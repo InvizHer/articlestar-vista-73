@@ -9,7 +9,6 @@ import { CalendarIcon, Clock, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import ArticleGrid from "@/components/blog/ArticleGrid";
 import { Button } from "@/components/ui/button";
-import { marked } from "marked";
 import { toast } from "sonner";
 
 // Helper function to convert DbArticle to Article
@@ -57,7 +56,7 @@ const Article = () => {
         .select("*")
         .eq("slug", slug)
         .eq("published", true)
-        .single();
+        .maybeSingle();
 
       if (error) {
         throw error;
@@ -156,7 +155,7 @@ const Article = () => {
           </div>
 
           <div 
-            className="prose prose-slate max-w-none"
+            className="prose prose-slate max-w-none prose-img:rounded-lg prose-headings:font-bold prose-a:text-blue-600"
             dangerouslySetInnerHTML={{ __html: article.content }}
           />
 

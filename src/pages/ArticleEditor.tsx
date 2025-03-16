@@ -18,6 +18,10 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { 
+  ToggleGroup, 
+  ToggleGroupItem 
+} from "@/components/ui/toggle-group";
 
 // Rich text editor modules and formats
 const modules = {
@@ -29,6 +33,10 @@ const modules = {
     [{ align: [] }],
     ["link", "image"],
     ["clean"],
+    ["blockquote", "code-block"],
+    [{ color: [] }, { background: [] }],
+    [{ font: [] }],
+    [{ script: "sub" }, { script: "super" }],
   ],
 };
 
@@ -44,6 +52,12 @@ const formats = [
   "align",
   "link",
   "image",
+  "blockquote",
+  "code-block",
+  "color",
+  "background",
+  "font",
+  "script",
 ];
 
 // Form validation schema
@@ -51,7 +65,7 @@ const articleSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters"),
   slug: z.string().min(5, "Slug must be at least 5 characters"),
   excerpt: z.string().min(10, "Excerpt must be at least 10 characters"),
-  content: z.string().min(50, "Content must be at least 50 characters"),
+  content: z.string().min(10, "Content must be at least 10 characters"),
   category: z.string().min(2, "Category is required"),
   tags: z.string().min(2, "At least one tag is required"),
   read_time: z.string().min(1, "Read time is required"),
@@ -70,6 +84,7 @@ const ArticleEditor = () => {
   const { isAuthenticated } = useAdmin();
   const [loading, setLoading] = useState(isEditMode);
   const [initialLoading, setInitialLoading] = useState(isEditMode);
+  const [editorValue, setEditorValue] = useState("");
 
   const form = useForm<ArticleFormValues>({
     resolver: zodResolver(articleSchema),
@@ -101,13 +116,22 @@ const ArticleEditor = () => {
     }
   }, [isEditMode, articleId, isAuthenticated, navigate]);
 
+  // Update form content field when editor value changes
+  useEffect(() => {
+    form.setValue("content", editorValue, { 
+      shouldValidate: true,
+      shouldDirty: true,
+      shouldTouch: true
+    });
+  }, [editorValue, form]);
+
   const fetchArticle = async (id: string) => {
     try {
       const { data, error } = await supabase
         .from("articles")
         .select("*")
         .eq("id", id)
-        .single();
+        .maybeSingle();
 
       if (error) {
         throw error;
@@ -127,6 +151,8 @@ const ArticleEditor = () => {
           author_avatar: data.author_avatar || "/placeholder.svg",
           published: data.published,
         });
+
+        setEditorValue(data.content);
       }
     } catch (error) {
       console.error("Error fetching article:", error);
@@ -171,7 +197,12 @@ const ArticleEditor = () => {
         toast.success("Article updated successfully");
       } else {
         // Create new article
-        const { error } = await supabase.from("articles").insert([articleData]);
+        const { error } = await supabase.from("articles").insert([
+          {
+            ...articleData,
+            date: new Date().toISOString(),
+          }
+        ]);
         if (error) throw error;
         toast.success("Article created successfully");
       }
@@ -400,8 +431,8 @@ const ArticleEditor = () => {
                       theme="snow"
                       modules={modules}
                       formats={formats}
-                      value={field.value}
-                      onChange={field.onChange}
+                      value={editorValue}
+                      onChange={setEditorValue}
                       className="min-h-[400px]"
                     />
                   </CardContent>
@@ -410,6 +441,8 @@ const ArticleEditor = () => {
               </FormItem>
             )}
           />
+
+          <input type="hidden" {...form.register("content")} />
         </form>
       </Form>
     </div>
