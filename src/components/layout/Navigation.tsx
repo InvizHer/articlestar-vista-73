@@ -1,11 +1,13 @@
 
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Navigation: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const location = useLocation();
+  const isAdmin = localStorage.getItem("adminSession") !== null;
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
@@ -33,6 +35,11 @@ const Navigation: React.FC = () => {
             <Link to="/contact" className="text-base font-medium hover:text-primary transition-colors">
               Contact
             </Link>
+            {isAdmin && (
+              <Link to="/admin/dashboard" className="text-base font-medium hover:text-primary transition-colors">
+                Admin Dashboard
+              </Link>
+            )}
           </nav>
 
           {/* Mobile menu button */}
@@ -81,6 +88,15 @@ const Navigation: React.FC = () => {
             >
               Contact
             </Link>
+            {isAdmin && (
+              <Link
+                to="/admin/dashboard"
+                className="block text-base font-medium hover:text-primary transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Admin Dashboard
+              </Link>
+            )}
           </div>
         </div>
       )}

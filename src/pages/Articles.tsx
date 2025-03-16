@@ -1,21 +1,78 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import PageHeader from "@/components/common/PageHeader";
-import { articles } from "@/data/articles";
+import { supabase } from "@/integrations/supabase/client";
+import { DbArticle } from "@/types/database";
+import { Article } from "@/types/blog";
 import ArticleGrid from "@/components/blog/ArticleGrid";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search } from "lucide-react";
+import { toast } from "sonner";
+
+// Helper function to convert DbArticle to Article
+const convertDbArticleToArticle = (dbArticle: DbArticle): Article => {
+  return {
+    id: dbArticle.id,
+    title: dbArticle.title,
+    slug: dbArticle.slug,
+    excerpt: dbArticle.excerpt,
+    content: dbArticle.content,
+    author: {
+      name: dbArticle.author_name,
+      avatar: dbArticle.author_avatar || "/placeholder.svg"
+    },
+    date: new Date(dbArticle.date).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    }),
+    readTime: dbArticle.read_time,
+    category: dbArticle.category,
+    tags: dbArticle.tags,
+    coverImage: dbArticle.cover_image || "/placeholder.svg"
+  };
+};
 
 const Articles = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Get unique categories
-  const categories = Array.from(
-    new Set(articles.map((article) => article.category))
-  );
+  useEffect(() => {
+    fetchArticles();
+  }, []);
+
+  const fetchArticles = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("articles")
+        .select("*")
+        .eq("published", true)
+        .order("date", { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      const articlesData = (data || []).map(convertDbArticleToArticle);
+      setArticles(articlesData);
+
+      // Extract unique categories
+      const uniqueCategories = Array.from(
+        new Set(articlesData.map(article => article.category))
+      );
+      setCategories(uniqueCategories);
+    } catch (error) {
+      console.error("Error fetching articles:", error);
+      toast.error("Failed to load articles");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filter articles based on search and category
   const filteredArticles = articles.filter((article) => {
@@ -55,21 +112,25 @@ const Articles = () => {
             />
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            {categories.map((category) => (
-              <Badge
-                key={category}
-                variant={selectedCategory === category ? "default" : "outline"}
-                className="cursor-pointer"
-                onClick={() => handleCategoryClick(category)}
-              >
-                {category}
-              </Badge>
-            ))}
-          </div>
+          {categories.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {categories.map((category) => (
+                <Badge
+                  key={category}
+                  variant={selectedCategory === category ? "default" : "outline"}
+                  className="cursor-pointer"
+                  onClick={() => handleCategoryClick(category)}
+                >
+                  {category}
+                </Badge>
+              ))}
+            </div>
+          )}
         </div>
 
-        {filteredArticles.length > 0 ? (
+        {loading ? (
+          <div className="text-center py-12">Loading articles...</div>
+        ) : filteredArticles.length > 0 ? (
           <ArticleGrid articles={filteredArticles} columns={3} />
         ) : (
           <div className="text-center py-12">

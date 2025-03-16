@@ -1,27 +1,115 @@
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
-import { getArticleBySlug, getRelatedArticles } from "@/data/articles";
+import { supabase } from "@/integrations/supabase/client";
+import { DbArticle } from "@/types/database";
+import { Article as ArticleType } from "@/types/blog";
 import { CalendarIcon, Clock, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import ArticleGrid from "@/components/blog/ArticleGrid";
 import { Button } from "@/components/ui/button";
 import { marked } from "marked";
+import { toast } from "sonner";
+
+// Helper function to convert DbArticle to Article
+const convertDbArticleToArticle = (dbArticle: DbArticle): ArticleType => {
+  return {
+    id: dbArticle.id,
+    title: dbArticle.title,
+    slug: dbArticle.slug,
+    excerpt: dbArticle.excerpt,
+    content: dbArticle.content,
+    author: {
+      name: dbArticle.author_name,
+      avatar: dbArticle.author_avatar || "/placeholder.svg"
+    },
+    date: new Date(dbArticle.date).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    }),
+    readTime: dbArticle.read_time,
+    category: dbArticle.category,
+    tags: dbArticle.tags,
+    coverImage: dbArticle.cover_image || "/placeholder.svg"
+  };
+};
 
 const Article = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  
-  const article = slug ? getArticleBySlug(slug) : undefined;
-  const relatedArticles = slug ? getRelatedArticles(slug, 2) : [];
+  const [article, setArticle] = useState<ArticleType | null>(null);
+  const [relatedArticles, setRelatedArticles] = useState<ArticleType[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!article) {
-      navigate("/not-found");
+    if (slug) {
+      fetchArticle(slug);
     }
     window.scrollTo(0, 0);
-  }, [article, navigate]);
+  }, [slug]);
+
+  const fetchArticle = async (slug: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("articles")
+        .select("*")
+        .eq("slug", slug)
+        .eq("published", true)
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      if (data) {
+        const articleData = convertDbArticleToArticle(data);
+        setArticle(articleData);
+        fetchRelatedArticles(data.category, data.tags, data.id);
+      } else {
+        navigate("/not-found");
+      }
+    } catch (error) {
+      console.error("Error fetching article:", error);
+      toast.error("Failed to load article");
+      navigate("/not-found");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchRelatedArticles = async (category: string, tags: string[], currentId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("articles")
+        .select("*")
+        .eq("published", true)
+        .neq("id", currentId)
+        .eq("category", category)
+        .limit(3);
+
+      if (error) {
+        throw error;
+      }
+
+      const relatedData = (data || []).map(convertDbArticleToArticle);
+      setRelatedArticles(relatedData);
+    } catch (error) {
+      console.error("Error fetching related articles:", error);
+      // We don't show an error toast for related articles as it's not critical
+    }
+  };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-12 sm:px-6 lg:px-8 text-center">
+          Loading article...
+        </div>
+      </Layout>
+    );
+  }
 
   if (!article) return null;
 
@@ -69,7 +157,7 @@ const Article = () => {
 
           <div 
             className="prose prose-slate max-w-none"
-            dangerouslySetInnerHTML={{ __html: marked.parse(article.content) }}
+            dangerouslySetInnerHTML={{ __html: article.content }}
           />
 
           <div className="mt-12 pt-8 border-t">
