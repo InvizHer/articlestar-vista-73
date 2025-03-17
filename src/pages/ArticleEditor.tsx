@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
-import { ArrowLeft, Save, EyeIcon, ListChecks, FileDown, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, EyeIcon, ListChecks, FileDown, Loader2, User, Clock, Calendar as CalendarIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { slugify } from "@/lib/utils";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -36,7 +35,6 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { motion } from "framer-motion";
 
-// Rich text editor modules and formats
 const modules = {
   toolbar: [
     [{ header: [1, 2, 3, 4, 5, 6, false] }],
@@ -73,7 +71,6 @@ const formats = [
   "script",
 ];
 
-// Form validation schema
 const articleSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters"),
   slug: z.string().min(5, "Slug must be at least 5 characters"),
@@ -131,7 +128,6 @@ const ArticleEditor = () => {
     }
   }, [isEditMode, articleId, isAuthenticated, navigate]);
 
-  // Update form content field when editor value changes
   useEffect(() => {
     form.setValue("content", editorValue, { 
       shouldValidate: true,
@@ -202,7 +198,6 @@ const ArticleEditor = () => {
       };
 
       if (isEditMode && articleId) {
-        // Update existing article
         const { error } = await supabase
           .from("articles")
           .update(articleData)
@@ -211,7 +206,6 @@ const ArticleEditor = () => {
         if (error) throw error;
         toast.success("Article updated successfully");
       } else {
-        // Create new article
         const { error } = await supabase.from("articles").insert([
           {
             ...articleData,
