@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -17,7 +16,8 @@ import {
   Linkedin,
   Copy,
   MessageCircle,
-  BookmarkCheck
+  BookmarkCheck,
+  AlignJustify
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import ArticleGrid from "@/components/blog/ArticleGrid";
@@ -26,7 +26,6 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Progress } from "@/components/ui/progress";
 
-// Helper function to convert DbArticle to Article
 const convertDbArticleToArticle = (dbArticle: DbArticle): ArticleType => {
   return {
     id: dbArticle.id,
@@ -69,7 +68,6 @@ const Article = () => {
     window.scrollTo(0, 0);
   }, [slug]);
 
-  // Check if the article is bookmarked
   useEffect(() => {
     if (article) {
       try {
@@ -84,7 +82,6 @@ const Article = () => {
     }
   }, [article]);
 
-  // Calculate reading progress and extract headings for table of contents
   useEffect(() => {
     if (!article) return;
 
@@ -98,7 +95,6 @@ const Article = () => {
       }
     };
     
-    // Extract headings for table of contents
     const articleContent = document.querySelector('.article-content');
     if (articleContent) {
       const headingElements = articleContent.querySelectorAll('h1, h2, h3, h4, h5, h6');
@@ -117,7 +113,7 @@ const Article = () => {
     }
     
     window.addEventListener("scroll", handleScroll);
-    handleScroll(); // Initial calculation
+    handleScroll();
     
     return () => window.removeEventListener("scroll", handleScroll);
   }, [article]);
@@ -169,7 +165,6 @@ const Article = () => {
       setRelatedArticles(relatedData);
     } catch (error) {
       console.error("Error fetching related articles:", error);
-      // We don't show an error toast for related articles as it's not critical
     }
   };
 
@@ -181,11 +176,9 @@ const Article = () => {
       let bookmarks: ArticleType[] = savedBookmarks ? JSON.parse(savedBookmarks) : [];
       
       if (isBookmarked) {
-        // Remove from bookmarks
         bookmarks = bookmarks.filter(bookmark => bookmark.id !== article.id);
         toast.success("Removed from bookmarks");
       } else {
-        // Add to bookmarks
         bookmarks.push(article);
         toast.success("Saved to bookmarks");
       }
@@ -216,7 +209,6 @@ const Article = () => {
         shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(`${article?.title || ''} ${url}`)}`;
         break;
       default:
-        // Just copy to clipboard if no platform
         navigator.clipboard.writeText(url);
         toast.success("Link copied to clipboard");
         return;
@@ -410,7 +402,6 @@ const Article = () => {
               />
             </div>
             
-            {/* Reading progress indicator */}
             <div className="mb-8">
               <div className="flex justify-between text-xs text-muted-foreground mb-1">
                 <span>Progress</span>
@@ -419,9 +410,7 @@ const Article = () => {
               <Progress value={readingProgress} className="h-1" />
             </div>
 
-            {/* Article content with table of contents sidebar */}
             <div className="flex flex-col md:flex-row gap-8">
-              {/* Table of contents (only on desktop) */}
               {showTableOfContents && headings.length > 0 && (
                 <motion.aside
                   initial={{ opacity: 0, x: -20 }}
@@ -446,7 +435,6 @@ const Article = () => {
                 </motion.aside>
               )}
               
-              {/* Mobile table of contents dialog */}
               {showTableOfContents && headings.length > 0 && (
                 <motion.div 
                   initial={{ opacity: 0, y: -10 }}
