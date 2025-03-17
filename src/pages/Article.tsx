@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -24,7 +25,7 @@ import ArticleGrid from "@/components/blog/ArticleGrid";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Progress } from "@/components/ui/progress";
+import { useBookmarks } from "@/hooks/use-bookmarks";
 
 const convertDbArticleToArticle = (dbArticle: DbArticle): ArticleType => {
   return {
@@ -56,10 +57,9 @@ const Article = () => {
   const [relatedArticles, setRelatedArticles] = useState<ArticleType[]>([]);
   const [loading, setLoading] = useState(true);
   const [shareOpen, setShareOpen] = useState(false);
-  const [isBookmarked, setIsBookmarked] = useState(false);
-  const [readingProgress, setReadingProgress] = useState(0);
   const [showTableOfContents, setShowTableOfContents] = useState(false);
   const [headings, setHeadings] = useState<{id: string, text: string, level: number}[]>([]);
+  const { isBookmarked, toggleBookmark } = useBookmarks();
 
   useEffect(() => {
     if (slug) {
@@ -69,32 +69,8 @@ const Article = () => {
   }, [slug]);
 
   useEffect(() => {
-    if (article) {
-      try {
-        const savedBookmarks = localStorage.getItem('bookmarks');
-        if (savedBookmarks) {
-          const bookmarks = JSON.parse(savedBookmarks);
-          setIsBookmarked(bookmarks.some((bookmark: ArticleType) => bookmark.id === article.id));
-        }
-      } catch (error) {
-        console.error('Failed to check bookmarks:', error);
-      }
-    }
-  }, [article]);
-
-  useEffect(() => {
     if (!article) return;
 
-    const handleScroll = () => {
-      const windowHeight = window.innerHeight;
-      const documentHeight = document.documentElement.scrollHeight - windowHeight;
-      const scrolled = window.scrollY;
-      
-      if (documentHeight > 0) {
-        setReadingProgress(Math.min((scrolled / documentHeight) * 100, 100));
-      }
-    };
-    
     const articleContent = document.querySelector('.article-content');
     if (articleContent) {
       const headingElements = articleContent.querySelectorAll('h1, h2, h3, h4, h5, h6');
@@ -111,11 +87,6 @@ const Article = () => {
       
       setHeadings(extractedHeadings);
     }
-    
-    window.addEventListener("scroll", handleScroll);
-    handleScroll();
-    
-    return () => window.removeEventListener("scroll", handleScroll);
   }, [article]);
 
   const fetchArticle = async (slug: string) => {
@@ -168,27 +139,9 @@ const Article = () => {
     }
   };
 
-  const toggleBookmark = () => {
+  const handleBookmarkToggle = () => {
     if (!article) return;
-    
-    try {
-      const savedBookmarks = localStorage.getItem('bookmarks');
-      let bookmarks: ArticleType[] = savedBookmarks ? JSON.parse(savedBookmarks) : [];
-      
-      if (isBookmarked) {
-        bookmarks = bookmarks.filter(bookmark => bookmark.id !== article.id);
-        toast.success("Removed from bookmarks");
-      } else {
-        bookmarks.push(article);
-        toast.success("Saved to bookmarks");
-      }
-      
-      localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
-      setIsBookmarked(!isBookmarked);
-    } catch (error) {
-      console.error('Failed to update bookmarks:', error);
-      toast.error("Failed to update bookmarks");
-    }
+    toggleBookmark(article);
   };
 
   const handleShare = (platform: string) => {
@@ -275,18 +228,18 @@ const Article = () => {
               </Button>
               
               <Button
-                variant={isBookmarked ? "default" : "outline"}
+                variant={isBookmarked(article.id) ? "default" : "outline"}
                 size="sm"
                 className="rounded-full"
-                onClick={toggleBookmark}
+                onClick={handleBookmarkToggle}
               >
-                {isBookmarked ? (
+                {isBookmarked(article.id) ? (
                   <BookmarkCheck className="h-4 w-4 mr-2" />
                 ) : (
                   <Bookmark className="h-4 w-4 mr-2" />
                 )}
                 <span className="hidden sm:inline">
-                  {isBookmarked ? "Bookmarked" : "Bookmark"}
+                  {isBookmarked(article.id) ? "Bookmarked" : "Bookmark"}
                 </span>
               </Button>
             </div>
@@ -401,14 +354,6 @@ const Article = () => {
                 className="h-full w-full object-cover"
               />
             </div>
-            
-            <div className="mb-8">
-              <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                <span>Progress</span>
-                <span>{Math.round(readingProgress)}%</span>
-              </div>
-              <Progress value={readingProgress} className="h-1" />
-            </div>
 
             <div className="flex flex-col md:flex-row gap-8">
               {showTableOfContents && headings.length > 0 && (
@@ -467,62 +412,74 @@ const Article = () => {
             </div>
 
             <div className="mt-12 pt-8 border-t">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <Button 
-                    variant={isBookmarked ? "default" : "outline"}
-                    size="sm" 
-                    className="rounded-full mr-2"
-                    onClick={toggleBookmark}
-                  >
-                    {isBookmarked ? (
-                      <>
-                        <BookmarkCheck className="h-4 w-4 mr-2" />
-                        Bookmarked
-                      </>
-                    ) : (
-                      <>
-                        <Bookmark className="h-4 w-4 mr-2" />
-                        Bookmark
-                      </>
-                    )}
-                  </Button>
-                </div>
-                
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    className="rounded-full text-[#1DA1F2] hover:bg-[#1DA1F2]/10"
-                    onClick={() => handleShare('twitter')}
-                  >
-                    <Twitter className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    className="rounded-full text-[#1877F2] hover:bg-[#1877F2]/10"
-                    onClick={() => handleShare('facebook')}
-                  >
-                    <Facebook className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    className="rounded-full text-[#0A66C2] hover:bg-[#0A66C2]/10"
-                    onClick={() => handleShare('linkedin')}
-                  >
-                    <Linkedin className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    className="rounded-full text-[#25D366] hover:bg-[#25D366]/10"
-                    onClick={() => handleShare('whatsapp')}
-                  >
-                    <MessageCircle className="h-4 w-4" />
-                  </Button>
-                </div>
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold mb-4">Share this article</h3>
+                <Button 
+                  variant={isBookmarked(article.id) ? "default" : "outline"}
+                  size="sm" 
+                  className="rounded-full"
+                  onClick={handleBookmarkToggle}
+                >
+                  {isBookmarked(article.id) ? (
+                    <>
+                      <BookmarkCheck className="h-4 w-4 mr-2" />
+                      Bookmarked
+                    </>
+                  ) : (
+                    <>
+                      <Bookmark className="h-4 w-4 mr-2" />
+                      Bookmark
+                    </>
+                  )}
+                </Button>
+              </div>
+              
+              <div className="flex flex-wrap gap-3 mt-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="rounded-full text-[#1DA1F2] hover:bg-[#1DA1F2]/10"
+                  onClick={() => handleShare('twitter')}
+                >
+                  <Twitter className="h-4 w-4 mr-2" />
+                  Twitter
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="rounded-full text-[#1877F2] hover:bg-[#1877F2]/10"
+                  onClick={() => handleShare('facebook')}
+                >
+                  <Facebook className="h-4 w-4 mr-2" />
+                  Facebook
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="rounded-full text-[#0A66C2] hover:bg-[#0A66C2]/10"
+                  onClick={() => handleShare('linkedin')}
+                >
+                  <Linkedin className="h-4 w-4 mr-2" />
+                  LinkedIn
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="rounded-full text-[#25D366] hover:bg-[#25D366]/10"
+                  onClick={() => handleShare('whatsapp')}
+                >
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  WhatsApp
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="rounded-full"
+                  onClick={() => handleShare('')}
+                >
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copy Link
+                </Button>
               </div>
             </div>
           </article>

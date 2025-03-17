@@ -24,16 +24,27 @@ import {
   FileText,
   Filter,
   Search,
-  LayoutDashboard,
   Check,
   X,
-  BarChart3,
   Settings,
   List,
   ChevronDown,
   ChevronUp,
   Tag,
-  Bookmark
+  Mail,
+  Package,
+  Users,
+  LucideIcon,
+  HelpCircle,
+  Activity,
+  Ellipsis,
+  MoreHorizontal,
+  LayoutDashboard,
+  Menu,
+  Moon,
+  Sun,
+  GridIcon,
+  LayoutGrid
 } from "lucide-react";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +56,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { 
@@ -56,7 +68,19 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { motion, AnimatePresence } from "framer-motion";
-import Layout from "@/components/layout/Layout";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+interface SidebarItem {
+  title: string;
+  icon: LucideIcon;
+  href?: string;
+  isActive: boolean;
+}
 
 const AdminDashboard = () => {
   const [articles, setArticles] = useState<DbArticle[]>([]);
@@ -67,9 +91,21 @@ const AdminDashboard = () => {
   const [sortField, setSortField] = useState<"date" | "title" | "category">("date");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [viewMode, setViewMode] = useState<"table" | "cards">("table");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const { logout } = useAdmin();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+
+  const sidebarItems: SidebarItem[] = [
+    { title: "Dashboard", icon: LayoutDashboard, isActive: true },
+    { title: "Articles", icon: FileText, isActive: false },
+    { title: "Categories", icon: Tag, isActive: false },
+    { title: "Users", icon: Users, isActive: false },
+    { title: "Comments", icon: Mail, isActive: false },
+    { title: "Settings", icon: Settings, isActive: false },
+    { title: "Help", icon: HelpCircle, isActive: false },
+  ];
 
   useEffect(() => {
     fetchArticles();
@@ -220,18 +256,7 @@ const AdminDashboard = () => {
     const published = articles.filter(a => a.published).length;
     const drafts = total - published;
     
-    // Get category counts
-    const categories = articles.reduce((acc, article) => {
-      acc[article.category] = (acc[article.category] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-    
-    // Get top categories
-    const topCategories = Object.entries(categories)
-      .sort(([, countA], [, countB]) => countB - countA)
-      .slice(0, 3);
-    
-    return { total, published, drafts, topCategories };
+    return { total, published, drafts };
   };
 
   const stats = getArticleStats();
@@ -339,7 +364,7 @@ const AdminDashboard = () => {
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon">
-                            <Settings className="h-4 w-4" />
+                            <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
@@ -463,7 +488,7 @@ const AdminDashboard = () => {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Settings className="h-4 w-4" />
+                        <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
@@ -493,7 +518,7 @@ const AdminDashboard = () => {
                 <p className="text-sm text-muted-foreground line-clamp-2 mb-4">{article.excerpt}</p>
                 <div className="flex items-center justify-between mt-auto text-xs text-muted-foreground">
                   <div className="flex items-center gap-2">
-                    <Bookmark className="h-3 w-3" />
+                    <Tag className="h-3 w-3" />
                     <span>{article.category}</span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -509,38 +534,102 @@ const AdminDashboard = () => {
     </div>
   );
 
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  const toggleDarkMode = () => {
+    setIsDarkMode(!isDarkMode);
+  };
+
   return (
-    <Layout fullWidth>
-      <div className="min-h-screen bg-muted/30">
-        <div className="bg-background border-b sticky top-0 z-30">
-          <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <LayoutDashboard className="h-5 w-5 text-primary" />
-              <h1 className="text-xl font-bold">Admin Dashboard</h1>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleLogout}
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                <span className="hidden sm:inline">Logout</span>
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900 flex">
+      {/* Sidebar */}
+      <aside className={`bg-white dark:bg-zinc-800 border-r dark:border-zinc-700 fixed inset-y-0 left-0 z-50 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 transition-transform duration-200 ease-in-out w-64 md:w-72`}>
+        <div className="flex flex-col h-full">
+          <div className="p-4 border-b dark:border-zinc-700">
+            <div className="flex items-center justify-between">
+              <h1 className="text-xl font-bold text-primary">Blog Admin</h1>
+              <Button variant="ghost" size="icon" onClick={toggleSidebar} className="md:hidden">
+                <X className="h-5 w-5" />
               </Button>
             </div>
           </div>
+          <nav className="flex-1 p-4">
+            <ul className="space-y-1">
+              {sidebarItems.map((item, index) => (
+                <li key={index}>
+                  <Button
+                    variant={item.isActive ? "default" : "ghost"}
+                    className={`w-full justify-start ${item.isActive ? '' : 'text-zinc-600 dark:text-zinc-400'}`}
+                    onClick={() => {/* Handle nav click */}}
+                  >
+                    <item.icon className="mr-3 h-5 w-5" />
+                    {item.title}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </nav>
+          <div className="p-4 border-t dark:border-zinc-700">
+            <Button variant="outline" className="w-full" onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Logout
+            </Button>
+          </div>
         </div>
+      </aside>
 
-        <div className="container mx-auto px-4 py-8">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8"
-          >
+      {/* Main content */}
+      <div className={`flex-1 ${isSidebarOpen ? 'md:ml-72' : 'md:ml-72'} transition-all duration-200`}>
+        <header className="bg-white dark:bg-zinc-800 border-b dark:border-zinc-700 sticky top-0 z-40">
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center">
+              <Button variant="ghost" size="icon" onClick={toggleSidebar} className="md:hidden mr-2">
+                <Menu className="h-5 w-5" />
+              </Button>
+              <h1 className="text-xl font-bold md:hidden">Dashboard</h1>
+            </div>
+            <div className="flex items-center space-x-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={toggleDarkMode}>
+                      {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Toggle dark mode</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <Activity className="h-5 w-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Activity</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </div>
+        </header>
+
+        <main className="p-4 md:p-6">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold mb-2">Dashboard</h1>
+            <p className="text-muted-foreground">Manage your blog content and monitor performance</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Total Articles</CardTitle>
+                <CardTitle className="text-sm font-medium">Total Articles</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">{stats.total}</div>
@@ -548,7 +637,7 @@ const AdminDashboard = () => {
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Published</CardTitle>
+                <CardTitle className="text-sm font-medium">Published</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-green-500">{stats.published}</div>
@@ -556,137 +645,104 @@ const AdminDashboard = () => {
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Drafts</CardTitle>
+                <CardTitle className="text-sm font-medium">Drafts</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-amber-500">{stats.drafts}</div>
               </CardContent>
             </Card>
-          </motion.div>
-          
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.1 }}
-            className="mb-8"
-          >
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle>Category Distribution</CardTitle>
-                <CardDescription>Top categories in your blog</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {stats.topCategories.map(([category, count]) => (
-                    <div key={category} className="flex items-center">
-                      <div className="w-1/3 font-medium truncate">{category}</div>
-                      <div className="w-2/3 flex items-center gap-2">
-                        <div className="h-2 bg-primary rounded-full" style={{ width: `${(count / stats.total) * 100}%` }}></div>
-                        <span className="text-sm text-muted-foreground">{count} articles</span>
-                      </div>
-                    </div>
-                  ))}
+          </div>
+
+          <div className="bg-white dark:bg-zinc-800 rounded-lg border dark:border-zinc-700 shadow-sm mb-8">
+            <div className="p-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <div>
+                  <h2 className="text-xl font-semibold">Articles Management</h2>
+                  <p className="text-sm text-muted-foreground">Manage your blog content</p>
                 </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-          
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.2 }}
-          >
-            <div className="bg-background rounded-lg border shadow-sm">
-              <div className="p-6">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                  <div>
-                    <h2 className="text-xl font-semibold">Articles Management</h2>
-                    <p className="text-sm text-muted-foreground">Manage your blog content</p>
-                  </div>
-                  <Button onClick={handleCreateArticle}>
-                    <Plus className="mr-2 h-4 w-4" /> <span className="hidden sm:inline">New Article</span>
+                <Button onClick={handleCreateArticle} className="bg-gradient-to-r from-primary to-primary/80">
+                  <Plus className="mr-2 h-4 w-4" /> New Article
+                </Button>
+              </div>
+              
+              <div className="flex flex-col md:flex-row gap-4 mb-6">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Search articles..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="w-full md:w-auto">
+                        <Filter className="mr-2 h-4 w-4" />
+                        <span className="hidden sm:inline">
+                          {statusFilter === "all" ? "All Articles" : 
+                           statusFilter === "published" ? "Published Only" : "Drafts Only"}
+                        </span>
+                        <span className="sm:hidden">Filter</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setStatusFilter("all")}>
+                        {statusFilter === "all" && <Check className="mr-2 h-4 w-4" />}
+                        All Articles
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setStatusFilter("published")}>
+                        {statusFilter === "published" && <Check className="mr-2 h-4 w-4" />}
+                        Published Only
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setStatusFilter("draft")}>
+                        {statusFilter === "draft" && <Check className="mr-2 h-4 w-4" />}
+                        Drafts Only
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={toggleViewMode}
+                    className="shrink-0"
+                  >
+                    {viewMode === "table" ? (
+                      <LayoutGrid className="h-4 w-4" />
+                    ) : (
+                      <List className="h-4 w-4" />
+                    )}
                   </Button>
                 </div>
-                
-                <div className="flex flex-col md:flex-row gap-4 mb-6">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      placeholder="Search articles..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="w-full md:w-auto">
-                          <Filter className="mr-2 h-4 w-4" />
-                          <span className="hidden sm:inline">
-                            {statusFilter === "all" ? "All Articles" : 
-                             statusFilter === "published" ? "Published Only" : "Drafts Only"}
-                          </span>
-                          <span className="sm:hidden">Filter</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => setStatusFilter("all")}>
-                          {statusFilter === "all" && <Check className="mr-2 h-4 w-4" />}
-                          All Articles
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setStatusFilter("published")}>
-                          {statusFilter === "published" && <Check className="mr-2 h-4 w-4" />}
-                          Published Only
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setStatusFilter("draft")}>
-                          {statusFilter === "draft" && <Check className="mr-2 h-4 w-4" />}
-                          Drafts Only
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      onClick={toggleViewMode}
-                      className="shrink-0"
-                    >
-                      {viewMode === "table" ? (
-                        <BarChart3 className="h-4 w-4" />
-                      ) : (
-                        <List className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-
-                {loading ? (
-                  <div className="text-center py-8">
-                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent"></div>
-                    <p className="mt-2 text-muted-foreground">Loading articles...</p>
-                  </div>
-                ) : (
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={viewMode}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      {viewMode === "table" ? renderTableView() : renderCardsView()}
-                    </motion.div>
-                  </AnimatePresence>
-                )}
               </div>
+
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent"></div>
+                  <p className="mt-2 text-muted-foreground">Loading articles...</p>
+                </div>
+              ) : (
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={viewMode}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {viewMode === "table" ? renderTableView() : renderCardsView()}
+                  </motion.div>
+                </AnimatePresence>
+              )}
             </div>
-          </motion.div>
-        </div>
+          </div>
+        </main>
       </div>
-    </Layout>
+    </div>
   );
 };
 

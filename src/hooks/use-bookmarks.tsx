@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { Article } from "@/types/blog";
 import { useDebounce } from "./use-debounce";
+import { toast } from "sonner";
 
 export function useBookmarks() {
   const [bookmarks, setBookmarks] = useState<Article[]>([]);
@@ -44,6 +45,7 @@ export function useBookmarks() {
       if (prev.some(bookmark => bookmark.id === article.id)) {
         return prev;
       }
+      toast.success("Article bookmarked successfully");
       return [...prev, article];
     });
     return true;
@@ -51,7 +53,13 @@ export function useBookmarks() {
 
   // Remove a bookmark
   const removeBookmark = (articleId: string) => {
-    setBookmarks(prev => prev.filter(bookmark => bookmark.id !== articleId));
+    setBookmarks(prev => {
+      const filtered = prev.filter(bookmark => bookmark.id !== articleId);
+      if (filtered.length < prev.length) {
+        toast.success("Article removed from bookmarks");
+      }
+      return filtered;
+    });
     return true;
   };
 
