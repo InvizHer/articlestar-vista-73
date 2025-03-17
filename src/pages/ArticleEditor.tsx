@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,14 +11,15 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
-import { ArrowLeft, Save, EyeIcon, ListChecks, FileDown, Loader2, User, Clock, Calendar as CalendarIcon, Info, Trash, Copy, CheckCircle } from "lucide-react";
+import { ArrowLeft, Save, EyeIcon, ListChecks, FileDown, Loader2, User, Clock, Calendar as CalendarIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { slugify, cn } from "@/lib/utils";
+import { slugify } from "@/lib/utils";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useIsMobile } from "@/hooks/use-mobile";
+import Layout from "@/components/layout/Layout";
 import { 
   Tabs, 
   TabsContent, 
@@ -35,7 +37,6 @@ import {
 } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { motion } from "framer-motion";
-import { useScrollLock } from "@/hooks/use-scroll-lock";
 
 const modules = {
   toolbar: [
@@ -100,8 +101,6 @@ const ArticleEditor = () => {
   const [editorValue, setEditorValue] = useState("");
   const [activeTab, setActiveTab] = useState("editor");
   const isMobile = useIsMobile();
-  const [editorHeight, setEditorHeight] = useState(800);
-  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const form = useForm<ArticleFormValues>({
     resolver: zodResolver(articleSchema),
@@ -119,8 +118,6 @@ const ArticleEditor = () => {
       published: false,
     },
   });
-
-  useScrollLock(isFullscreen);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -180,19 +177,6 @@ const ArticleEditor = () => {
       setInitialLoading(false);
     }
   };
-
-  useEffect(() => {
-    const updateEditorHeight = () => {
-      const viewportHeight = window.innerHeight;
-      const newHeight = Math.max(Math.floor(viewportHeight * 0.8), 800);
-      setEditorHeight(newHeight);
-    };
-    
-    updateEditorHeight();
-    window.addEventListener('resize', updateEditorHeight);
-    
-    return () => window.removeEventListener('resize', updateEditorHeight);
-  }, []);
 
   const onSubmit = async (values: ArticleFormValues) => {
     setSaving(true);
@@ -256,22 +240,6 @@ const ArticleEditor = () => {
     setActiveTab("preview");
   };
 
-  const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
-  };
-
-  const getReadTime = (content: string) => {
-    const wordCount = content.replace(/<[^>]*>/g, '').split(/\s+/).length;
-    const readingTimeMin = Math.max(1, Math.ceil(wordCount / 200));
-    return `${readingTimeMin} min read`;
-  };
-
-  const updateReadTime = () => {
-    const content = form.getValues("content");
-    const readTime = getReadTime(content);
-    form.setValue("read_time", readTime);
-  };
-
   if (initialLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/30">
@@ -284,93 +252,78 @@ const ArticleEditor = () => {
   }
 
   return (
-    <div className={cn(
-      "min-h-screen bg-muted/30",
-      isFullscreen && "fixed inset-0 z-50 bg-background"
-    )}>
-      <div className="bg-background border-b sticky top-0 z-30">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              {!isFullscreen && (
+    <Layout fullWidth>
+      <div className="min-h-screen bg-muted/30">
+        <div className="bg-background border-b sticky top-0 z-30">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
                 <Button variant="outline" onClick={() => navigate("/admin/dashboard")}>
                   <ArrowLeft className="mr-2 h-4 w-4" /> Back
                 </Button>
-              )}
-              <h1 className="text-xl font-bold">
-                {isEditMode ? "Edit Article" : "Create New Article"}
-              </h1>
-            </div>
-            
-            <div className="flex gap-2">
-              <Button 
-                variant="outline"
-                size="sm"
-                onClick={toggleFullscreen}
-                className="hidden sm:flex"
-              >
-                {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
-              </Button>
+                <h1 className="text-xl font-bold">
+                  {isEditMode ? "Edit Article" : "Create New Article"}
+                </h1>
+              </div>
               
-              <Button 
-                variant="outline"
-                disabled={saving}
-                onClick={handlePreview}
-              >
-                <EyeIcon className="mr-2 h-4 w-4" />
-                <span className="hidden sm:inline">Preview</span>
-              </Button>
-              
-              <Button 
-                disabled={saving}
-                onClick={form.handleSubmit(onSubmit)}
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    Save
-                  </>
+              <div className="flex gap-2">
+                {form.formState.isDirty && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-sm text-muted-foreground flex items-center mr-2"
+                  >
+                    <span className="hidden sm:inline">Unsaved changes</span>
+                  </motion.div>
                 )}
-              </Button>
-              
-              {isFullscreen && (
-                <Button variant="outline" onClick={toggleFullscreen}>
-                  Exit
+                <Button 
+                  variant="outline"
+                  disabled={saving}
+                  onClick={handlePreview}
+                >
+                  <EyeIcon className="mr-2 h-4 w-4" />
+                  <span className="hidden sm:inline">Preview</span>
                 </Button>
-              )}
+                <Button 
+                  disabled={saving}
+                  onClick={form.handleSubmit(onSubmit)}
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Save
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className={cn(
-        "container mx-auto px-4 py-8",
-        isFullscreen && "max-w-screen-2xl"
-      )}>
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="flex justify-between items-center mb-6">
-              <TabsList>
-                <TabsTrigger value="editor" className="flex items-center gap-2">
-                  <ListChecks className="h-4 w-4" />
-                  Editor
-                </TabsTrigger>
-                <TabsTrigger value="preview" className="flex items-center gap-2">
-                  <EyeIcon className="h-4 w-4" />
-                  Preview
-                </TabsTrigger>
-              </TabsList>
+        <div className="container mx-auto px-4 py-8">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <div className="flex justify-between items-center mb-6">
+                <TabsList>
+                  <TabsTrigger value="editor" className="flex items-center gap-2">
+                    <ListChecks className="h-4 w-4" />
+                    Editor
+                  </TabsTrigger>
+                  <TabsTrigger value="preview" className="flex items-center gap-2">
+                    <EyeIcon className="h-4 w-4" />
+                    Preview
+                  </TabsTrigger>
+                </TabsList>
 
-              <div className="flex items-center gap-4">
                 <FormField
                   control={form.control}
                   name="published"
@@ -391,239 +344,229 @@ const ArticleEditor = () => {
                   )}
                 />
               </div>
-            </div>
-            
-            <TabsContent value="editor" className="mt-0">
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <Card className="shadow-md lg:col-span-2">
-                      <CardContent className="pt-6">
-                        <FormField
-                          control={form.control}
-                          name="title"
-                          render={({ field }) => (
-                            <FormItem className="mb-4">
-                              <FormLabel>Title</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  placeholder="Article title" 
-                                  {...field} 
-                                  onChange={(e) => handleTitleChange(e.target.value)} 
-                                  className="text-lg"
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+              
+              <TabsContent value="editor" className="mt-0">
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                      <Card className="shadow-md lg:col-span-2">
+                        <CardContent className="pt-6">
+                          <FormField
+                            control={form.control}
+                            name="title"
+                            render={({ field }) => (
+                              <FormItem className="mb-4">
+                                <FormLabel>Title</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="Article title" 
+                                    {...field} 
+                                    onChange={(e) => handleTitleChange(e.target.value)} 
+                                    className="text-lg"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
 
-                        <FormField
-                          control={form.control}
-                          name="slug"
-                          render={({ field }) => (
-                            <FormItem className="mb-4">
-                              <FormLabel>Slug</FormLabel>
-                              <FormControl>
-                                <Input placeholder="article-slug" {...field} />
-                              </FormControl>
-                              <FormDescription>
-                                URL-friendly version of the title
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                          <FormField
+                            control={form.control}
+                            name="slug"
+                            render={({ field }) => (
+                              <FormItem className="mb-4">
+                                <FormLabel>Slug</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="article-slug" {...field} />
+                                </FormControl>
+                                <FormDescription>
+                                  URL-friendly version of the title
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
 
-                        <FormField
-                          control={form.control}
-                          name="excerpt"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Excerpt</FormLabel>
-                              <FormControl>
-                                <Textarea
-                                  placeholder="Brief summary of the article"
-                                  {...field}
-                                  rows={3}
-                                />
-                              </FormControl>
-                              <FormDescription>
-                                A short description displayed on article cards
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </CardContent>
-                    </Card>
+                          <FormField
+                            control={form.control}
+                            name="excerpt"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Excerpt</FormLabel>
+                                <FormControl>
+                                  <Textarea
+                                    placeholder="Brief summary of the article"
+                                    {...field}
+                                    rows={3}
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  A short description displayed on article cards
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </CardContent>
+                      </Card>
+
+                      <Card className="shadow-md">
+                        <CardContent className="pt-6">
+                          <FormField
+                            control={form.control}
+                            name="category"
+                            render={({ field }) => (
+                              <FormItem className="mb-4">
+                                <FormLabel>Category</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Development, Design, etc." {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="tags"
+                            render={({ field }) => (
+                              <FormItem className="mb-4">
+                                <FormLabel>Tags</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="React, TypeScript, etc. (comma-separated)" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                              control={form.control}
+                              name="author_name"
+                              render={({ field }) => (
+                                <FormItem className="mb-4">
+                                  <FormLabel>Author Name</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="Author name" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name="read_time"
+                              render={({ field }) => (
+                                <FormItem className="mb-4">
+                                  <FormLabel>Read Time</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="5 min read" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-1 gap-4">
+                            <FormField
+                              control={form.control}
+                              name="cover_image"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Cover Image URL</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="URL to cover image" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
 
                     <Card className="shadow-md">
                       <CardContent className="pt-6">
                         <FormField
                           control={form.control}
-                          name="category"
+                          name="content"
                           render={({ field }) => (
-                            <FormItem className="mb-4">
-                              <FormLabel>Category</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Development, Design, etc." {...field} />
-                              </FormControl>
+                            <FormItem>
+                              <FormLabel>Content</FormLabel>
+                              <Card className="border-0 shadow-none">
+                                <CardContent className="p-0">
+                                  <div className="min-h-[600px]"> {/* Increased height here */}
+                                    <ReactQuill
+                                      theme="snow"
+                                      modules={modules}
+                                      formats={formats}
+                                      value={editorValue}
+                                      onChange={setEditorValue}
+                                      className="h-[550px]" /* Increased height here */
+                                      style={{ height: "550px" }} /* Ensuring height is applied */
+                                    />
+                                  </div>
+                                </CardContent>
+                              </Card>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
 
-                        <FormField
-                          control={form.control}
-                          name="tags"
-                          render={({ field }) => (
-                            <FormItem className="mb-4">
-                              <FormLabel>Tags</FormLabel>
-                              <FormControl>
-                                <Input placeholder="React, TypeScript, etc. (comma-separated)" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <FormField
-                            control={form.control}
-                            name="author_name"
-                            render={({ field }) => (
-                              <FormItem className="mb-4">
-                                <FormLabel>Author Name</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="Author name" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="read_time"
-                            render={({ field }) => (
-                              <FormItem className="mb-4">
-                                <FormLabel className="flex items-center gap-1">
-                                  Read Time
-                                  <Button 
-                                    type="button" 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="h-5 w-5"
-                                    onClick={updateReadTime}
-                                  >
-                                    <Info className="h-3 w-3" />
-                                  </Button>
-                                </FormLabel>
-                                <FormControl>
-                                  <Input placeholder="5 min read" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-4">
-                          <FormField
-                            control={form.control}
-                            name="cover_image"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Cover Image URL</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="URL to cover image" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
+                        <input type="hidden" {...form.register("content")} />
                       </CardContent>
                     </Card>
-                  </div>
-
-                  <Card className="shadow-md">
-                    <CardContent className="pt-6">
-                      <FormField
-                        control={form.control}
-                        name="content"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Content</FormLabel>
-                            <Card className="border-0 shadow-none">
-                              <CardContent className="p-0">
-                                <div style={{ minHeight: `${editorHeight}px` }}>
-                                  <ReactQuill
-                                    theme="snow"
-                                    modules={modules}
-                                    formats={formats}
-                                    value={editorValue}
-                                    onChange={setEditorValue}
-                                    style={{ height: `${editorHeight}px` }}
-                                  />
-                                </div>
-                              </CardContent>
-                            </Card>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <input type="hidden" {...form.register("content")} />
-                    </CardContent>
-                  </Card>
-                </form>
-              </Form>
-            </TabsContent>
-            
-            <TabsContent value="preview" className="mt-0">
-              <Card className="shadow-md overflow-hidden">
-                <div className="aspect-video w-full overflow-hidden bg-muted">
-                  <img
-                    src={form.getValues("cover_image") || "/placeholder.svg"}
-                    alt={form.getValues("title")}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                <CardContent className="pt-6">
-                  <div className="prose max-w-none">
-                    <h1>{form.getValues("title")}</h1>
-                    <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-muted-foreground pb-6 mb-6 border-b">
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4" />
-                        <span>By {form.getValues("author_name")}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <CalendarIcon className="h-4 w-4" />
-                        <span>{new Date().toLocaleDateString('en-US', { 
-                          year: 'numeric', 
-                          month: 'long', 
-                          day: 'numeric' 
-                        })}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
-                        <span>{form.getValues("read_time")}</span>
-                      </div>
-                    </div>
-                    <div
-                      className="prose prose-slate max-w-none prose-img:rounded-xl prose-headings:font-bold prose-a:text-primary hover:prose-a:text-primary/80"
-                      dangerouslySetInnerHTML={{ __html: form.getValues("content") || "<p>No content yet.</p>" }}
+                  </form>
+                </Form>
+              </TabsContent>
+              
+              <TabsContent value="preview" className="mt-0">
+                <Card className="shadow-md overflow-hidden">
+                  <div className="aspect-video w-full overflow-hidden bg-muted">
+                    <img
+                      src={form.getValues("cover_image") || "/placeholder.svg"}
+                      alt={form.getValues("title")}
+                      className="h-full w-full object-cover"
                     />
                   </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </motion.div>
+                  <CardContent className="pt-6">
+                    <div className="prose max-w-none">
+                      <h1>{form.getValues("title")}</h1>
+                      <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-muted-foreground pb-6 mb-6 border-b">
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4" />
+                          <span>By {form.getValues("author_name")}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <CalendarIcon className="h-4 w-4" />
+                          <span>{new Date().toLocaleDateString('en-US', { 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          })}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4" />
+                          <span>{form.getValues("read_time")}</span>
+                        </div>
+                      </div>
+                      <div
+                        className="prose prose-slate max-w-none prose-img:rounded-xl prose-headings:font-bold prose-a:text-primary hover:prose-a:text-primary/80"
+                        dangerouslySetInnerHTML={{ __html: form.getValues("content") || "<p>No content yet.</p>" }}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </motion.div>
+        </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 
