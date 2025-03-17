@@ -5,12 +5,26 @@ import Layout from "@/components/layout/Layout";
 import { supabase } from "@/integrations/supabase/client";
 import { DbArticle } from "@/types/database";
 import { Article as ArticleType } from "@/types/blog";
-import { CalendarIcon, Clock, User, ChevronLeft, Share2, Bookmark, Twitter, Facebook, Linkedin } from "lucide-react";
+import { 
+  CalendarIcon, 
+  Clock, 
+  User, 
+  ChevronLeft, 
+  Share2, 
+  Bookmark, 
+  Twitter, 
+  Facebook, 
+  Linkedin,
+  Copy,
+  MessageCircle,
+  BookmarkCheck
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import ArticleGrid from "@/components/blog/ArticleGrid";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { Progress } from "@/components/ui/progress";
 
 // Helper function to convert DbArticle to Article
 const convertDbArticleToArticle = (dbArticle: DbArticle): ArticleType => {
@@ -43,6 +57,10 @@ const Article = () => {
   const [relatedArticles, setRelatedArticles] = useState<ArticleType[]>([]);
   const [loading, setLoading] = useState(true);
   const [shareOpen, setShareOpen] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [readingProgress, setReadingProgress] = useState(0);
+  const [showTableOfContents, setShowTableOfContents] = useState(false);
+  const [headings, setHeadings] = useState<{id: string, text: string, level: number}[]>([]);
 
   useEffect(() => {
     if (slug) {
@@ -50,6 +68,59 @@ const Article = () => {
     }
     window.scrollTo(0, 0);
   }, [slug]);
+
+  // Check if the article is bookmarked
+  useEffect(() => {
+    if (article) {
+      try {
+        const savedBookmarks = localStorage.getItem('bookmarks');
+        if (savedBookmarks) {
+          const bookmarks = JSON.parse(savedBookmarks);
+          setIsBookmarked(bookmarks.some((bookmark: ArticleType) => bookmark.id === article.id));
+        }
+      } catch (error) {
+        console.error('Failed to check bookmarks:', error);
+      }
+    }
+  }, [article]);
+
+  // Calculate reading progress and extract headings for table of contents
+  useEffect(() => {
+    if (!article) return;
+
+    const handleScroll = () => {
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight - windowHeight;
+      const scrolled = window.scrollY;
+      
+      if (documentHeight > 0) {
+        setReadingProgress(Math.min((scrolled / documentHeight) * 100, 100));
+      }
+    };
+    
+    // Extract headings for table of contents
+    const articleContent = document.querySelector('.article-content');
+    if (articleContent) {
+      const headingElements = articleContent.querySelectorAll('h1, h2, h3, h4, h5, h6');
+      const extractedHeadings = Array.from(headingElements).map(heading => {
+        const id = heading.id || `heading-${Math.random().toString(36).substr(2, 9)}`;
+        if (!heading.id) heading.id = id;
+        
+        return {
+          id,
+          text: heading.textContent || '',
+          level: parseInt(heading.tagName.substring(1))
+        };
+      });
+      
+      setHeadings(extractedHeadings);
+    }
+    
+    window.addEventListener("scroll", handleScroll);
+    handleScroll(); // Initial calculation
+    
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [article]);
 
   const fetchArticle = async (slug: string) => {
     try {
@@ -102,6 +173,65 @@ const Article = () => {
     }
   };
 
+  const toggleBookmark = () => {
+    if (!article) return;
+    
+    try {
+      const savedBookmarks = localStorage.getItem('bookmarks');
+      let bookmarks: ArticleType[] = savedBookmarks ? JSON.parse(savedBookmarks) : [];
+      
+      if (isBookmarked) {
+        // Remove from bookmarks
+        bookmarks = bookmarks.filter(bookmark => bookmark.id !== article.id);
+        toast.success("Removed from bookmarks");
+      } else {
+        // Add to bookmarks
+        bookmarks.push(article);
+        toast.success("Saved to bookmarks");
+      }
+      
+      localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
+      setIsBookmarked(!isBookmarked);
+    } catch (error) {
+      console.error('Failed to update bookmarks:', error);
+      toast.error("Failed to update bookmarks");
+    }
+  };
+
+  const handleShare = (platform: string) => {
+    const url = window.location.href;
+    let shareUrl = '';
+    
+    switch (platform) {
+      case 'twitter':
+        shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(article?.title || '')}&url=${encodeURIComponent(url)}`;
+        break;
+      case 'facebook':
+        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+        break;
+      case 'linkedin':
+        shareUrl = `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(url)}&title=${encodeURIComponent(article?.title || '')}`;
+        break;
+      case 'whatsapp':
+        shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(`${article?.title || ''} ${url}`)}`;
+        break;
+      default:
+        // Just copy to clipboard if no platform
+        navigator.clipboard.writeText(url);
+        toast.success("Link copied to clipboard");
+        return;
+    }
+    
+    window.open(shareUrl, '_blank');
+  };
+
+  const scrollToHeading = (id: string) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -122,47 +252,53 @@ const Article = () => {
 
   if (!article) return null;
 
-  const handleShare = (platform: string) => {
-    const url = window.location.href;
-    let shareUrl = '';
-    
-    switch (platform) {
-      case 'twitter':
-        shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(article.title)}&url=${encodeURIComponent(url)}`;
-        break;
-      case 'facebook':
-        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
-        break;
-      case 'linkedin':
-        shareUrl = `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(url)}&title=${encodeURIComponent(article.title)}`;
-        break;
-      default:
-        // Just copy to clipboard if no platform
-        navigator.clipboard.writeText(url);
-        toast.success("Link copied to clipboard");
-        return;
-    }
-    
-    window.open(shareUrl, '_blank');
-  };
-
   return (
     <Layout>
-      <div className="max-w-5xl mx-auto px-4 py-12">
+      <div className="max-w-5xl mx-auto px-4 py-8">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="mb-6 text-muted-foreground hover:text-primary"
-            onClick={() => navigate(-1)}
-          >
-            <ChevronLeft className="mr-1 h-4 w-4" />
-            Back
-          </Button>
+          <div className="flex justify-between items-center mb-6">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-muted-foreground hover:text-primary"
+              onClick={() => navigate(-1)}
+            >
+              <ChevronLeft className="mr-1 h-4 w-4" />
+              Back
+            </Button>
+            
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full"
+                onClick={() => setShowTableOfContents(!showTableOfContents)}
+              >
+                <AlignJustify className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Contents</span>
+              </Button>
+              
+              <Button
+                variant={isBookmarked ? "default" : "outline"}
+                size="sm"
+                className="rounded-full"
+                onClick={toggleBookmark}
+              >
+                {isBookmarked ? (
+                  <BookmarkCheck className="h-4 w-4 mr-2" />
+                ) : (
+                  <Bookmark className="h-4 w-4 mr-2" />
+                )}
+                <span className="hidden sm:inline">
+                  {isBookmarked ? "Bookmarked" : "Bookmark"}
+                </span>
+              </Button>
+            </div>
+          </div>
           
           <article>
             <div className="mb-8">
@@ -214,7 +350,12 @@ const Article = () => {
                   </Button>
                   
                   {shareOpen && (
-                    <div className="absolute right-0 mt-2 p-2 bg-background border rounded-lg shadow-lg z-10 flex gap-1">
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      className="absolute right-0 mt-2 p-2 bg-background border rounded-lg shadow-lg z-10 flex gap-1"
+                    >
                       <Button 
                         variant="ghost" 
                         size="icon" 
@@ -242,14 +383,20 @@ const Article = () => {
                       <Button 
                         variant="ghost" 
                         size="icon" 
+                        className="rounded-full text-[#25D366] hover:bg-[#25D366]/10"
+                        onClick={() => handleShare('whatsapp')}
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
                         className="rounded-full"
                         onClick={() => handleShare('')}
                       >
-                        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M5 2V1H10V2H5ZM4.75 0C4.33579 0 4 0.335786 4 0.75V1H3.5C2.67157 1 2 1.67157 2 2.5V12.5C2 13.3284 2.67157 14 3.5 14H11.5C12.3284 14 13 13.3284 13 12.5V2.5C13 1.67157 12.3284 1 11.5 1H11V0.75C11 0.335786 10.6642 0 10.25 0H4.75ZM11 2V2.25C11 2.66421 10.6642 3 10.25 3H4.75C4.33579 3 4 2.66421 4 2.25V2H3.5C3.22386 2 3 2.22386 3 2.5V12.5C3 12.7761 3.22386 13 3.5 13H11.5C11.7761 13 12 12.7761 12 12.5V2.5C12 2.22386 11.7761 2 11.5 2H11Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
-                        </svg>
+                        <Copy className="h-4 w-4" />
                       </Button>
-                    </div>
+                    </motion.div>
                   )}
                 </div>
               </div>
@@ -262,25 +409,95 @@ const Article = () => {
                 className="h-full w-full object-cover"
               />
             </div>
+            
+            {/* Reading progress indicator */}
+            <div className="mb-8">
+              <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                <span>Progress</span>
+                <span>{Math.round(readingProgress)}%</span>
+              </div>
+              <Progress value={readingProgress} className="h-1" />
+            </div>
 
-            <div 
-              className="prose prose-slate max-w-none prose-img:rounded-xl prose-headings:font-bold prose-a:text-primary hover:prose-a:text-primary/80 prose-headings:scroll-m-20 prose-p:leading-7 prose-blockquote:border-l-primary/50 prose-pre:bg-muted"
-              dangerouslySetInnerHTML={{ __html: article.content }}
-            />
+            {/* Article content with table of contents sidebar */}
+            <div className="flex flex-col md:flex-row gap-8">
+              {/* Table of contents (only on desktop) */}
+              {showTableOfContents && headings.length > 0 && (
+                <motion.aside
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="hidden md:block w-56 flex-shrink-0 sticky top-20 max-h-[calc(100vh-80px)] overflow-auto"
+                >
+                  <div className="border rounded-md p-4">
+                    <h3 className="font-medium mb-3">Table of Contents</h3>
+                    <ul className="space-y-2 text-sm">
+                      {headings.map(heading => (
+                        <li 
+                          key={heading.id}
+                          className={`cursor-pointer hover:text-primary transition-colors pl-${(heading.level - 1) * 2}`}
+                          onClick={() => scrollToHeading(heading.id)}
+                        >
+                          {heading.text}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </motion.aside>
+              )}
+              
+              {/* Mobile table of contents dialog */}
+              {showTableOfContents && headings.length > 0 && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="md:hidden mb-8 border rounded-md p-4"
+                >
+                  <h3 className="font-medium mb-3">Table of Contents</h3>
+                  <ul className="space-y-2 text-sm">
+                    {headings.map(heading => (
+                      <li 
+                        key={heading.id}
+                        className={`cursor-pointer hover:text-primary transition-colors pl-${(heading.level - 1) * 2}`}
+                        onClick={() => {
+                          scrollToHeading(heading.id);
+                          setShowTableOfContents(false);
+                        }}
+                      >
+                        {heading.text}
+                      </li>
+                    ))}
+                  </ul>
+                </motion.div>
+              )}
+              
+              <div 
+                className="article-content prose prose-slate max-w-none prose-img:rounded-xl prose-headings:font-bold prose-a:text-primary hover:prose-a:text-primary/80 prose-headings:scroll-m-20 prose-p:leading-7 prose-blockquote:border-l-primary/50 prose-pre:bg-muted"
+                dangerouslySetInnerHTML={{ __html: article.content }}
+              />
+            </div>
 
             <div className="mt-12 pt-8 border-t">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <Button 
-                    variant="outline" 
+                    variant={isBookmarked ? "default" : "outline"}
                     size="sm" 
                     className="rounded-full mr-2"
-                    onClick={() => {
-                      toast.success("Article bookmarked!");
-                    }}
+                    onClick={toggleBookmark}
                   >
-                    <Bookmark className="h-4 w-4 mr-2" />
-                    Bookmark
+                    {isBookmarked ? (
+                      <>
+                        <BookmarkCheck className="h-4 w-4 mr-2" />
+                        Bookmarked
+                      </>
+                    ) : (
+                      <>
+                        <Bookmark className="h-4 w-4 mr-2" />
+                        Bookmark
+                      </>
+                    )}
                   </Button>
                 </div>
                 
@@ -308,6 +525,14 @@ const Article = () => {
                     onClick={() => handleShare('linkedin')}
                   >
                     <Linkedin className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="rounded-full text-[#25D366] hover:bg-[#25D366]/10"
+                    onClick={() => handleShare('whatsapp')}
+                  >
+                    <MessageCircle className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
