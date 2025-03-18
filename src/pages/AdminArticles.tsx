@@ -24,7 +24,6 @@ import {
   FilePlus,
   Search,
   Trash2,
-  Filter,
   Eye,
   Calendar,
   CircleOff,
@@ -41,7 +40,6 @@ import {
 import { Article } from "@/types/blog";
 import { DbArticle } from "@/types/database";
 import DashboardLayout from "@/components/admin/DashboardLayout";
-import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
@@ -57,8 +55,6 @@ import {
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
 import { formatDistanceToNow } from "date-fns";
 
 const AdminArticles = () => {
@@ -169,21 +165,6 @@ const AdminArticles = () => {
   const totalArticles = articles.length;
   const publishedArticles = articles.filter(article => article.published).length;
   const draftArticles = articles.filter(article => !article.published).length;
-  
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.05
-      }
-    }
-  };
-  
-  const item = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 }
-  };
 
   const handleTabChange = (value: string) => {
     setActiveTab(value as "all" | "published" | "draft");
@@ -388,21 +369,15 @@ const AdminArticles = () => {
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
             ) : filteredArticles.length > 0 ? (
-              <motion.div
-                variants={container}
-                initial="hidden"
-                animate="show"
-                className="space-y-4"
-              >
+              <div className="space-y-4">
                 {filteredArticles.map((article) => (
-                  <motion.div key={article.id} variants={item}>
-                    <ArticleListItem 
-                      article={article} 
-                      onDelete={() => setArticleToDelete(article)} 
-                    />
-                  </motion.div>
+                  <ArticleListItem 
+                    key={article.id}
+                    article={article} 
+                    onDelete={() => setArticleToDelete(article)} 
+                  />
                 ))}
-              </motion.div>
+              </div>
             ) : (
               <div className="text-center py-12">
                 <div className="max-w-md mx-auto">

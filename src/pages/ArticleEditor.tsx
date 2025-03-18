@@ -17,7 +17,6 @@ import {
   Clock, 
   Calendar as CalendarIcon, 
   Loader2,
-  FileText,
   Tag,
   Image,
   ChevronDown,
@@ -43,7 +42,6 @@ import {
   TabsTrigger 
 } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { motion } from "framer-motion";
 import DashboardLayout from "@/components/admin/DashboardLayout";
 import { 
   Popover,
@@ -369,7 +367,7 @@ const ArticleEditor = () => {
   if (initialLoading) {
     return (
       <DashboardLayout>
-        <div className="min-h-[50vh] flex items-center justify-center">
+        <div className="flex items-center justify-center min-h-[300px]">
           <div className="text-center space-y-4">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
             <p className="text-lg">Loading article...</p>
@@ -382,7 +380,7 @@ const ArticleEditor = () => {
   return (
     <DashboardLayout>
       <div className="w-full">
-        {/* Improved Header Design for better mobile responsiveness */}
+        {/* Header */}
         <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 rounded-xl shadow-sm mb-6 overflow-hidden">
           <div className="p-4 sm:p-6">
             <div className="flex flex-col gap-4">
@@ -833,7 +831,7 @@ const ArticleEditor = () => {
                           </FormLabel>
                           <Card className="border shadow-none">
                             <CardContent className="p-1 sm:p-3">
-                              <div className="min-h-[250px] sm:min-h-[350px] md:min-h-[450px] overflow-hidden rounded-md">
+                              <div className="min-h-[250px] sm:min-h-[350px] md:min-h-[450px]">
                                 <ReactQuill
                                   theme="snow"
                                   modules={modules}
@@ -842,7 +840,7 @@ const ArticleEditor = () => {
                                   onChange={(value) => {
                                     setEditorValue(value);
                                   }}
-                                  className="h-[250px] sm:h-[350px] md:h-[450px] w-full"
+                                  className="h-[250px] sm:h-[350px] md:h-[450px]"
                                 />
                               </div>
                             </CardContent>

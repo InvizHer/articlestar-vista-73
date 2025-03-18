@@ -29,32 +29,22 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   };
   
   return (
-    <div className="flex h-screen w-full bg-gray-50 dark:bg-gray-900 overflow-hidden">
+    <div className="h-screen w-full flex bg-gray-50 dark:bg-gray-900">
       <DashboardSidebar isOpen={sidebarOpen} toggle={toggleSidebar} />
       
-      <div className="flex flex-col flex-1 w-full">
+      <div className="flex flex-col flex-1 min-h-0">
         <DashboardHeader toggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen} />
         
         <main className={cn(
-          "flex-1 overflow-y-auto",
-          isMobile ? "pb-safe" : "",
+          "flex-1 overflow-auto",
           fullWidth ? "px-0" : "px-4 md:px-6 lg:px-8"
         )}>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={location.pathname}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3 }}
-              className={cn(
-                "py-6",
-                fullWidth ? "w-full" : "max-w-7xl mx-auto"
-              )}
-            >
-              {children}
-            </motion.div>
-          </AnimatePresence>
+          <div className={cn(
+            "py-6",
+            fullWidth ? "w-full" : "max-w-7xl mx-auto"
+          )}>
+            {children}
+          </div>
         </main>
       </div>
     </div>
