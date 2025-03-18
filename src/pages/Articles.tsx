@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -9,6 +8,7 @@ import { Article } from "@/types/blog";
 import ArticleGrid from "@/components/blog/ArticleGrid";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Search, Filter } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -21,7 +21,6 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 
-// Helper function to convert DbArticle to Article
 const convertDbArticleToArticle = (dbArticle: DbArticle): Article => {
   return {
     id: dbArticle.id,
@@ -65,7 +64,6 @@ const Articles = () => {
   }, [currentPage]);
 
   useEffect(() => {
-    // Update URL when search or page changes
     const params = new URLSearchParams();
     if (searchTerm) params.set("search", searchTerm);
     if (currentPage > 1) params.set("page", currentPage.toString());
@@ -74,7 +72,6 @@ const Articles = () => {
 
   const fetchArticles = async () => {
     try {
-      // First get the total count for pagination
       const { count, error: countError } = await supabase
         .from("articles")
         .select("*", { count: "exact" })
@@ -86,7 +83,6 @@ const Articles = () => {
         setTotalPages(Math.ceil(count / articlesPerPage));
       }
 
-      // Then get the paginated results
       const { data, error } = await supabase
         .from("articles")
         .select("*")
@@ -101,7 +97,6 @@ const Articles = () => {
       const articlesData = (data || []).map(convertDbArticleToArticle);
       setArticles(articlesData);
 
-      // Extract unique categories
       const uniqueCategories = Array.from(
         new Set(articlesData.map(article => article.category))
       );
@@ -114,13 +109,11 @@ const Articles = () => {
     }
   };
 
-  // Handle search form submission
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setCurrentPage(1); // Reset to first page on new search
+    setCurrentPage(1);
   };
 
-  // Filter articles based on search and category
   const filteredArticles = articles.filter((article) => {
     const matchesSearch = searchTerm ? (
       article.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -134,7 +127,7 @@ const Articles = () => {
 
   const handleCategoryClick = (category: string) => {
     setSelectedCategory(selectedCategory === category ? null : category);
-    setCurrentPage(1); // Reset to first page on category change
+    setCurrentPage(1);
   };
 
   const handlePageChange = (page: number) => {
@@ -142,47 +135,38 @@ const Articles = () => {
     setCurrentPage(page);
   };
 
-  // Generate page numbers for pagination
   const generatePagination = () => {
     const pages = [];
     const maxVisiblePages = 5;
     
     if (totalPages <= maxVisiblePages) {
-      // Show all pages if there are less than maxVisiblePages
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
       }
     } else {
-      // Always show first and last pages
       pages.push(1);
       
-      // Calculate range around current page
       let startPage = Math.max(2, currentPage - 1);
       let endPage = Math.min(totalPages - 1, currentPage + 1);
       
-      // Adjust if we're at the beginning or end
       if (currentPage <= 2) {
         endPage = 4;
       } else if (currentPage >= totalPages - 1) {
         startPage = totalPages - 3;
       }
       
-      // Add ellipsis for skipped pages
       if (startPage > 2) {
         pages.push('ellipsis-start');
       }
       
-      // Add page numbers around current page
       for (let i = startPage; i <= endPage; i++) {
         pages.push(i);
       }
       
-      // Add ellipsis for skipped pages
       if (endPage < totalPages - 1) {
         pages.push('ellipsis-end');
       }
       
-      // Add last page
       if (totalPages > 1) {
         pages.push(totalPages);
       }

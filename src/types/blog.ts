@@ -14,4 +14,5 @@ export interface Article {
   category: string;
   tags: string[];
   coverImage: string;
+  published?: boolean;
 }
