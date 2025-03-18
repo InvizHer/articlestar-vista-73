@@ -29,11 +29,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   };
   
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="flex h-screen overflow-hidden">
+    <div className="h-screen bg-gray-50 dark:bg-gray-900 flex flex-col overflow-hidden">
+      <div className="flex flex-1 overflow-hidden">
         <DashboardSidebar isOpen={sidebarOpen} toggle={toggleSidebar} />
         
-        <div className="flex flex-col flex-1 w-full overflow-hidden transition-all duration-300 ease-in-out">
+        <div className="flex flex-col flex-1 w-full overflow-hidden">
           <DashboardHeader toggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen} />
           
           <main className={cn(
@@ -49,8 +49,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3 }}
                 className={cn(
-                  "mx-auto py-6",
-                  fullWidth ? "w-full" : "max-w-7xl"
+                  "pb-6 pt-6",
+                  fullWidth ? "w-full" : "max-w-7xl mx-auto"
                 )}
               >
                 {children}
