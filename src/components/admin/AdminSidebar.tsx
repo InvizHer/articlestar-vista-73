@@ -25,7 +25,7 @@ interface NavItemProps {
   icon: React.ElementType;
   label: string;
   active?: boolean;
-  end?: boolean;
+  exact?: boolean;
 }
 
 const NavItem: React.FC<NavItemProps> = ({ 
@@ -33,12 +33,11 @@ const NavItem: React.FC<NavItemProps> = ({
   icon: Icon, 
   label, 
   active = false,
-  end = false
+  exact = false
 }) => {
   return (
     <Link 
       to={to} 
-      end={end}
       className={cn(
         "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
         active 
@@ -92,8 +91,8 @@ const AdminSidebar: React.FC = () => {
     setIsCollapsed(isMobile);
   }, [isMobile]);
 
-  const isActive = (path: string, end: boolean = false) => {
-    if (end) {
+  const isActive = (path: string, exact: boolean = false) => {
+    if (exact) {
       return location.pathname === path;
     }
     return location.pathname.startsWith(path);
@@ -124,7 +123,7 @@ const AdminSidebar: React.FC = () => {
               icon={LayoutDashboard} 
               label="Dashboard" 
               active={isActive("/admin/dashboard", true)}
-              end
+              exact
             />
           </div>
           
