@@ -23,24 +23,16 @@ interface BookmarksDialogProps {
 export function BookmarksDialog({ className }: BookmarksDialogProps) {
   const { bookmarks, removeBookmark, clearBookmarks, isLoaded } = useBookmarks();
   const [open, setOpen] = useState(false);
-  const [localBookmarks, setLocalBookmarks] = useState<Article[]>([]);
 
-  // Update local state when bookmarks change
-  useEffect(() => {
-    if (isLoaded) {
-      setLocalBookmarks(bookmarks);
-    }
-  }, [bookmarks, isLoaded]);
-
-  const handleRemoveBookmark = (articleId: string) => {
-    // Update local state immediately for UI responsiveness
-    setLocalBookmarks(current => current.filter(item => item.id !== articleId));
-    // Then update the actual state
+  const handleRemoveBookmark = (event: React.MouseEvent, articleId: string) => {
+    event.preventDefault();
+    event.stopPropagation();
     removeBookmark(articleId);
   };
 
-  const handleClearBookmarks = () => {
-    setLocalBookmarks([]);
+  const handleClearBookmarks = (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
     clearBookmarks();
   };
 
@@ -49,9 +41,9 @@ export function BookmarksDialog({ className }: BookmarksDialogProps) {
       <DialogTrigger asChild>
         <Button variant="ghost" size="icon" className={cn("relative", className)}>
           <Bookmark className="h-5 w-5" />
-          {localBookmarks.length > 0 && (
+          {bookmarks.length > 0 && (
             <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center">
-              {localBookmarks.length}
+              {bookmarks.length}
             </span>
           )}
         </Button>
@@ -74,7 +66,7 @@ export function BookmarksDialog({ className }: BookmarksDialogProps) {
             <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
             <p className="mt-2 text-muted-foreground">Loading bookmarks...</p>
           </div>
-        ) : localBookmarks.length === 0 ? (
+        ) : bookmarks.length === 0 ? (
           <div className="py-12 text-center">
             <XCircle className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
             <p className="text-muted-foreground">No bookmarks yet. Save articles to read later!</p>
@@ -83,7 +75,7 @@ export function BookmarksDialog({ className }: BookmarksDialogProps) {
           <>
             <ScrollArea className="max-h-[60vh]">
               <div className="space-y-4">
-                {localBookmarks.map(article => (
+                {bookmarks.map(article => (
                   <div 
                     key={article.id} 
                     className="flex gap-3 p-3 rounded-lg hover:bg-accent/10 transition-colors group relative"
@@ -111,7 +103,7 @@ export function BookmarksDialog({ className }: BookmarksDialogProps) {
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      onClick={() => handleRemoveBookmark(article.id)}
+                      onClick={(e) => handleRemoveBookmark(e, article.id)}
                       className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity absolute top-3 right-3"
                     >
                       <Trash2 className="h-4 w-4 text-muted-foreground" />

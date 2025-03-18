@@ -31,31 +31,53 @@ export function useBookmarks() {
   useEffect(() => {
     if (!isLoaded) return;
     
-    if (bookmarks.length > 0) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(bookmarks));
-    } else if (bookmarks.length === 0) {
-      localStorage.removeItem(STORAGE_KEY);
+    try {
+      if (bookmarks.length > 0) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(bookmarks));
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    } catch (error) {
+      console.error('Error saving bookmarks:', error);
     }
   }, [bookmarks, isLoaded]);
 
   const addBookmark = useCallback((article: Article) => {
     setBookmarks(prev => {
+      // Check if already exists
       const exists = prev.some(item => item.id === article.id);
       if (exists) return prev;
+      
+      // Add the bookmark and immediately update localStorage
+      const newBookmarks = [...prev, article];
+      if (isLoaded) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(newBookmarks));
+      }
+      
       toast.success(`"${article.title}" added to bookmarks`);
-      return [...prev, article];
+      return newBookmarks;
     });
-  }, []);
+  }, [isLoaded]);
 
   const removeBookmark = useCallback((articleId: string) => {
     setBookmarks(prev => {
       const article = prev.find(item => item.id === articleId);
-      if (article) {
-        toast.success(`"${article.title}" removed from bookmarks`);
+      if (!article) return prev;
+      
+      // Remove the bookmark and immediately update localStorage
+      const newBookmarks = prev.filter(item => item.id !== articleId);
+      if (isLoaded) {
+        if (newBookmarks.length > 0) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(newBookmarks));
+        } else {
+          localStorage.removeItem(STORAGE_KEY);
+        }
       }
-      return prev.filter(item => item.id !== articleId);
+      
+      toast.success(`"${article.title}" removed from bookmarks`);
+      return newBookmarks;
     });
-  }, []);
+  }, [isLoaded]);
 
   const toggleBookmark = useCallback((article: Article) => {
     const isCurrentlyBookmarked = bookmarks.some(item => item.id === article.id);
@@ -72,6 +94,7 @@ export function useBookmarks() {
 
   const clearBookmarks = useCallback(() => {
     setBookmarks([]);
+    localStorage.removeItem(STORAGE_KEY);
     toast.success('All bookmarks cleared');
   }, []);
 

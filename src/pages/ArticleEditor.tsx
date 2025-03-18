@@ -25,7 +25,8 @@ import {
   Maximize2,
   Minimize2,
   ChevronDown,
-  SettingsIcon
+  SettingsIcon,
+  Plus
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { slugify } from "@/lib/utils";
@@ -57,6 +58,22 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const modules = {
   toolbar: [
@@ -110,6 +127,17 @@ const articleSchema = z.object({
 
 type ArticleFormValues = z.infer<typeof articleSchema>;
 
+interface CategoryItem {
+  id: string;
+  name: string;
+}
+
+interface Author {
+  id: string;
+  name: string;
+  avatar: string;
+}
+
 const ArticleEditor = () => {
   const { articleId } = useParams<{ articleId: string }>();
   const isEditMode = articleId !== "new";
@@ -121,6 +149,22 @@ const ArticleEditor = () => {
   const [editorValue, setEditorValue] = useState("");
   const [activeTab, setActiveTab] = useState("editor");
   const [isFullScreen, setIsFullScreen] = useState(false);
+  
+  // State for categories, tags, and authors
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
+  const [authors, setAuthors] = useState<Author[]>([]);
+  
+  // State for new items
+  const [newCategory, setNewCategory] = useState("");
+  const [newTag, setNewTag] = useState("");
+  const [newAuthor, setNewAuthor] = useState({ name: "", avatar: "/placeholder.svg" });
+  
+  // Dialogs state
+  const [categoryDialog, setCategoryDialog] = useState(false);
+  const [tagDialog, setTagDialog] = useState(false);
+  const [authorDialog, setAuthorDialog] = useState(false);
+  const [settingsDialog, setSettingsDialog] = useState(false);
 
   const form = useForm<ArticleFormValues>({
     resolver: zodResolver(articleSchema),
@@ -138,6 +182,60 @@ const ArticleEditor = () => {
       published: false,
     },
   });
+
+  // Load existing categories, tags, and authors when component mounts
+  useEffect(() => {
+    const fetchMetadata = async () => {
+      try {
+        // Fetch unique categories
+        const { data: categoryData } = await supabase
+          .from('articles')
+          .select('category')
+          .order('category');
+          
+        if (categoryData) {
+          const uniqueCategories = Array.from(new Set(categoryData.map(item => item.category)))
+            .filter(Boolean)
+            .map((cat, index) => ({ id: `cat-${index}`, name: cat }));
+          setCategories(uniqueCategories);
+        }
+        
+        // Fetch unique tags
+        const { data: tagData } = await supabase
+          .from('articles')
+          .select('tags');
+          
+        if (tagData) {
+          const allTags = tagData.flatMap(item => item.tags || []);
+          const uniqueTags = Array.from(new Set(allTags)).filter(Boolean);
+          setTags(uniqueTags);
+        }
+        
+        // Fetch unique authors
+        const { data: authorData } = await supabase
+          .from('articles')
+          .select('author_name, author_avatar');
+          
+        if (authorData) {
+          const uniqueAuthors = Array.from(
+            new Map(authorData.map(item => [
+              item.author_name, 
+              { 
+                id: `author-${item.author_name}`, 
+                name: item.author_name, 
+                avatar: item.author_avatar || "/placeholder.svg" 
+              }
+            ])).values()
+          );
+          setAuthors(uniqueAuthors);
+        }
+      } catch (error) {
+        console.error("Error fetching metadata:", error);
+      }
+    };
+    
+    fetchMetadata();
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -277,6 +375,59 @@ const ArticleEditor = () => {
       day: 'numeric' 
     });
   };
+  
+  // Handle adding new category
+  const handleAddCategory = () => {
+    if (newCategory && !categories.some(c => c.name === newCategory)) {
+      const newCategoryItem = { id: `cat-${Date.now()}`, name: newCategory };
+      setCategories(prev => [...prev, newCategoryItem]);
+      form.setValue("category", newCategory);
+      setNewCategory("");
+      setCategoryDialog(false);
+      toast.success(`Category "${newCategory}" added`);
+    }
+  };
+  
+  // Handle adding new tag
+  const handleAddTag = () => {
+    if (newTag && !tags.includes(newTag)) {
+      setTags(prev => [...prev, newTag]);
+      
+      // Add to current tags in form
+      const currentTags = form.getValues("tags");
+      const tagsArray = currentTags ? 
+        currentTags.split(",").map(t => t.trim()).filter(t => t !== "") : 
+        [];
+      
+      if (!tagsArray.includes(newTag)) {
+        tagsArray.push(newTag);
+        form.setValue("tags", tagsArray.join(", "));
+      }
+      
+      setNewTag("");
+      setTagDialog(false);
+      toast.success(`Tag "${newTag}" added`);
+    }
+  };
+  
+  // Handle adding new author
+  const handleAddAuthor = () => {
+    if (newAuthor.name && !authors.some(a => a.name === newAuthor.name)) {
+      const newAuthorItem = { 
+        id: `author-${Date.now()}`, 
+        name: newAuthor.name, 
+        avatar: newAuthor.avatar || "/placeholder.svg" 
+      };
+      
+      setAuthors(prev => [...prev, newAuthorItem]);
+      form.setValue("author_name", newAuthor.name);
+      form.setValue("author_avatar", newAuthor.avatar);
+      
+      setNewAuthor({ name: "", avatar: "/placeholder.svg" });
+      setAuthorDialog(false);
+      toast.success(`Author "${newAuthor.name}" added`);
+    }
+  };
 
   if (initialLoading) {
     return (
@@ -290,6 +441,59 @@ const ArticleEditor = () => {
       </AdminLayout>
     );
   }
+  
+  // Settings dialog content
+  const SettingsDialogContent = () => (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-medium mb-2">Profile Settings</h3>
+        <div className="flex gap-4 items-center">
+          <div className="w-16 h-16 rounded-full overflow-hidden bg-muted">
+            <img 
+              src="/placeholder.svg" 
+              alt="Profile" 
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <div className="flex-1">
+            <h4 className="font-medium">Admin User</h4>
+            <p className="text-sm text-muted-foreground">admin@example.com</p>
+          </div>
+          <Button variant="outline" size="sm">
+            Edit Profile
+          </Button>
+        </div>
+      </div>
+      
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium">Blog Settings</h3>
+        
+        <div className="flex justify-between items-center">
+          <div>
+            <h4 className="font-medium">Dark Mode</h4>
+            <p className="text-sm text-muted-foreground">Toggle dark mode for the editor</p>
+          </div>
+          <Switch defaultChecked={document.documentElement.classList.contains('dark')} />
+        </div>
+        
+        <div className="flex justify-between items-center">
+          <div>
+            <h4 className="font-medium">Auto Save</h4>
+            <p className="text-sm text-muted-foreground">Save drafts automatically</p>
+          </div>
+          <Switch defaultChecked />
+        </div>
+        
+        <div className="flex justify-between items-center">
+          <div>
+            <h4 className="font-medium">Email Notifications</h4>
+            <p className="text-sm text-muted-foreground">Get notified about comments</p>
+          </div>
+          <Switch />
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <AdminLayout fullWidth={isFullScreen}>
@@ -339,6 +543,23 @@ const ArticleEditor = () => {
                     {isFullScreen ? "Exit Fullscreen" : "Fullscreen"}
                   </span>
                 </Button>
+                <Dialog open={settingsDialog} onOpenChange={setSettingsDialog}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline">
+                      <SettingsIcon className="mr-2 h-4 w-4" />
+                      <span className="hidden sm:inline">Settings</span>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Settings</DialogTitle>
+                      <DialogDescription>
+                        Configure your blog and account settings
+                      </DialogDescription>
+                    </DialogHeader>
+                    <SettingsDialogContent />
+                  </DialogContent>
+                </Dialog>
                 <Button 
                   disabled={saving}
                   onClick={form.handleSubmit(onSubmit)}
@@ -518,9 +739,62 @@ const ArticleEditor = () => {
                                 <FormLabel className="flex items-center gap-2">
                                   <Tag className="h-4 w-4" /> Category
                                 </FormLabel>
-                                <FormControl>
-                                  <Input placeholder="Development, Design, etc." {...field} />
-                                </FormControl>
+                                <div className="flex gap-2">
+                                  <FormControl>
+                                    <Select
+                                      value={field.value}
+                                      onValueChange={(value) => {
+                                        field.onChange(value);
+                                      }}
+                                    >
+                                      <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Select a category" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {categories.map(category => (
+                                          <SelectItem key={category.id} value={category.name}>
+                                            {category.name}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </FormControl>
+                                  
+                                  <Dialog open={categoryDialog} onOpenChange={setCategoryDialog}>
+                                    <DialogTrigger asChild>
+                                      <Button variant="outline" size="icon">
+                                        <Plus className="h-4 w-4" />
+                                      </Button>
+                                    </DialogTrigger>
+                                    <DialogContent className="sm:max-w-[425px]">
+                                      <DialogHeader>
+                                        <DialogTitle>Add New Category</DialogTitle>
+                                        <DialogDescription>
+                                          Create a new category for your articles
+                                        </DialogDescription>
+                                      </DialogHeader>
+                                      <div className="grid gap-4 py-4">
+                                        <div className="grid gap-2">
+                                          <Label htmlFor="new-category">Category Name</Label>
+                                          <Input 
+                                            id="new-category" 
+                                            value={newCategory}
+                                            onChange={(e) => setNewCategory(e.target.value)}
+                                            placeholder="E.g., Technology, Health, Finance"
+                                          />
+                                        </div>
+                                      </div>
+                                      <DialogFooter>
+                                        <Button variant="outline" onClick={() => setCategoryDialog(false)}>
+                                          Cancel
+                                        </Button>
+                                        <Button onClick={handleAddCategory} disabled={!newCategory}>
+                                          Add Category
+                                        </Button>
+                                      </DialogFooter>
+                                    </DialogContent>
+                                  </Dialog>
+                                </div>
                                 <FormMessage />
                               </FormItem>
                             )}
@@ -534,9 +808,77 @@ const ArticleEditor = () => {
                                 <FormLabel className="flex items-center gap-2">
                                   <Tag className="h-4 w-4" /> Tags
                                 </FormLabel>
-                                <FormControl>
-                                  <Input placeholder="React, TypeScript, etc. (comma-separated)" {...field} />
-                                </FormControl>
+                                <div className="space-y-2">
+                                  <div className="flex flex-wrap gap-2 mb-2">
+                                    {field.value.split(',').map((tag, index) => {
+                                      const trimmedTag = tag.trim();
+                                      return trimmedTag && (
+                                        <Badge key={index} variant="secondary">
+                                          {trimmedTag}
+                                        </Badge>
+                                      );
+                                    })}
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <FormControl>
+                                      <Input placeholder="React, TypeScript, etc. (comma-separated)" {...field} />
+                                    </FormControl>
+                                    
+                                    <Dialog open={tagDialog} onOpenChange={setTagDialog}>
+                                      <DialogTrigger asChild>
+                                        <Button variant="outline" size="icon">
+                                          <Plus className="h-4 w-4" />
+                                        </Button>
+                                      </DialogTrigger>
+                                      <DialogContent className="sm:max-w-[425px]">
+                                        <DialogHeader>
+                                          <DialogTitle>Add New Tag</DialogTitle>
+                                          <DialogDescription>
+                                            Create a new tag for your articles
+                                          </DialogDescription>
+                                        </DialogHeader>
+                                        <div className="grid gap-4 py-4">
+                                          <div className="grid gap-2">
+                                            <Label htmlFor="new-tag">Tag Name</Label>
+                                            <Input 
+                                              id="new-tag" 
+                                              value={newTag}
+                                              onChange={(e) => setNewTag(e.target.value)}
+                                              placeholder="E.g., React, JavaScript, Design"
+                                            />
+                                          </div>
+                                          
+                                          <div className="grid grid-cols-5 gap-2">
+                                            {tags.slice(0, 10).map((tag, index) => (
+                                              <Badge 
+                                                key={index} 
+                                                variant="outline"
+                                                className="cursor-pointer"
+                                                onClick={() => {
+                                                  const currentTags = field.value.split(',').map(t => t.trim()).filter(t => t !== "");
+                                                  if (!currentTags.includes(tag)) {
+                                                    const newTags = [...currentTags, tag].join(', ');
+                                                    field.onChange(newTags);
+                                                  }
+                                                }}
+                                              >
+                                                {tag}
+                                              </Badge>
+                                            ))}
+                                          </div>
+                                        </div>
+                                        <DialogFooter>
+                                          <Button variant="outline" onClick={() => setTagDialog(false)}>
+                                            Cancel
+                                          </Button>
+                                          <Button onClick={handleAddTag} disabled={!newTag}>
+                                            Add Tag
+                                          </Button>
+                                        </DialogFooter>
+                                      </DialogContent>
+                                    </Dialog>
+                                  </div>
+                                </div>
                                 <FormMessage />
                               </FormItem>
                             )}
@@ -551,9 +893,89 @@ const ArticleEditor = () => {
                                   <FormLabel className="flex items-center gap-2">
                                     <User className="h-4 w-4" /> Author
                                   </FormLabel>
-                                  <FormControl>
-                                    <Input placeholder="Author name" {...field} />
-                                  </FormControl>
+                                  <div className="flex gap-2">
+                                    <FormControl>
+                                      <Select
+                                        value={field.value}
+                                        onValueChange={(value) => {
+                                          field.onChange(value);
+                                          const author = authors.find(a => a.name === value);
+                                          if (author) {
+                                            form.setValue("author_avatar", author.avatar);
+                                          }
+                                        }}
+                                      >
+                                        <SelectTrigger className="w-full">
+                                          <SelectValue placeholder="Select an author" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {authors.map(author => (
+                                            <SelectItem key={author.id} value={author.name}>
+                                              {author.name}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </FormControl>
+                                    
+                                    <Dialog open={authorDialog} onOpenChange={setAuthorDialog}>
+                                      <DialogTrigger asChild>
+                                        <Button variant="outline" size="icon">
+                                          <Plus className="h-4 w-4" />
+                                        </Button>
+                                      </DialogTrigger>
+                                      <DialogContent className="sm:max-w-[425px]">
+                                        <DialogHeader>
+                                          <DialogTitle>Add New Author</DialogTitle>
+                                          <DialogDescription>
+                                            Create a new author for your articles
+                                          </DialogDescription>
+                                        </DialogHeader>
+                                        <div className="grid gap-4 py-4">
+                                          <div className="grid gap-2">
+                                            <Label htmlFor="author-name">Author Name</Label>
+                                            <Input 
+                                              id="author-name" 
+                                              value={newAuthor.name}
+                                              onChange={(e) => setNewAuthor({...newAuthor, name: e.target.value})}
+                                              placeholder="Author's name"
+                                            />
+                                          </div>
+                                          <div className="grid gap-2">
+                                            <Label htmlFor="author-avatar">Avatar URL</Label>
+                                            <Input 
+                                              id="author-avatar" 
+                                              value={newAuthor.avatar}
+                                              onChange={(e) => setNewAuthor({...newAuthor, avatar: e.target.value})}
+                                              placeholder="URL to author's avatar"
+                                            />
+                                          </div>
+                                          {newAuthor.avatar && (
+                                            <div className="flex justify-center">
+                                              <div className="w-16 h-16 rounded-full overflow-hidden bg-muted">
+                                                <img 
+                                                  src={newAuthor.avatar} 
+                                                  alt="Author preview"
+                                                  className="h-full w-full object-cover"
+                                                  onError={(e) => {
+                                                    (e.target as HTMLImageElement).src = "/placeholder.svg";
+                                                  }}
+                                                />
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                        <DialogFooter>
+                                          <Button variant="outline" onClick={() => setAuthorDialog(false)}>
+                                            Cancel
+                                          </Button>
+                                          <Button onClick={handleAddAuthor} disabled={!newAuthor.name}>
+                                            Add Author
+                                          </Button>
+                                        </DialogFooter>
+                                      </DialogContent>
+                                    </Dialog>
+                                  </div>
                                   <FormMessage />
                                 </FormItem>
                               )}
@@ -711,5 +1133,12 @@ const ArticleEditor = () => {
     </AdminLayout>
   );
 };
+
+// Define Label component since it's not provided
+const Label = ({ htmlFor, children }: { htmlFor: string, children: React.ReactNode }) => (
+  <label htmlFor={htmlFor} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+    {children}
+  </label>
+);
 
 export default ArticleEditor;

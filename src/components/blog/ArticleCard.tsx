@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { Article } from "@/types/blog";
 import { CalendarIcon, Clock, ArrowUpRight, Bookmark, BookmarkCheck } from "lucide-react";
@@ -19,19 +19,10 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, variant = "default",
   const isFeatured = variant === "featured";
   const isCompact = variant === "compact";
   const { isBookmarked, toggleBookmark } = useBookmarks();
-  const [isBookmarkedLocally, setIsBookmarkedLocally] = useState<boolean | null>(null);
-  
-  // Get the current bookmark status
-  const bookmarkStatus = isBookmarkedLocally !== null 
-    ? isBookmarkedLocally 
-    : isBookmarked(article.id);
   
   const handleBookmarkClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    // Update local state immediately for UI responsiveness
-    setIsBookmarkedLocally(!bookmarkStatus);
-    // Then update the actual state
     toggleBookmark(article);
   };
   
@@ -78,7 +69,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, variant = "default",
             className="h-8 w-8 rounded-full hover:bg-background/80"
             onClick={handleBookmarkClick}
           >
-            {bookmarkStatus ? (
+            {isBookmarked(article.id) ? (
               <BookmarkCheck className="h-4 w-4 fill-primary text-primary" />
             ) : (
               <Bookmark className="h-4 w-4 text-muted-foreground" />
