@@ -62,7 +62,20 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				purple: {
+					'50': '#faf5ff',
+					'100': '#f3e8ff',
+					'200': '#e9d5ff',
+					'300': '#d8b4fe',
+					'400': '#c084fc',
+					'500': '#a855f7',
+					'600': '#9333ea',
+					'700': '#7e22ce',
+					'800': '#6b21a8',
+					'900': '#581c87',
+					'950': '#3b0764',
+				},
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -120,6 +133,12 @@ export default {
 				'zoom-in': 'zoom-in 0.3s ease-out',
 				'float': 'float 5s ease-in-out infinite',
 				'pulse-soft': 'pulse-soft 3s ease-in-out infinite',
+			},
+			backgroundImage: {
+				'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+				'purple-gradient': 'linear-gradient(to right, #8B5CF6, #D946EF)',
+				'purple-dark-gradient': 'linear-gradient(to right, #6b21a8, #9333ea)',
+				'purple-light-gradient': 'linear-gradient(to right, #a855f7, #d8b4fe)',
 			}
 		}
 	},

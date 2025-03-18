@@ -21,7 +21,7 @@ interface ThemeProviderState {
 
 const initialState: ThemeProviderState = {
   theme: "system",
-  themeColor: "default",
+  themeColor: "purple",
   setTheme: () => null,
   setThemeColor: () => null,
 };
@@ -31,7 +31,7 @@ const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 export function ThemeProvider({
   children,
   defaultTheme = "system",
-  defaultColor = "default",
+  defaultColor = "purple",
   storageKey = "bloghub-theme",
   colorKey = "bloghub-color",
   ...props

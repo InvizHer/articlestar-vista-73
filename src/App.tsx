@@ -24,13 +24,13 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="system" defaultColor="default">
+    <ThemeProvider defaultTheme="system" defaultColor="purple">
       <AdminProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <ScrollToTop threshold={500} />
+            <ScrollToTop threshold={300} showProgress={true} />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/articles" element={<Articles />} />

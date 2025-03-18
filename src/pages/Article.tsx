@@ -5,12 +5,11 @@ import Layout from "@/components/layout/Layout";
 import { supabase } from "@/integrations/supabase/client";
 import { DbArticle } from "@/types/database";
 import { Article as ArticleType } from "@/types/blog";
-import { CalendarIcon, Clock, ChevronLeft, Share2, Bookmark, Twitter, Facebook, Linkedin, Eye, User } from "lucide-react";
+import { CalendarIcon, Clock, ChevronLeft, Share2, Bookmark, Twitter, Facebook, Linkedin, Eye, User, MessageCircle, Heart, UserCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import ArticleGrid from "@/components/blog/ArticleGrid";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { TableOfContents } from "@/components/blog/TableOfContents";
 import { useBookmarks } from "@/hooks/use-bookmarks";
 import {
@@ -18,6 +17,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 // Helper function to convert DbArticle to Article
@@ -46,11 +53,76 @@ const convertDbArticleToArticle = (dbArticle: DbArticle): ArticleType => {
   };
 };
 
+// Author Profile Component
+const AuthorProfile = ({ author }: { author: ArticleType['author'] }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="w-full rounded-full">
+          <UserCircle className="h-4 w-4 mr-2" />
+          View Profile
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md p-0 overflow-hidden rounded-xl border border-purple-200 dark:border-purple-900/50 bg-gradient-to-br from-background to-purple-50/50 dark:from-background dark:to-purple-950/10 backdrop-blur-sm">
+        <div className="h-32 bg-gradient-to-r from-primary to-purple-500 relative">
+          <div className="absolute -bottom-12 left-6 w-24 h-24 rounded-full border-4 border-background overflow-hidden">
+            <img 
+              src={author.avatar} 
+              alt={author.name}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        </div>
+        
+        <div className="pt-16 px-6 pb-6">
+          <h2 className="text-2xl font-bold mb-1">{author.name}</h2>
+          <p className="text-muted-foreground">Content Creator & Writer</p>
+          
+          <div className="flex items-center gap-4 mt-4 mb-6">
+            <div className="text-center">
+              <p className="text-xl font-bold">42</p>
+              <p className="text-xs text-muted-foreground">Articles</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xl font-bold">15.2k</p>
+              <p className="text-xs text-muted-foreground">Readers</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xl font-bold">4.8</p>
+              <p className="text-xs text-muted-foreground">Rating</p>
+            </div>
+          </div>
+          
+          <h3 className="font-medium mb-2">About</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Professional content creator specializing in technology, science, and digital trends. 
+            With over 5 years of experience in content creation and a passion for making complex topics accessible.
+          </p>
+          
+          <h3 className="font-medium mb-2">Connect</h3>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" className="rounded-full h-9 w-9 text-[#1DA1F2]">
+              <Twitter className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon" className="rounded-full h-9 w-9 text-[#1877F2]">
+              <Facebook className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon" className="rounded-full h-9 w-9 text-[#0A66C2]">
+              <Linkedin className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const Article = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [article, setArticle] = useState<ArticleType | null>(null);
-  const [relatedArticles, setRelatedArticles] = useState<ArticleType[]>([]);
   const [loading, setLoading] = useState(true);
   const contentRef = useRef<HTMLDivElement>(null);
   const { isBookmarked, toggleBookmark } = useBookmarks();
@@ -96,7 +168,6 @@ const Article = () => {
       if (data) {
         const articleData = convertDbArticleToArticle(data);
         setArticle(articleData);
-        fetchRelatedArticles(data.category, data.tags, data.id);
         
         // Increment view count
         incrementViewCount(data.id);
@@ -121,28 +192,6 @@ const Article = () => {
       navigate("/not-found");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchRelatedArticles = async (category: string, tags: string[], currentId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("articles")
-        .select("*")
-        .eq("published", true)
-        .neq("id", currentId)
-        .eq("category", category)
-        .limit(3);
-
-      if (error) {
-        throw error;
-      }
-
-      const relatedData = (data || []).map(convertDbArticleToArticle);
-      setRelatedArticles(relatedData);
-    } catch (error) {
-      console.error("Error fetching related articles:", error);
-      // We don't show an error toast for related articles as it's not critical
     }
   };
 
@@ -192,7 +241,7 @@ const Article = () => {
 
   return (
     <Layout>
-      <div className="w-full bg-gradient-to-b from-primary/5 to-background">
+      <div className="w-full">
         <div className="max-w-7xl mx-auto px-4 py-8">
           <Button 
             variant="ghost" 
@@ -222,108 +271,115 @@ const Article = () => {
                   </Badge>
                 </div>
 
-                <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-6">
+                <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-6 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
                   {article.title}
                 </h1>
 
-                <div className="flex flex-wrap gap-4 items-center mb-8 p-4 rounded-lg bg-card/50 backdrop-blur-sm border">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full overflow-hidden bg-muted">
-                      <img 
-                        src={article.author.avatar} 
-                        alt={article.author.name} 
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div>
-                      <div className="font-medium">{article.author.name}</div>
-                      <div className="flex items-center text-xs text-muted-foreground">
-                        <User className="h-3 w-3 mr-1" />
-                        Author
+                <div className="relative p-6 rounded-xl bg-gradient-to-r from-purple-50/50 to-background border border-purple-100/50 dark:from-purple-950/10 dark:to-background dark:border-purple-900/20 mb-8">
+                  <div className="absolute -top-4 -left-4 w-24 h-24 rounded-full bg-gradient-to-br from-primary/20 to-purple-500/20 blur-3xl opacity-50 z-0"></div>
+                  
+                  <div className="flex flex-wrap gap-6 items-center relative z-10">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full overflow-hidden bg-muted ring-2 ring-primary/20">
+                        <img 
+                          src={article.author.avatar} 
+                          alt={article.author.name} 
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div>
+                        <div className="font-medium">{article.author.name}</div>
+                        <div className="flex items-center text-xs text-muted-foreground">
+                          <User className="h-3 w-3 mr-1" />
+                          Author
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  
-                  <div className="ml-auto flex items-center gap-4 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <CalendarIcon className="h-4 w-4" />
-                      <span>{article.date}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      <span>{article.readTime}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-2 ml-auto md:ml-0">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className={cn(
-                        "rounded-full",
-                        isBookmarked(article.id) && "bg-primary/10 text-primary border-primary/30"
-                      )}
-                      onClick={() => toggleBookmark(article)}
-                    >
-                      <Bookmark className={`h-4 w-4 mr-2 ${isBookmarked(article.id) ? "fill-primary text-primary" : ""}`} />
-                      {isBookmarked(article.id) ? "Bookmarked" : "Bookmark"}
-                    </Button>
                     
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" size="icon" className="rounded-full h-9 w-9">
-                          <Share2 className="h-4 w-4" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-2" align="end">
-                        <div className="flex gap-2">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="rounded-full text-[#1DA1F2] hover:bg-[#1DA1F2]/10"
-                            onClick={() => handleShare('twitter')}
-                          >
-                            <Twitter className="h-4 w-4" />
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground rounded-full bg-muted/50 px-4 py-1.5">
+                      <div className="flex items-center gap-2">
+                        <CalendarIcon className="h-4 w-4 text-primary/70" />
+                        <span>{article.date}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-primary/70" />
+                        <span>{article.readTime}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 ml-auto">
+                      <Button
+                        variant={isBookmarked(article.id) ? "default" : "outline"}
+                        size="sm"
+                        className={cn(
+                          "rounded-full gap-2",
+                          isBookmarked(article.id) && "bg-gradient-to-r from-primary to-purple-500 text-white"
+                        )}
+                        onClick={() => toggleBookmark(article)}
+                      >
+                        <Bookmark className={`h-4 w-4 ${isBookmarked(article.id) ? "fill-white text-white" : ""}`} />
+                        {isBookmarked(article.id) ? "Saved" : "Save"}
+                      </Button>
+                      
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" size="sm" className="rounded-full gap-2">
+                            <Share2 className="h-4 w-4" />
+                            Share
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="rounded-full text-[#1877F2] hover:bg-[#1877F2]/10"
-                            onClick={() => handleShare('facebook')}
-                          >
-                            <Facebook className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="rounded-full text-[#0A66C2] hover:bg-[#0A66C2]/10"
-                            onClick={() => handleShare('linkedin')}
-                          >
-                            <Linkedin className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="rounded-full"
-                            onClick={() => handleShare('')}
-                          >
-                            <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M5 2V1H10V2H5ZM4.75 0C4.33579 0 4 0.335786 4 0.75V1H3.5C2.67157 1 2 1.67157 2 2.5V12.5C2 13.3284 2.67157 14 3.5 14H11.5C12.3284 14 13 13.3284 13 12.5V2.5C13 1.67157 12.3284 1 11.5 1H11V0.75C11 0.335786 10.6642 0 10.25 0H4.75ZM11 2V2.25C11 2.66421 10.6642 3 10.25 3H4.75C4.33579 3 4 2.66421 4 2.25V2H3.5C3.22386 2 3 2.22386 3 2.5V12.5C3 12.7761 3.22386 13 3.5 13H11.5C11.7761 13 12 12.7761 12 12.5V2.5C12 2.22386 11.7761 2 11.5 2H11Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
-                            </svg>
-                          </Button>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-2" align="end">
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="rounded-full text-[#1DA1F2] hover:bg-[#1DA1F2]/10"
+                              onClick={() => handleShare('twitter')}
+                            >
+                              <Twitter className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="rounded-full text-[#1877F2] hover:bg-[#1877F2]/10"
+                              onClick={() => handleShare('facebook')}
+                            >
+                              <Facebook className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="rounded-full text-[#0A66C2] hover:bg-[#0A66C2]/10"
+                              onClick={() => handleShare('linkedin')}
+                            >
+                              <Linkedin className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="rounded-full"
+                              onClick={() => handleShare('')}
+                            >
+                              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M5 2V1H10V2H5ZM4.75 0C4.33579 0 4 0.335786 4 0.75V1H3.5C2.67157 1 2 1.67157 2 2.5V12.5C2 13.3284 2.67157 14 3.5 14H11.5C12.3284 14 13 13.3284 13 12.5V2.5C13 1.67157 12.3284 1 11.5 1H11V0.75C11 0.335786 10.6642 0 10.25 0H4.75ZM11 2V2.25C11 2.66421 10.6642 3 10.25 3H4.75C4.33579 3 4 2.66421 4 2.25V2H3.5C3.22386 2 3 2.22386 3 2.5V12.5C3 12.7761 3.22386 13 3.5 13H11.5C11.7761 13 12 12.7761 12 12.5V2.5C12 2.22386 11.7761 2 11.5 2H11Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
+                              </svg>
+                            </Button>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="aspect-video w-full overflow-hidden rounded-lg shadow-md mb-10">
-                <img
-                  src={article.coverImage}
-                  alt={article.title}
-                  className="h-full w-full object-cover"
-                />
+              <div className="aspect-[21/9] w-full overflow-hidden rounded-xl shadow-md mb-10 bg-gradient-to-r from-primary/10 to-purple-500/10 p-1">
+                <div className="w-full h-full rounded-lg overflow-hidden">
+                  <img
+                    src={article.coverImage}
+                    alt={article.title}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
               </div>
 
               <div 
@@ -337,7 +393,7 @@ const Article = () => {
                   <h4 className="text-sm font-medium mb-3">Tags</h4>
                   <div className="flex flex-wrap gap-2">
                     {article.tags.map((tag, idx) => (
-                      <Badge key={idx} variant="secondary" className="bg-secondary/50">
+                      <Badge key={idx} variant="secondary" className="bg-gradient-to-r from-primary/10 to-purple-500/10 text-primary border-primary/20">
                         {tag}
                       </Badge>
                     ))}
@@ -348,16 +404,16 @@ const Article = () => {
               <div className="mt-8 pt-6 border-t">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <Button 
-                    variant="outline" 
+                    variant={isBookmarked(article.id) ? "default" : "outline"}
                     size="sm" 
                     className={cn(
-                      "rounded-full",
-                      isBookmarked(article.id) && "bg-primary/10 text-primary border-primary/30"
+                      "rounded-full gap-2",
+                      isBookmarked(article.id) && "bg-gradient-to-r from-primary to-purple-500 text-white"
                     )}
                     onClick={() => toggleBookmark(article)}
                   >
-                    <Bookmark className={`h-4 w-4 mr-2 ${isBookmarked(article.id) ? "fill-primary text-primary" : ""}`} />
-                    {isBookmarked(article.id) ? "Bookmarked" : "Bookmark Article"}
+                    <Bookmark className={`h-4 w-4 ${isBookmarked(article.id) ? "fill-white text-white" : ""}`} />
+                    {isBookmarked(article.id) ? "Saved to Reading List" : "Save to Reading List"}
                   </Button>
                   
                   <div className="flex gap-2">
@@ -394,47 +450,48 @@ const Article = () => {
               <TableOfContents contentRef={contentRef} className="hidden lg:block sticky top-24" />
               
               {/* Author card */}
-              <div className="rounded-lg border bg-card shadow-sm p-6 sticky top-80">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-full overflow-hidden bg-muted">
-                    <img 
-                      src={article.author.avatar} 
-                      alt={article.author.name} 
-                      className="w-full h-full object-cover"
-                    />
+              <div className="rounded-xl border bg-gradient-to-r from-purple-50/50 to-background dark:from-purple-950/10 dark:to-background shadow-sm p-6 sticky top-80 overflow-hidden">
+                <div className="absolute -top-10 -right-10 w-24 h-24 rounded-full bg-gradient-to-br from-primary/20 to-purple-500/20 blur-3xl opacity-70 z-0"></div>
+                
+                <div className="relative z-10">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-16 h-16 rounded-full overflow-hidden bg-muted ring-2 ring-primary/20">
+                      <img 
+                        src={article.author.avatar} 
+                        alt={article.author.name} 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div>
+                      <div className="font-bold text-lg">{article.author.name}</div>
+                      <div className="text-sm text-muted-foreground">Content Creator</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="font-medium">{article.author.name}</div>
-                    <div className="text-sm text-muted-foreground">Author</div>
+                  
+                  <div className="flex items-center gap-4 mb-4 text-sm">
+                    <div className="text-center">
+                      <p className="font-bold">42</p>
+                      <p className="text-xs text-muted-foreground">Articles</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="font-bold">15.2k</p>
+                      <p className="text-xs text-muted-foreground">Readers</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="font-bold">4.8</p>
+                      <p className="text-xs text-muted-foreground">Rating</p>
+                    </div>
                   </div>
+                  
+                  <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
+                    Content creator specializing in {article.category} and related topics with expertise in digital media and content strategy.
+                  </p>
+                  
+                  <AuthorProfile author={article.author} />
                 </div>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Content creator specializing in {article.category} and related topics.
-                </p>
-                <Button variant="outline" size="sm" className="w-full rounded-full">
-                  View Profile
-                </Button>
               </div>
             </div>
           </motion.div>
-
-          {relatedArticles.length > 0 && (
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-              className="mt-16 mb-8"
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold">Related Articles</h2>
-                <Button asChild variant="ghost" size="sm">
-                  <Link to="/articles">View All Articles</Link>
-                </Button>
-              </div>
-              <ArticleGrid articles={relatedArticles} columns={3} />
-            </motion.div>
-          )}
         </div>
       </div>
     </Layout>
