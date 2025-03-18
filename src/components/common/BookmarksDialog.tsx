@@ -1,6 +1,7 @@
 
-import React, { useState, useEffect } from "react";
-import { useBookmarks } from "@/hooks/use-bookmarks";
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useBookmarks } from '@/hooks/use-bookmarks';
 import {
   Dialog,
   DialogContent,
@@ -9,95 +10,77 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { Bookmark, BookmarkCheck, ChevronDown, Clock, MoreHorizontal, Eye, Info, Search, Trash2, X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Link } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Bookmark, Clock, Trash2, XCircle, Search, X, BookmarkCheck, Eye } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
-export const BookmarksDialog = () => {
-  const { bookmarks, removeBookmark, clearBookmarks, maxBookmarksReached } = useBookmarks();
-  const [open, setOpen] = useState(false);
+interface BookmarksDialogProps {
+  className?: string;
+}
+
+export function BookmarksDialog({ className }: BookmarksDialogProps) {
+  const { bookmarks, removeBookmark, clearBookmarks } = useBookmarks();
+  const [open, setOpen] = React.useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
-  const [categoryFilter, setCategoryFilter] = useState('');
-
-  const bookmarkCount = bookmarks.length;
-
-  const categories = [...new Set(bookmarks.map(bookmark => bookmark.category))];
-
-  const filteredBookmarks = bookmarks
-    .filter(bookmark => {
-      const searchTermLower = searchTerm.toLowerCase();
-      return (
-        bookmark.title.toLowerCase().includes(searchTermLower) ||
-        bookmark.excerpt?.toLowerCase().includes(searchTermLower) ||
-        bookmark.category.toLowerCase().includes(searchTermLower)
-      );
-    })
-    .filter(bookmark => {
-      return categoryFilter ? bookmark.category === categoryFilter : true;
-    })
-    .sort((a, b) => {
-      const dateA = new Date(a.date).getTime();
-      const dateB = new Date(b.date).getTime();
-      return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
-    });
-
-  const handleClearBookmarks = () => {
-    clearBookmarks();
-    setOpen(false);
-  };
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  
+  // Get unique categories
+  const categories = [...new Set(bookmarks.map(article => article.category))];
+  
+  // Filter bookmarks
+  const filteredBookmarks = bookmarks.filter(article => {
+    const matchesSearch = article.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         article.excerpt.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory ? article.category === selectedCategory : true;
+    return matchesSearch && matchesCategory;
+  });
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative rounded-full hover:bg-primary/10">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className={cn(
+            "relative hover:bg-background hover:text-primary transition-all duration-300", 
+            className
+          )}
+        >
           <Bookmark className="h-5 w-5" />
-          {bookmarkCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-              {bookmarkCount}
+          {bookmarks.length > 0 && (
+            <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-gradient-to-r from-primary to-purple-500 text-[10px] font-bold text-primary-foreground flex items-center justify-center shadow-md">
+              {bookmarks.length}
             </span>
           )}
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md p-0 gap-0 rounded-xl border border-purple-200 dark:border-purple-900/50 overflow-hidden">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b bg-gradient-to-r from-primary/10 to-purple-500/10">
+      <DialogContent className="sm:max-w-lg p-0 overflow-hidden rounded-xl border border-purple-200 dark:border-purple-900/50 bg-gradient-to-br from-background to-purple-50/50 dark:from-background dark:to-purple-950/10 backdrop-blur-sm">
+        <DialogHeader className="px-6 pt-6 pb-2">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 text-xl">
               <BookmarkCheck className="h-5 w-5 text-primary" />
-              <DialogTitle>Reading List ({bookmarkCount}/3)</DialogTitle>
-            </div>
-            
-            <div className="bookmark-limit-badge flex items-center gap-2 bg-gradient-to-r from-primary/10 to-purple-500/10 px-3 py-1.5 rounded-full text-xs font-medium">
-              <span className={maxBookmarksReached ? "text-destructive" : "text-primary"}>
-                {bookmarkCount}/3 articles saved
-              </span>
-              <Info className="h-3 w-3 text-muted-foreground" />
-            </div>
+              My Reading List
+            </DialogTitle>
+            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+              {bookmarks.length} {bookmarks.length === 1 ? 'Article' : 'Articles'}
+            </Badge>
           </div>
-          <DialogDescription className="sr-only">
-            Manage your reading list
+          <DialogDescription className="text-sm text-muted-foreground">
+            Your saved articles for later reading.
           </DialogDescription>
-          
-          <div className="mt-4 flex gap-2">
-            <div className="relative flex-grow">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
+        </DialogHeader>
+        
+        {bookmarks.length > 0 && (
+          <div className="px-6 pb-3 pt-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <input
                 type="text"
-                placeholder="Search saved articles..."
-                className="pl-9 rounded-full bg-background border-primary/20 focus-visible:ring-primary/30"
+                placeholder="Search your bookmarks..."
+                className="w-full rounded-lg border border-input bg-background pl-10 pr-10 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -105,161 +88,139 @@ export const BookmarksDialog = () => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 h-5 w-5 hover:bg-transparent hover:opacity-70"
-                  onClick={() => setSearchTerm("")}
+                  className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground"
+                  onClick={() => setSearchTerm('')}
                 >
                   <X className="h-3 w-3" />
                 </Button>
               )}
             </div>
             
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="rounded-full">
-                  <MoreHorizontal className="h-4 w-4" />
+            {categories.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-3">
+                <Button
+                  variant={selectedCategory === null ? "default" : "outline"}
+                  size="sm"
+                  className="text-xs rounded-full h-7"
+                  onClick={() => setSelectedCategory(null)}
+                >
+                  All
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 rounded-xl">
-                <DropdownMenuLabel>Sort by</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={() => setSortOrder('newest')}
-                  className="cursor-pointer flex justify-between"
-                >
-                  Newest First
-                  {sortOrder === 'newest' && <div className="h-2 w-2 rounded-full bg-primary"></div>}
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={() => setSortOrder('oldest')}
-                  className="cursor-pointer flex justify-between"
-                >
-                  Oldest First
-                  {sortOrder === 'oldest' && <div className="h-2 w-2 rounded-full bg-primary"></div>}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={handleClearBookmarks}
-                  className="cursor-pointer text-destructive focus:text-destructive flex items-center gap-2"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  <span>Clear All</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                {categories.map(category => (
+                  <Button
+                    key={category}
+                    variant={selectedCategory === category ? "default" : "outline"}
+                    size="sm"
+                    className="text-xs rounded-full h-7"
+                    onClick={() => setSelectedCategory(prev => prev === category ? null : category)}
+                  >
+                    {category}
+                  </Button>
+                ))}
+              </div>
+            )}
           </div>
-          
-          <div className="mt-3 flex flex-wrap gap-2">
-            <div
-              onClick={() => setCategoryFilter('')} 
-              className={cn(
-                "text-xs px-2 py-1 rounded-full cursor-pointer transition-colors",
-                categoryFilter === '' 
-                  ? "bg-primary text-white" 
-                  : "bg-muted hover:bg-muted/80 text-muted-foreground"
-              )}
+        )}
+        
+        {bookmarks.length === 0 ? (
+          <div className="py-12 text-center px-6">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.3 }}
             >
-              All
-            </div>
-            {categories.map((category, index) => (
-              <div
-                key={index}
-                onClick={() => setCategoryFilter(category)} 
-                className={cn(
-                  "text-xs px-2 py-1 rounded-full cursor-pointer transition-colors",
-                  categoryFilter === category 
-                    ? "bg-primary text-white" 
-                    : "bg-muted hover:bg-muted/80 text-muted-foreground"
-                )}
-              >
-                {category}
+              <div className="bg-primary/5 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <Bookmark className="h-6 w-6 text-muted-foreground/50" />
               </div>
-            ))}
+              <p className="text-muted-foreground font-medium">No bookmarks yet</p>
+              <p className="text-muted-foreground/70 text-sm mt-1">Save articles to read later!</p>
+            </motion.div>
           </div>
-        </DialogHeader>
-
-        <div className="max-h-[400px] overflow-y-auto p-4">
-          {filteredBookmarks.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-48 text-center p-4">
-              <div className="bg-primary/10 p-3 rounded-full mb-3">
-                <Bookmark className="h-6 w-6 text-primary" />
-              </div>
-              {bookmarks.length === 0 ? (
-                <div>
-                  <h3 className="font-medium text-lg mb-1">No saved articles</h3>
-                  <p className="text-muted-foreground text-sm">
-                    Articles you save will appear here
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  <h3 className="font-medium text-lg mb-1">No matches found</h3>
-                  <p className="text-muted-foreground text-sm">
-                    Try adjusting your search or filters
-                  </p>
-                </div>
-              )}
-            </div>
-          ) : (
-            <AnimatePresence>
-              {filteredBookmarks.map((bookmark, index) => (
-                <motion.div
-                  key={bookmark.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2, delay: index * 0.05 }}
-                  className="mb-3 p-3 rounded-lg hover:bg-muted/50 transition-colors relative group"
-                >
-                  <div className="flex gap-3">
-                    <div className="w-16 h-16 rounded-md overflow-hidden flex-shrink-0">
-                      <img 
-                        src={bookmark.coverImage} 
-                        alt={bookmark.title}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="overflow-hidden">
-                      <Link 
-                        to={`/article/${bookmark.slug}`} 
-                        className="font-medium line-clamp-1 hover:text-primary transition-colors"
-                        onClick={() => setOpen(false)}
+        ) : (
+          <>
+            <ScrollArea className="max-h-[60vh] px-6 py-3">
+              <AnimatePresence>
+                {filteredBookmarks.length === 0 ? (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="py-8 text-center"
+                  >
+                    <XCircle className="mx-auto h-8 w-8 text-muted-foreground/50 mb-3" />
+                    <p className="text-muted-foreground">No matching bookmarks found</p>
+                  </motion.div>
+                ) : (
+                  <div className="space-y-3">
+                    {filteredBookmarks.map((article, index) => (
+                      <motion.div 
+                        key={article.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.2, delay: index * 0.05 }}
+                        className="flex gap-3 p-3 rounded-lg hover:bg-accent/20 transition-colors group relative"
                       >
-                        {bookmark.title}
-                      </Link>
-                      
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          <span>{bookmark.readTime}</span>
+                        <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 border border-border/50">
+                          <img 
+                            src={article.coverImage} 
+                            alt={article.title} 
+                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          />
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Eye className="h-3 w-3" />
-                          <span>{bookmark.viewCount} views</span>
+                        <div className="overflow-hidden flex-1">
+                          <Link 
+                            to={`/article/${article.slug}`}
+                            onClick={() => setOpen(false)}
+                            className="font-medium text-base line-clamp-2 hover:text-primary group-hover:underline transition-colors"
+                          >
+                            {article.title}
+                          </Link>
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              <span>{article.readTime}</span>
+                            </span>
+                            {article.viewCount !== undefined && (
+                              <span className="flex items-center gap-1">
+                                <Eye className="h-3 w-3" />
+                                <span>{article.viewCount} views</span>
+                              </span>
+                            )}
+                          </div>
+                          <Badge variant="outline" className="mt-2 text-xs font-normal">
+                            {article.category}
+                          </Badge>
                         </div>
-                      </div>
-                      
-                      <div className="mt-2 flex gap-2 items-center">
-                        <Badge variant="outline" className="bg-primary/5 text-xs px-2 py-0 h-5">
-                          {bookmark.category}
-                        </Badge>
-                      </div>
-                    </div>
-                    
-                    <Button
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-6 w-6 rounded-full absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => removeBookmark(bookmark.id)}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => removeBookmark(article.id)}
+                          className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity absolute top-3 right-3 text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </motion.div>
+                    ))}
                   </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          )}
-        </div>
+                )}
+              </AnimatePresence>
+            </ScrollArea>
+            
+            <div className="flex justify-end p-4 border-t">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={clearBookmarks}
+                className="text-xs hover:bg-destructive/10 hover:text-destructive"
+              >
+                <Trash2 className="h-3 w-3 mr-1" />
+                Clear All
+              </Button>
+            </div>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
-};
+}
