@@ -2,6 +2,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAdmin } from "@/context/AdminContext";
+import { Loader2 } from "lucide-react";
+import AdminLayout from "./AdminLayout";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -25,7 +27,16 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }, [isAuthenticated, navigate]);
 
   if (isChecking) {
-    return <div className="container mx-auto py-8 text-center">Checking authentication...</div>;
+    return (
+      <AdminLayout>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
+            <p className="text-lg">Checking authentication...</p>
+          </div>
+        </div>
+      </AdminLayout>
+    );
   }
 
   return isAuthenticated ? <>{children}</> : null;
