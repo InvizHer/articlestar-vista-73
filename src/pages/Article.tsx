@@ -373,52 +373,19 @@ const Article = () => {
                 View Profile
               </Button>
             </div>
-            
-            {/* Related Articles */}
-            {relatedArticles.length > 0 && (
-              <div className="rounded-lg border bg-card shadow-sm p-6">
-                <h3 className="font-medium text-lg mb-4">Related Articles</h3>
-                <div className="space-y-4">
-                  {relatedArticles.map((relArticle) => (
-                    <div key={relArticle.id} className="flex gap-3">
-                      <div className="w-16 h-16 rounded overflow-hidden bg-muted flex-shrink-0">
-                        <img 
-                          src={relArticle.coverImage} 
-                          alt={relArticle.title} 
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
-                      <div>
-                        <Link 
-                          to={`/article/${relArticle.slug}`} 
-                          className="font-medium text-sm line-clamp-2 hover:text-primary"
-                        >
-                          {relArticle.title}
-                        </Link>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                          <Clock className="h-3 w-3" />
-                          <span>{relArticle.readTime}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </motion.div>
 
-        {/* Mobile view related articles */}
         {relatedArticles.length > 0 && (
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-            className="mt-20 lg:hidden"
+            className="mt-20"
           >
             <h2 className="text-2xl font-bold mb-8">Related Articles</h2>
-            <ArticleGrid articles={relatedArticles} columns={2} />
+            <ArticleGrid articles={relatedArticles} columns={3} />
           </motion.div>
         )}
       </div>

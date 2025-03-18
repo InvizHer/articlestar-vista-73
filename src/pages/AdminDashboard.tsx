@@ -5,33 +5,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { DbArticle } from "@/types/database";
 import { useAdmin } from "@/context/AdminContext";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { useMediaQuery } from "@/hooks/use-mobile";
-import { motion, AnimatePresence } from "framer-motion";
-import AdminLayout from "@/components/admin/AdminLayout";
-import { format } from "date-fns";
-import { Badge } from "@/components/ui/badge";
-import { 
-  Tabs, 
-  TabsList, 
-  TabsTrigger,
-  TabsContent 
-} from "@/components/ui/tabs";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardFooter
-} from "@/components/ui/card";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { 
   CalendarIcon, 
   Edit, 
@@ -39,213 +21,45 @@ import {
   Plus, 
   Trash2,
   Check,
-  Search,
+  X,
   Filter,
-  LayoutGrid,
+  Search,
   List,
-  CheckCircle,
-  CircleSlash,
-  BookOpen,
+  BarChart3,
+  ChevronDown,
+  ChevronUp,
+  Tag,
+  TrendingUp,
+  FileCheck,
   FileClock,
-  ArrowUpDown,
-  MoreHorizontal,
-  FileText,
-  X
+  BookOpen,
+  CheckCircle,
+  CircleSlash
 } from "lucide-react";
-
-const ArticleCard = ({ article, onEdit, onView, onDelete, onTogglePublish }) => {
-  const isSmall = useMediaQuery("(max-width: 640px)");
-  
-  return (
-    <Card className="h-full transition-all hover:shadow-md group overflow-hidden">
-      <div className="aspect-video w-full relative overflow-hidden bg-muted">
-        <img 
-          src={article.cover_image || "/placeholder.svg"} 
-          alt={article.title}
-          className="h-full w-full object-cover transition-transform group-hover:scale-105 duration-300"
-        />
-        <div className="absolute top-2 right-2">
-          <Badge variant={article.published ? "default" : "outline"} className="font-normal">
-            {article.published ? (
-              <span className="flex items-center gap-1">
-                <CheckCircle className="h-3 w-3" />
-                Published
-              </span>
-            ) : (
-              <span className="flex items-center gap-1">
-                <CircleSlash className="h-3 w-3" />
-                Draft
-              </span>
-            )}
-          </Badge>
-        </div>
-      </div>
-      <CardHeader className="p-4 pb-0">
-        <div className="flex justify-between items-start">
-          <Badge variant="secondary" className="font-normal mb-2">
-            {article.category}
-          </Badge>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onView(article.slug)}>
-                <Eye className="mr-2 h-4 w-4" /> View
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onEdit(article.id)}>
-                <Edit className="mr-2 h-4 w-4" /> Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onTogglePublish(article)}>
-                {article.published ? <X className="mr-2 h-4 w-4" /> : <Check className="mr-2 h-4 w-4" />}
-                {article.published ? "Unpublish" : "Publish"}
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => onDelete(article.id)}
-                className="text-destructive"
-              >
-                <Trash2 className="mr-2 h-4 w-4" /> Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-        <CardTitle className="line-clamp-2 text-base sm:text-lg">
-          {article.title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-4 pt-2">
-        <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-          {article.excerpt}
-        </p>
-      </CardContent>
-      <CardFooter className="p-4 pt-0 flex items-center justify-between text-xs text-muted-foreground">
-        <div className="flex items-center gap-1">
-          <CalendarIcon className="h-3 w-3" />
-          <span>{format(new Date(article.date), "MMM d, yyyy")}</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <FileText className="h-3 w-3" />
-          <span>{article.read_time}</span>
-        </div>
-      </CardFooter>
-    </Card>
-  );
-};
-
-const ArticleListItem = ({ article, onEdit, onView, onDelete, onTogglePublish }) => {
-  return (
-    <div className="flex gap-4 p-4 border-b hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
-      <div className="hidden sm:block w-16 h-16 rounded-md overflow-hidden bg-muted flex-shrink-0">
-        <img 
-          src={article.cover_image || "/placeholder.svg"} 
-          alt={article.title}
-          className="h-full w-full object-cover"
-        />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex flex-wrap gap-2 mb-1">
-          <Badge variant={article.published ? "default" : "outline"} className="font-normal text-xs">
-            {article.published ? (
-              <span className="flex items-center gap-1">
-                <CheckCircle className="h-3 w-3" />
-                Published
-              </span>
-            ) : (
-              <span className="flex items-center gap-1">
-                <CircleSlash className="h-3 w-3" />
-                Draft
-              </span>
-            )}
-          </Badge>
-          <Badge variant="secondary" className="font-normal text-xs">
-            {article.category}
-          </Badge>
-        </div>
-        <h3 className="font-medium text-sm sm:text-base line-clamp-1">{article.title}</h3>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <CalendarIcon className="h-3 w-3" />
-            <span>{format(new Date(article.date), "MMM d, yyyy")}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <FileText className="h-3 w-3" />
-            <span>{article.read_time}</span>
-          </div>
-        </div>
-      </div>
-      <div className="flex items-center gap-1">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          onClick={() => onView(article.slug)}
-        >
-          <Eye className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          onClick={() => onEdit(article.id)}
-        >
-          <Edit className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 text-destructive hover:bg-destructive/10"
-          onClick={() => onDelete(article.id)}
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      </div>
-    </div>
-  );
-};
-
-const MobileArticleListItem = ({ article, onEdit, onView, onDelete, onTogglePublish }) => {
-  return (
-    <div className="p-3 border rounded-lg mb-3">
-      <div className="flex justify-between items-start mb-2">
-        <Badge variant={article.published ? "default" : "outline"} className="font-normal text-xs">
-          {article.published ? "Published" : "Draft"}
-        </Badge>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-7 w-7">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onView(article.slug)}>
-              <Eye className="mr-2 h-4 w-4" /> View
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onEdit(article.id)}>
-              <Edit className="mr-2 h-4 w-4" /> Edit
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onTogglePublish(article)}>
-              {article.published ? <X className="mr-2 h-4 w-4" /> : <Check className="mr-2 h-4 w-4" />}
-              {article.published ? "Unpublish" : "Publish"}
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={() => onDelete(article.id)}
-              className="text-destructive"
-            >
-              <Trash2 className="mr-2 h-4 w-4" /> Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-      <h3 className="font-medium text-sm mb-1 line-clamp-1">{article.title}</h3>
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>{article.category}</span>
-        <span>{format(new Date(article.date), "MMM d, yyyy")}</span>
-      </div>
-    </div>
-  );
-};
+import { format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { motion, AnimatePresence } from "framer-motion";
+import AdminLayout from "@/components/admin/AdminLayout";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger
+} from "@/components/ui/tabs";
 
 const AdminDashboard = () => {
   const [articles, setArticles] = useState<DbArticle[]>([]);
@@ -255,10 +69,9 @@ const AdminDashboard = () => {
   const [statusFilter, setStatusFilter] = useState<"all" | "published" | "draft">("all");
   const [sortField, setSortField] = useState<"date" | "title" | "category">("date");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [viewMode, setViewMode] = useState<"table" | "cards">("table");
   const { admin } = useAdmin();
   const navigate = useNavigate();
-  const isMobile = useMediaQuery("(max-width: 640px)");
 
   useEffect(() => {
     fetchArticles();
@@ -303,7 +116,7 @@ const AdminDashboard = () => {
       result = result.filter(article => 
         article.title.toLowerCase().includes(term) || 
         article.category.toLowerCase().includes(term) ||
-        (article.tags && article.tags.some(tag => tag.toLowerCase().includes(term)))
+        article.tags.some(tag => tag.toLowerCase().includes(term))
       );
     }
     
@@ -396,7 +209,7 @@ const AdminDashboard = () => {
   };
 
   const toggleViewMode = () => {
-    setViewMode(viewMode === "grid" ? "list" : "grid");
+    setViewMode(viewMode === "table" ? "cards" : "table");
   };
 
   const getArticleStats = () => {
@@ -409,199 +222,377 @@ const AdminDashboard = () => {
 
   const stats = getArticleStats();
 
-  const EmptyState = () => (
-    <div className="text-center py-8 px-4">
-      <BookOpen className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-      <h3 className="text-lg font-medium mb-2">No articles found</h3>
-      <p className="text-muted-foreground mb-4">
-        {searchTerm || statusFilter !== "all" 
-          ? "Try changing your filters or search term" 
-          : "Start by creating your first article"}
-      </p>
-      {searchTerm || statusFilter !== "all" ? (
-        <Button 
-          variant="outline" 
-          onClick={() => {
-            setSearchTerm("");
-            setStatusFilter("all");
-          }}
-        >
-          Clear filters
-        </Button>
-      ) : (
-        <Button onClick={handleCreateArticle}>
-          <Plus className="mr-2 h-4 w-4" /> Create Article
-        </Button>
-      )}
+  const renderSortIcon = (field: "date" | "title" | "category") => {
+    if (sortField !== field) return null;
+    
+    return sortDirection === "asc" ? (
+      <ChevronUp className="h-4 w-4 ml-1" />
+    ) : (
+      <ChevronDown className="h-4 w-4 ml-1" />
+    );
+  };
+
+  const renderTableView = () => (
+    <div className="bg-white rounded-lg border shadow-sm dark:bg-slate-800 dark:border-slate-700 overflow-hidden">
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead 
+                className="cursor-pointer"
+                onClick={() => handleSort("title")}
+              >
+                <div className="flex items-center">
+                  Title {renderSortIcon("title")}
+                </div>
+              </TableHead>
+              <TableHead className="w-28">Status</TableHead>
+              <TableHead 
+                className="hidden md:table-cell w-32 cursor-pointer"
+                onClick={() => handleSort("category")}
+              >
+                <div className="flex items-center">
+                  Category {renderSortIcon("category")}
+                </div>
+              </TableHead>
+              <TableHead 
+                className="hidden md:table-cell w-40 cursor-pointer"
+                onClick={() => handleSort("date")}
+              >
+                <div className="flex items-center">
+                  Date {renderSortIcon("date")}
+                </div>
+              </TableHead>
+              <TableHead className="text-right w-40">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredArticles.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8">
+                  {searchTerm || statusFilter !== "all" ? (
+                    <div>
+                      <FileCheck className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                      <p className="mt-2 text-muted-foreground">No matching articles found</p>
+                      <Button 
+                        variant="link" 
+                        className="mt-2"
+                        onClick={() => {
+                          setSearchTerm("");
+                          setStatusFilter("all");
+                        }}
+                      >
+                        Clear filters
+                      </Button>
+                    </div>
+                  ) : (
+                    <div>
+                      <FileCheck className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                      <p className="mt-2 text-muted-foreground">No articles found. Create your first article!</p>
+                      <Button 
+                        onClick={handleCreateArticle}
+                        className="mt-4"
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create Article
+                      </Button>
+                    </div>
+                  )}
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredArticles.map((article) => (
+                <TableRow key={article.id} className="group">
+                  <TableCell className="font-medium truncate max-w-[240px]">
+                    {article.title}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={article.published ? "default" : "outline"} className="whitespace-nowrap">
+                      {article.published ? 
+                        <span className="flex items-center gap-1">
+                          <CheckCircle className="h-3 w-3" /> Published
+                        </span> : 
+                        <span className="flex items-center gap-1">
+                          <CircleSlash className="h-3 w-3" /> Draft
+                        </span>
+                      }
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    <Badge variant="secondary" className="font-normal">
+                      {article.category}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground hidden md:table-cell">
+                    <div className="flex items-center gap-2">
+                      <CalendarIcon className="h-4 w-4" />
+                      {article.date ? format(new Date(article.date), "MMM d, yyyy") : "N/A"}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2 opacity-70 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleViewArticle(article.slug)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleEditArticle(article.id)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant={article.published ? "outline" : "default"}
+                        size="sm"
+                        className="h-8 px-2 text-xs"
+                        onClick={() => handleTogglePublish(article)}
+                      >
+                        {article.published ? 
+                          <X className="h-3 w-3 mr-1" /> : 
+                          <Check className="h-3 w-3 mr-1" />
+                        }
+                        {article.published ? "Unpublish" : "Publish"}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                        onClick={() => handleDeleteArticle(article.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 
-  const renderGridView = () => (
+  const renderCardsView = () => (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {filteredArticles.length === 0 ? (
-        <div className="col-span-full">
-          <EmptyState />
+        <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
+          {searchTerm || statusFilter !== "all" ? (
+            <div>
+              <FileCheck className="mx-auto h-12 w-12 text-muted-foreground/50" />
+              <p className="mt-4 text-muted-foreground">No matching articles found</p>
+              <Button 
+                variant="link" 
+                className="mt-2"
+                onClick={() => {
+                  setSearchTerm("");
+                  setStatusFilter("all");
+                }}
+              >
+                Clear filters
+              </Button>
+            </div>
+          ) : (
+            <div>
+              <FileCheck className="mx-auto h-12 w-12 text-muted-foreground/50" />
+              <p className="mt-4 text-muted-foreground">No articles found. Create your first article!</p>
+              <Button 
+                onClick={handleCreateArticle}
+                className="mt-4"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Create Article
+              </Button>
+            </div>
+          )}
         </div>
       ) : (
         filteredArticles.map((article) => (
-          <ArticleCard 
-            key={article.id} 
-            article={article}
-            onEdit={handleEditArticle}
-            onView={handleViewArticle}
-            onDelete={handleDeleteArticle}
-            onTogglePublish={handleTogglePublish}
-          />
+          <motion.div
+            key={article.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card className="h-full flex flex-col overflow-hidden group hover:shadow-md transition-shadow dark:bg-slate-800 dark:border-slate-700">
+              <div className="aspect-video w-full overflow-hidden bg-muted">
+                <img
+                  src={article.cover_image || "/placeholder.svg"}
+                  alt={article.title}
+                  className="h-full w-full object-cover transition-transform group-hover:scale-105 duration-300"
+                />
+              </div>
+              <CardHeader className="pb-2">
+                <div className="flex justify-between items-start">
+                  <Badge variant={article.published ? "default" : "outline"} className="mb-2">
+                    {article.published ? 
+                      <span className="flex items-center gap-1">
+                        <CheckCircle className="h-3 w-3" /> Published
+                      </span> : 
+                      <span className="flex items-center gap-1">
+                        <CircleSlash className="h-3 w-3" /> Draft
+                      </span>
+                    }
+                  </Badge>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleViewArticle(article.slug)}>
+                        <Eye className="mr-2 h-4 w-4" /> View
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleEditArticle(article.id)}>
+                        <Edit className="mr-2 h-4 w-4" /> Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleTogglePublish(article)}>
+                        {article.published ? <X className="mr-2 h-4 w-4" /> : <Check className="mr-2 h-4 w-4" />}
+                        {article.published ? "Unpublish" : "Publish"}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        onClick={() => handleDeleteArticle(article.id)}
+                        className="text-destructive"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                <CardTitle className="text-lg line-clamp-2">{article.title}</CardTitle>
+              </CardHeader>
+              <CardContent className="pb-4 flex-grow">
+                <p className="text-sm text-muted-foreground line-clamp-2 mb-4">{article.excerpt}</p>
+                <div className="flex items-center justify-between mt-auto text-xs text-muted-foreground">
+                  <Badge variant="secondary" className="font-normal text-xs">
+                    {article.category}
+                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <CalendarIcon className="h-3 w-3" />
+                    <span>{article.date ? format(new Date(article.date), "MMM d, yyyy") : "N/A"}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         ))
       )}
     </div>
   );
 
-  const renderListView = () => (
-    <div className="border rounded-lg overflow-hidden bg-white dark:bg-slate-800">
-      {filteredArticles.length === 0 ? (
-        <EmptyState />
-      ) : (
-        filteredArticles.map((article) => (
-          isMobile ? (
-            <MobileArticleListItem
-              key={article.id}
-              article={article}
-              onEdit={handleEditArticle}
-              onView={handleViewArticle}
-              onDelete={handleDeleteArticle}
-              onTogglePublish={handleTogglePublish}
-            />
-          ) : (
-            <ArticleListItem 
-              key={article.id} 
-              article={article}
-              onEdit={handleEditArticle}
-              onView={handleViewArticle}
-              onDelete={handleDeleteArticle}
-              onTogglePublish={handleTogglePublish}
-            />
-          )
-        ))
-      )}
-    </div>
-  );
+  const welcomeMessage = () => {
+    const hour = new Date().getHours();
+    
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  };
 
   return (
     <AdminLayout>
-      <div className="py-4 sm:py-6">
-        <header className="mb-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold">Blog Dashboard</h1>
-              <p className="text-muted-foreground">Manage your articles and content</p>
-            </div>
-            <Button onClick={handleCreateArticle} size={isMobile ? "sm" : "default"}>
-              <Plus className="mr-2 h-4 w-4" /> 
-              {isMobile ? "New" : "New Article"}
-            </Button>
+      <div className="py-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">{welcomeMessage()}, {admin?.username}</h1>
+            <p className="text-muted-foreground">Here's what's happening with your blog today.</p>
           </div>
-        </header>
+          <Button onClick={handleCreateArticle}>
+            <Plus className="mr-2 h-4 w-4" /> New Article
+          </Button>
+        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <Card>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <Card className="bg-white dark:bg-slate-800">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                <BookOpen className="h-4 w-4 inline mr-2" /> Total Articles
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <BookOpen className="h-4 w-4" /> Total Articles
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl sm:text-3xl font-bold">{stats.total}</p>
+              <div className="text-3xl font-bold">{stats.total}</div>
             </CardContent>
           </Card>
-          
-          <Card>
+          <Card className="bg-white dark:bg-slate-800">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                <CheckCircle className="h-4 w-4 inline mr-2 text-green-500" /> Published
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-500" /> Published
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl sm:text-3xl font-bold text-green-500">{stats.published}</p>
+              <div className="text-3xl font-bold text-green-500">{stats.published}</div>
             </CardContent>
           </Card>
-          
-          <Card>
+          <Card className="bg-white dark:bg-slate-800">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                <FileClock className="h-4 w-4 inline mr-2 text-amber-500" /> Drafts
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <FileClock className="h-4 w-4 text-amber-500" /> Drafts
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl sm:text-3xl font-bold text-amber-500">{stats.drafts}</p>
+              <div className="text-3xl font-bold text-amber-500">{stats.drafts}</div>
             </CardContent>
           </Card>
         </div>
-
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Content Management</CardTitle>
-            <CardDescription>Manage and organize your published articles and drafts</CardDescription>
-          </CardHeader>
-          <CardContent>
+        
+        <div className="bg-white rounded-lg border shadow-sm dark:bg-slate-800 dark:border-slate-700 mb-8">
+          <div className="p-6">
             <Tabs defaultValue="articles" className="w-full">
-              <TabsList className="mb-4">
-                <TabsTrigger value="articles">
-                  <FileText className="h-4 w-4 mr-2" />
-                  Articles
-                </TabsTrigger>
-              </TabsList>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <TabsList>
+                  <TabsTrigger value="articles" className="flex items-center gap-2">
+                    <FileCheck className="h-4 w-4" /> Articles
+                  </TabsTrigger>
+                  <TabsTrigger value="analytics" className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4" /> Analytics
+                  </TabsTrigger>
+                </TabsList>
+                <Button onClick={handleCreateArticle} variant="default">
+                  <Plus className="mr-2 h-4 w-4" /> New Article
+                </Button>
+              </div>
               
-              <TabsContent value="articles" className="space-y-4">
-                <div className="flex flex-col sm:flex-row gap-4">
+              <TabsContent value="articles" className="mt-0 space-y-6">
+                <div className="flex flex-col md:flex-row gap-4 mb-6">
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       placeholder="Search articles..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
+                      className="pl-10 bg-slate-50 dark:bg-slate-700"
                     />
                   </div>
-                  
                   <div className="flex gap-2">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size={isMobile ? "sm" : "default"}>
-                          <Filter className="h-4 w-4 mr-2" />
-                          {statusFilter === "all" ? "All" : 
-                           statusFilter === "published" ? "Published" : "Drafts"}
+                        <Button variant="outline" className="w-full md:w-auto">
+                          <Filter className="mr-2 h-4 w-4" />
+                          <span className="hidden sm:inline">
+                            {statusFilter === "all" ? "All Articles" : 
+                            statusFilter === "published" ? "Published Only" : "Drafts Only"}
+                          </span>
+                          <span className="sm:hidden">Filter</span>
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => setStatusFilter("all")}>
+                          {statusFilter === "all" && <Check className="mr-2 h-4 w-4" />}
                           All Articles
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => setStatusFilter("published")}>
+                          {statusFilter === "published" && <Check className="mr-2 h-4 w-4" />}
                           Published Only
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => setStatusFilter("draft")}>
+                          {statusFilter === "draft" && <Check className="mr-2 h-4 w-4" />}
                           Drafts Only
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size={isMobile ? "sm" : "default"}>
-                          <ArrowUpDown className="h-4 w-4 mr-2" />
-                          Sort
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleSort("date")}>
-                          Date {sortField === "date" && (sortDirection === "asc" ? "(Oldest)" : "(Newest)")}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleSort("title")}>
-                          Title {sortField === "title" && (sortDirection === "asc" ? "(A-Z)" : "(Z-A)")}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleSort("category")}>
-                          Category {sortField === "category" && (sortDirection === "asc" ? "(A-Z)" : "(Z-A)")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -610,11 +601,12 @@ const AdminDashboard = () => {
                       variant="outline" 
                       size="icon" 
                       onClick={toggleViewMode}
+                      className="shrink-0"
                     >
-                      {viewMode === "grid" ? (
-                        <List className="h-4 w-4" />
+                      {viewMode === "table" ? (
+                        <BarChart3 className="h-4 w-4" />
                       ) : (
-                        <LayoutGrid className="h-4 w-4" />
+                        <List className="h-4 w-4" />
                       )}
                     </Button>
                   </div>
@@ -634,14 +626,28 @@ const AdminDashboard = () => {
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.2 }}
                     >
-                      {viewMode === "grid" ? renderGridView() : renderListView()}
+                      {viewMode === "table" ? renderTableView() : renderCardsView()}
                     </motion.div>
                   </AnimatePresence>
                 )}
               </TabsContent>
+              
+              <TabsContent value="analytics" className="mt-0">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <TrendingUp className="h-12 w-12 text-muted-foreground/50" />
+                      <h3 className="mt-4 text-xl font-semibold">Analytics Coming Soon</h3>
+                      <p className="text-muted-foreground mt-2">
+                        Detailed analytics for your blog will be available in the future.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
             </Tabs>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </AdminLayout>
   );

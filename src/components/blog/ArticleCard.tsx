@@ -2,7 +2,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Article } from "@/types/blog";
-import { CalendarIcon, Clock, ArrowUpRight, Bookmark, BookmarkCheck } from "lucide-react";
+import { CalendarIcon, Clock, ArrowUpRight, Bookmark } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { useBookmarks } from "@/hooks/use-bookmarks";
@@ -69,11 +69,12 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, variant = "default",
             className="h-8 w-8 rounded-full hover:bg-background/80"
             onClick={handleBookmarkClick}
           >
-            {isBookmarked(article.id) ? (
-              <BookmarkCheck className="h-4 w-4 fill-primary text-primary" />
-            ) : (
-              <Bookmark className="h-4 w-4 text-muted-foreground" />
-            )}
+            <Bookmark 
+              className={cn(
+                "h-4 w-4 transition-colors",
+                isBookmarked(article.id) ? "fill-primary text-primary" : "text-muted-foreground"
+              )} 
+            />
           </Button>
         </div>
 
