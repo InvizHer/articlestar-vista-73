@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useBookmarks } from "@/hooks/use-bookmarks";
 import {
@@ -17,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Bookmark, BookmarkCheck, ChevronDown, Clock, DotsHorizontal, Eye, Info, MoreHorizontal, Search, Trash2, X } from "lucide-react";
+import { Bookmark, BookmarkCheck, ChevronDown, Clock, MoreHorizontal, Eye, Info, Search, Trash2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
