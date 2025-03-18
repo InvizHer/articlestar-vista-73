@@ -2,7 +2,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Article } from "@/types/blog";
-import { CalendarIcon, Clock, ArrowUpRight, Bookmark, Eye, Tag } from "lucide-react";
+import { CalendarIcon, Clock, ArrowUpRight, Bookmark, Eye, Tag, Heart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { useBookmarks } from "@/hooks/use-bookmarks";
@@ -33,7 +33,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, variant = "default",
       transition={{ duration: 0.5, delay: index * 0.1 }}
       viewport={{ once: true }}
       className={cn(
-        "group h-full overflow-hidden rounded-xl border bg-card shadow-sm transition-all hover:shadow-md",
+        "group h-full overflow-hidden rounded-xl border bg-card transition-all hover:shadow-md",
         isFeatured ? "flex flex-col md:flex-row" : "flex flex-col",
         isCompact && "border-0 shadow-none"
       )}

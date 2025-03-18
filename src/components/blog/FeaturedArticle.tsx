@@ -17,9 +17,6 @@ const FeaturedArticle: React.FC<FeaturedArticleProps> = ({ article }) => {
       viewport={{ once: true }}
       className="relative"
     >
-      <div className="absolute -left-4 md:-left-10 top-1/2 -translate-y-1/2 hidden lg:block">
-        <div className="bg-muted/50 h-40 w-2 rounded-full"></div>
-      </div>
       <ArticleCard article={article} variant="featured" />
     </motion.div>
   );
