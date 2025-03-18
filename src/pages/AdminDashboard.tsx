@@ -258,7 +258,7 @@ const AdminDashboard = () => {
                     <Link 
                       key={article.id} 
                       to={`/admin/article/${article.id}`}
-                      className="flex items-center gap-4 p-4 border rounded-md hover:bg-accent/10 transition-colors"
+                      className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 border rounded-md hover:bg-accent/10 transition-colors"
                     >
                       <div className="w-10 h-10 rounded-md overflow-hidden flex-shrink-0">
                         <img 
@@ -273,7 +273,7 @@ const AdminDashboard = () => {
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="font-medium text-sm line-clamp-1">{article.title}</h3>
-                          <Badge variant={article.published ? "default" : "outline"} className="ml-auto sm:ml-2 mt-1 sm:mt-0">
+                          <Badge variant={article.published ? "default" : "outline"} className="text-xs my-1 sm:my-0 sm:ml-2">
                             {article.published ? "Published" : "Draft"}
                           </Badge>
                         </div>
@@ -288,7 +288,7 @@ const AdminDashboard = () => {
                           </span>
                         </div>
                       </div>
-                      <ArrowUpRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <ArrowUpRight className="h-4 w-4 text-muted-foreground shrink-0 hidden sm:block" />
                     </Link>
                   ))
                 ) : (
@@ -324,7 +324,7 @@ const AdminDashboard = () => {
                       <Link 
                         key={article.id} 
                         to={`/admin/article/${article.id}`}
-                        className="flex items-center gap-4 p-4 border rounded-md hover:bg-accent/10 transition-colors"
+                        className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 border rounded-md hover:bg-accent/10 transition-colors"
                       >
                         <div className="w-10 h-10 rounded-md overflow-hidden flex-shrink-0">
                           <img 
@@ -339,7 +339,7 @@ const AdminDashboard = () => {
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
                             <h3 className="font-medium text-sm line-clamp-1">{article.title}</h3>
-                            <Badge variant={article.published ? "default" : "outline"} className="ml-auto sm:ml-2 mt-1 sm:mt-0">
+                            <Badge variant={article.published ? "default" : "outline"} className="text-xs my-1 sm:my-0 sm:ml-2">
                               {article.published ? "Published" : "Draft"}
                             </Badge>
                           </div>
@@ -354,7 +354,7 @@ const AdminDashboard = () => {
                             </span>
                           </div>
                         </div>
-                        <ArrowUpRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <ArrowUpRight className="h-4 w-4 text-muted-foreground shrink-0 hidden sm:block" />
                       </Link>
                     ))
                 ) : (

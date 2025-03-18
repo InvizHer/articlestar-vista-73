@@ -590,7 +590,7 @@ const ArticleEditor = () => {
                                 <FormLabel className="flex items-center gap-2">
                                   <Tag className="h-4 w-4" /> Category
                                 </FormLabel>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div className="flex flex-col sm:flex-row gap-2">
                                   <FormControl>
                                     <Select
                                       value={field.value}
@@ -598,7 +598,7 @@ const ArticleEditor = () => {
                                         field.onChange(value);
                                       }}
                                     >
-                                      <SelectTrigger>
+                                      <SelectTrigger className="w-full">
                                         <SelectValue placeholder="Select category" />
                                       </SelectTrigger>
                                       <SelectContent>
@@ -615,12 +615,14 @@ const ArticleEditor = () => {
                                       placeholder="New category"
                                       value={newCategory}
                                       onChange={(e) => setNewCategory(e.target.value)}
+                                      className="w-full"
                                     />
                                     <Button 
                                       type="button" 
                                       size="sm" 
                                       variant="outline"
                                       onClick={handleAddNewCategory}
+                                      className="flex-shrink-0"
                                     >
                                       <Plus className="h-4 w-4" />
                                     </Button>
@@ -661,10 +663,10 @@ const ArticleEditor = () => {
                                           Add from existing tags
                                         </Button>
                                       </PopoverTrigger>
-                                      <PopoverContent className="p-0" align="start">
+                                      <PopoverContent className="p-0 w-[250px] sm:w-[300px]" align="start">
                                         <Command>
                                           <CommandInput placeholder="Search tags..." />
-                                          <CommandList>
+                                          <CommandList className="max-h-[200px]">
                                             <CommandEmpty>No tags found.</CommandEmpty>
                                             <CommandGroup>
                                               {tagsList.map((tag) => (
@@ -688,6 +690,7 @@ const ArticleEditor = () => {
                                               type="button" 
                                               size="sm" 
                                               onClick={handleAddNewTag}
+                                              className="flex-shrink-0"
                                             >
                                               Add
                                             </Button>
@@ -702,7 +705,7 @@ const ArticleEditor = () => {
                             )}
                           />
 
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <FormField
                               control={form.control}
                               name="author_name"
@@ -736,12 +739,14 @@ const ArticleEditor = () => {
                                         placeholder="New author"
                                         value={newAuthor}
                                         onChange={(e) => setNewAuthor(e.target.value)}
+                                        className="w-full"
                                       />
                                       <Button 
                                         type="button" 
                                         size="sm" 
                                         variant="outline"
                                         onClick={handleAddNewAuthor}
+                                        className="flex-shrink-0"
                                       >
                                         <Plus className="h-4 w-4" />
                                       </Button>
@@ -769,6 +774,7 @@ const ArticleEditor = () => {
                                       size="sm" 
                                       variant="outline" 
                                       onClick={() => calculateReadTime(editorValue)}
+                                      className="flex-shrink-0"
                                     >
                                       Calculate
                                     </Button>
@@ -825,7 +831,7 @@ const ArticleEditor = () => {
                             </FormLabel>
                             <Card className="border-0 shadow-none">
                               <CardContent className="p-0">
-                                <div className="min-h-[650px]">
+                                <div className="min-h-[300px] md:min-h-[450px] lg:min-h-[550px] overflow-hidden">
                                   <ReactQuill
                                     theme="snow"
                                     modules={modules}
@@ -834,8 +840,12 @@ const ArticleEditor = () => {
                                     onChange={(value) => {
                                       setEditorValue(value);
                                     }}
-                                    className="h-[600px]"
-                                    style={{ height: "600px" }}
+                                    className="h-[300px] md:h-[450px] lg:h-[550px] max-w-full"
+                                    style={{ 
+                                      height: "300px", 
+                                      maxWidth: "100%",
+                                      overflow: "hidden"
+                                    }}
                                   />
                                 </div>
                               </CardContent>

@@ -18,9 +18,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
-  // Set sidebar to closed by default on mobile when component mounts
+  // Set sidebar state when component mounts or when screen size changes
   useEffect(() => {
-    setSidebarOpen(!isMobile);
+    // Always closed for mobile, always closed for desktop too as per new requirements
+    setSidebarOpen(false);
   }, [isMobile]);
   
   const toggleSidebar = () => {
