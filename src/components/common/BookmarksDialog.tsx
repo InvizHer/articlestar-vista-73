@@ -22,7 +22,7 @@ interface BookmarksDialogProps {
 }
 
 export function BookmarksDialog({ className }: BookmarksDialogProps) {
-  const { bookmarks, removeBookmark, clearBookmarks } = useBookmarks();
+  const { bookmarks, removeBookmark, clearBookmarks, maxBookmarksReached } = useBookmarks();
   const [open, setOpen] = React.useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -64,12 +64,19 @@ export function BookmarksDialog({ className }: BookmarksDialogProps) {
               <BookmarkCheck className="h-5 w-5 text-primary" />
               My Reading List
             </DialogTitle>
-            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-              {bookmarks.length} {bookmarks.length === 1 ? 'Article' : 'Articles'}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                {bookmarks.length} {bookmarks.length === 1 ? 'Article' : 'Articles'}
+              </Badge>
+              <Badge variant={maxBookmarksReached ? "destructive" : "outline"} className="text-xs">
+                {bookmarks.length}/3
+              </Badge>
+            </div>
           </div>
           <DialogDescription className="text-sm text-muted-foreground">
-            Your saved articles for later reading.
+            {maxBookmarksReached 
+              ? "Maximum bookmarks reached. Remove one to add more." 
+              : "Your saved articles for later reading."}
           </DialogDescription>
         </DialogHeader>
         

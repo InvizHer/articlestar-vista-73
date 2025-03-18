@@ -1,17 +1,17 @@
-
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { supabase } from "@/integrations/supabase/client";
 import { DbArticle } from "@/types/database";
 import { Article as ArticleType } from "@/types/blog";
-import { CalendarIcon, Clock, ChevronLeft, Share2, Bookmark, Twitter, Facebook, Linkedin, Eye, User, MessageCircle, Heart, UserCircle } from "lucide-react";
+import { CalendarIcon, Clock, ChevronLeft, Share2, Bookmark, Twitter, Facebook, Linkedin, Eye, User, MessageCircle, Heart, UserCircle, MessageSquare, WhatsApp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { TableOfContents } from "@/components/blog/TableOfContents";
 import { useBookmarks } from "@/hooks/use-bookmarks";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Popover,
   PopoverContent,
@@ -27,7 +27,6 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
-// Helper function to convert DbArticle to Article
 const convertDbArticleToArticle = (dbArticle: DbArticle): ArticleType => {
   return {
     id: dbArticle.id,
@@ -53,7 +52,6 @@ const convertDbArticleToArticle = (dbArticle: DbArticle): ArticleType => {
   };
 };
 
-// Author Profile Component
 const AuthorProfile = ({ author }: { author: ArticleType['author'] }) => {
   const [isOpen, setIsOpen] = useState(false);
   
@@ -66,17 +64,27 @@ const AuthorProfile = ({ author }: { author: ArticleType['author'] }) => {
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md p-0 overflow-hidden rounded-xl border border-purple-200 dark:border-purple-900/50 bg-gradient-to-br from-background to-purple-50/50 dark:from-background dark:to-purple-950/10 backdrop-blur-sm">
-        <div className="h-32 bg-gradient-to-r from-primary to-purple-500 relative">
-          <div className="absolute -bottom-12 left-6 w-24 h-24 rounded-full border-4 border-background overflow-hidden">
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="h-32 bg-gradient-to-r from-primary to-purple-500 relative"
+        >
+          <div className="absolute -bottom-12 left-6 w-24 h-24 rounded-full border-4 border-background overflow-hidden shadow-md">
             <img 
               src={author.avatar} 
               alt={author.name}
               className="w-full h-full object-cover"
             />
           </div>
-        </div>
+        </motion.div>
         
-        <div className="pt-16 px-6 pb-6">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.3 }}
+          className="pt-16 px-6 pb-6"
+        >
           <h2 className="text-2xl font-bold mb-1">{author.name}</h2>
           <p className="text-muted-foreground">Content Creator & Writer</p>
           
@@ -112,8 +120,11 @@ const AuthorProfile = ({ author }: { author: ArticleType['author'] }) => {
             <Button variant="outline" size="icon" className="rounded-full h-9 w-9 text-[#0A66C2]">
               <Linkedin className="h-4 w-4" />
             </Button>
+            <Button variant="outline" size="icon" className="rounded-full h-9 w-9 text-[#25D366]">
+              <WhatsApp className="h-4 w-4" />
+            </Button>
           </div>
-        </div>
+        </motion.div>
       </DialogContent>
     </Dialog>
   );
@@ -125,8 +136,9 @@ const Article = () => {
   const [article, setArticle] = useState<ArticleType | null>(null);
   const [loading, setLoading] = useState(true);
   const contentRef = useRef<HTMLDivElement>(null);
-  const { isBookmarked, toggleBookmark } = useBookmarks();
+  const { isBookmarked, toggleBookmark, maxBookmarksReached } = useBookmarks();
   const viewCountedRef = useRef(false);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (slug) {
@@ -169,10 +181,8 @@ const Article = () => {
         const articleData = convertDbArticleToArticle(data);
         setArticle(articleData);
         
-        // Increment view count
         incrementViewCount(data.id);
         
-        // Add IDs to headings for table of contents
         setTimeout(() => {
           if (contentRef.current) {
             const headings = contentRef.current.querySelectorAll('h1, h2, h3, h4, h5, h6');
@@ -209,8 +219,10 @@ const Article = () => {
       case 'linkedin':
         shareUrl = `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(url)}&title=${encodeURIComponent(article!.title)}`;
         break;
+      case 'whatsapp':
+        shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(article!.title + ' ' + url)}`;
+        break;
       default:
-        // Just copy to clipboard if no platform
         navigator.clipboard.writeText(url);
         toast.success("Link copied to clipboard");
         return;
@@ -278,25 +290,99 @@ const Article = () => {
                 <div className="relative p-6 rounded-xl bg-gradient-to-r from-purple-50/50 to-background border border-purple-100/50 dark:from-purple-950/10 dark:to-background dark:border-purple-900/20 mb-8">
                   <div className="absolute -top-4 -left-4 w-24 h-24 rounded-full bg-gradient-to-br from-primary/20 to-purple-500/20 blur-3xl opacity-50 z-0"></div>
                   
-                  <div className="flex flex-wrap gap-6 items-center relative z-10">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full overflow-hidden bg-muted ring-2 ring-primary/20">
-                        <img 
-                          src={article.author.avatar} 
-                          alt={article.author.name} 
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div>
-                        <div className="font-medium">{article.author.name}</div>
-                        <div className="flex items-center text-xs text-muted-foreground">
-                          <User className="h-3 w-3 mr-1" />
-                          Author
+                  <div className="flex flex-col gap-4 relative z-10">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full overflow-hidden bg-muted ring-2 ring-primary/20">
+                          <img 
+                            src={article.author.avatar} 
+                            alt={article.author.name} 
+                            className="w-full h-full object-cover"
+                          />
                         </div>
+                        <div>
+                          <div className="font-medium">{article.author.name}</div>
+                          <div className="flex items-center text-xs text-muted-foreground">
+                            <User className="h-3 w-3 mr-1" />
+                            Author
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant={isBookmarked(article.id) ? "default" : "outline"}
+                          size="sm"
+                          className={cn(
+                            "rounded-full gap-1",
+                            isBookmarked(article.id) && "bg-gradient-to-r from-primary to-purple-500 text-white"
+                          )}
+                          onClick={() => toggleBookmark(article)}
+                          disabled={maxBookmarksReached && !isBookmarked(article.id)}
+                          title={maxBookmarksReached && !isBookmarked(article.id) ? "Maximum bookmarks reached" : ""}
+                        >
+                          <Bookmark className={`h-4 w-4 ${isBookmarked(article.id) ? "fill-white text-white" : ""}`} />
+                          <span className={isMobile ? "sr-only" : ""}>{isBookmarked(article.id) ? "Saved" : "Save"}</span>
+                        </Button>
+                        
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" size="sm" className="rounded-full gap-1">
+                              <Share2 className="h-4 w-4" />
+                              <span className={isMobile ? "sr-only" : ""}>Share</span>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-2" align="end">
+                            <div className="flex gap-2">
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="rounded-full text-[#1DA1F2] hover:bg-[#1DA1F2]/10"
+                                onClick={() => handleShare('twitter')}
+                              >
+                                <Twitter className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="rounded-full text-[#1877F2] hover:bg-[#1877F2]/10"
+                                onClick={() => handleShare('facebook')}
+                              >
+                                <Facebook className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="rounded-full text-[#0A66C2] hover:bg-[#0A66C2]/10"
+                                onClick={() => handleShare('linkedin')}
+                              >
+                                <Linkedin className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="rounded-full text-[#25D366] hover:bg-[#25D366]/10"
+                                onClick={() => handleShare('whatsapp')}
+                              >
+                                <WhatsApp className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="rounded-full"
+                                onClick={() => handleShare('')}
+                              >
+                                <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M5 2V1H10V2H5ZM4.75 0C4.33579 0 4 0.335786 4 0.75V1H3.5C2.67157 1 2 1.67157 2 2.5V12.5C2 13.3284 2.67157 14 3.5 14H11.5C12.3284 14 13 13.3284 13 12.5V2.5C13 1.67157 12.3284 1 11.5 1H11V0.75C11 0.335786 10.6642 0 10.25 0H4.75ZM11 2V2.25C11 2.66421 10.6642 3 10.25 3H4.75C4.33579 3 4 2.66421 4 2.25V2H3.5C3.22386 2 3 2.22386 3 2.5V12.5C3 12.7761 3.22386 13 3.5 13H11.5C11.7761 13 12 12.7761 12 12.5V2.5C12 2.22386 11.7761 2 11.5 2H11Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
+                                </svg>
+                              </Button>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground rounded-full bg-muted/50 px-4 py-1.5">
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground rounded-full bg-muted/50 px-4 py-1.5 w-fit">
                       <div className="flex items-center gap-2">
                         <CalendarIcon className="h-4 w-4 text-primary/70" />
                         <span>{article.date}</span>
@@ -305,68 +391,6 @@ const Article = () => {
                         <Clock className="h-4 w-4 text-primary/70" />
                         <span>{article.readTime}</span>
                       </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-2 ml-auto">
-                      <Button
-                        variant={isBookmarked(article.id) ? "default" : "outline"}
-                        size="sm"
-                        className={cn(
-                          "rounded-full gap-2",
-                          isBookmarked(article.id) && "bg-gradient-to-r from-primary to-purple-500 text-white"
-                        )}
-                        onClick={() => toggleBookmark(article)}
-                      >
-                        <Bookmark className={`h-4 w-4 ${isBookmarked(article.id) ? "fill-white text-white" : ""}`} />
-                        {isBookmarked(article.id) ? "Saved" : "Save"}
-                      </Button>
-                      
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" size="sm" className="rounded-full gap-2">
-                            <Share2 className="h-4 w-4" />
-                            Share
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-2" align="end">
-                          <div className="flex gap-2">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="rounded-full text-[#1DA1F2] hover:bg-[#1DA1F2]/10"
-                              onClick={() => handleShare('twitter')}
-                            >
-                              <Twitter className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="rounded-full text-[#1877F2] hover:bg-[#1877F2]/10"
-                              onClick={() => handleShare('facebook')}
-                            >
-                              <Facebook className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="rounded-full text-[#0A66C2] hover:bg-[#0A66C2]/10"
-                              onClick={() => handleShare('linkedin')}
-                            >
-                              <Linkedin className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="rounded-full"
-                              onClick={() => handleShare('')}
-                            >
-                              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M5 2V1H10V2H5ZM4.75 0C4.33579 0 4 0.335786 4 0.75V1H3.5C2.67157 1 2 1.67157 2 2.5V12.5C2 13.3284 2.67157 14 3.5 14H11.5C12.3284 14 13 13.3284 13 12.5V2.5C13 1.67157 12.3284 1 11.5 1H11V0.75C11 0.335786 10.6642 0 10.25 0H4.75ZM11 2V2.25C11 2.66421 10.6642 3 10.25 3H4.75C4.33579 3 4 2.66421 4 2.25V2H3.5C3.22386 2 3 2.22386 3 2.5V12.5C3 12.7761 3.22386 13 3.5 13H11.5C11.7761 13 12 12.7761 12 12.5V2.5C12 2.22386 11.7761 2 11.5 2H11Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
-                              </svg>
-                            </Button>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
                     </div>
                   </div>
                 </div>
@@ -411,6 +435,8 @@ const Article = () => {
                       isBookmarked(article.id) && "bg-gradient-to-r from-primary to-purple-500 text-white"
                     )}
                     onClick={() => toggleBookmark(article)}
+                    disabled={maxBookmarksReached && !isBookmarked(article.id)}
+                    title={maxBookmarksReached && !isBookmarked(article.id) ? "Maximum bookmarks reached" : ""}
                   >
                     <Bookmark className={`h-4 w-4 ${isBookmarked(article.id) ? "fill-white text-white" : ""}`} />
                     {isBookmarked(article.id) ? "Saved to Reading List" : "Save to Reading List"}
@@ -441,6 +467,14 @@ const Article = () => {
                     >
                       <Linkedin className="h-4 w-4" />
                     </Button>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="rounded-full text-[#25D366] hover:bg-[#25D366]/10"
+                      onClick={() => handleShare('whatsapp')}
+                    >
+                      <WhatsApp className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -449,7 +483,6 @@ const Article = () => {
             <div className="w-full lg:w-1/4 space-y-6">
               <TableOfContents contentRef={contentRef} className="hidden lg:block sticky top-24" />
               
-              {/* Author card */}
               <div className="rounded-xl border bg-gradient-to-r from-purple-50/50 to-background dark:from-purple-950/10 dark:to-background shadow-sm p-6 sticky top-80 overflow-hidden">
                 <div className="absolute -top-10 -right-10 w-24 h-24 rounded-full bg-gradient-to-br from-primary/20 to-purple-500/20 blur-3xl opacity-70 z-0"></div>
                 

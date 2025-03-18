@@ -4,6 +4,7 @@ import { Article } from '@/types/blog';
 import { toast } from 'sonner';
 
 const STORAGE_KEY = 'bloghub-bookmarks';
+const MAX_BOOKMARKS = 3;
 
 export function useBookmarks() {
   const [bookmarks, setBookmarks] = useState<Article[]>([]);
@@ -34,6 +35,12 @@ export function useBookmarks() {
     setBookmarks(prev => {
       const exists = prev.some(item => item.id === article.id);
       if (exists) return prev;
+      
+      if (prev.length >= MAX_BOOKMARKS) {
+        toast.error(`Maximum ${MAX_BOOKMARKS} bookmarks allowed. Please remove one to add more.`);
+        return prev;
+      }
+      
       toast.success(`"${article.title}" added to bookmarks`);
       return [...prev, article];
     });
@@ -74,5 +81,6 @@ export function useBookmarks() {
     toggleBookmark,
     isBookmarked,
     clearBookmarks,
+    maxBookmarksReached: bookmarks.length >= MAX_BOOKMARKS
   };
 }
