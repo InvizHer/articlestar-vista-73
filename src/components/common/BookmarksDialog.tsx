@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Bookmark, Clock, Trash2, XCircle, Search, X, BookmarkCheck } from 'lucide-react';
+import { Bookmark, Clock, Trash2, XCircle, Search, X, BookmarkCheck, Eye } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
