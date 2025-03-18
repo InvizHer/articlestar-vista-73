@@ -2,35 +2,25 @@
 import React, { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Menu, X, Moon, Sun, Search } from "lucide-react";
+import { BookOpen, Menu, X, Moon, Sun, Laptop, Palette } from "lucide-react";
 import { 
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "@/hooks/use-theme";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { BookmarksDialog } from "@/components/common/BookmarksDialog";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 
 const Navigation = () => {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, themeColor, setThemeColor } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const isMobile = useIsMobile();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchOpen, setSearchOpen] = useState(false);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      window.location.href = `/articles?search=${encodeURIComponent(searchQuery)}`;
-      setSearchOpen(false);
-    }
-  };
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -41,6 +31,15 @@ const Navigation = () => {
     { path: "/articles", label: "Articles" },
     { path: "/about", label: "About" },
     { path: "/contact", label: "Contact" }
+  ];
+
+  const themeColors = [
+    { name: "Default", value: "default", color: "bg-slate-600" },
+    { name: "Blue", value: "blue", color: "bg-blue-600" },
+    { name: "Purple", value: "purple", color: "bg-purple-600" },
+    { name: "Green", value: "green", color: "bg-green-600" },
+    { name: "Orange", value: "orange", color: "bg-orange-600" },
+    { name: "Pink", value: "pink", color: "bg-pink-600" }
   ];
 
   return (
@@ -73,25 +72,6 @@ const Navigation = () => {
         </nav>
 
         <div className="flex items-center gap-2">
-          <Dialog open={searchOpen} onOpenChange={setSearchOpen}>
-            <DialogTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Search className="h-5 w-5" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <form onSubmit={handleSearch} className="flex gap-2">
-                <Input
-                  placeholder="Search articles..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1"
-                />
-                <Button type="submit">Search</Button>
-              </form>
-            </DialogContent>
-          </Dialog>
-
           <BookmarksDialog />
           
           <DropdownMenu>
@@ -99,20 +79,51 @@ const Navigation = () => {
               <Button variant="ghost" size="icon">
                 {theme === "dark" ? (
                   <Moon className="h-5 w-5" />
-                ) : (
+                ) : theme === "light" ? (
                   <Sun className="h-5 w-5" />
+                ) : (
+                  <Laptop className="h-5 w-5" />
                 )}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setTheme("light")}>
+              <DropdownMenuLabel>Theme Mode</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => setTheme("light")} className={theme === "light" ? "bg-accent" : ""}>
                 <Sun className="mr-2 h-4 w-4" />
                 Light
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTheme("dark")}>
+              <DropdownMenuItem onClick={() => setTheme("dark")} className={theme === "dark" ? "bg-accent" : ""}>
                 <Moon className="mr-2 h-4 w-4" />
                 Dark
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTheme("system")} className={theme === "system" ? "bg-accent" : ""}>
+                <Laptop className="mr-2 h-4 w-4" />
+                System Default
+              </DropdownMenuItem>
+              
+              <DropdownMenuSeparator />
+              
+              <DropdownMenuLabel className="flex items-center">
+                <Palette className="mr-2 h-4 w-4" />
+                Theme Color
+              </DropdownMenuLabel>
+              
+              <div className="grid grid-cols-3 gap-1 p-2">
+                {themeColors.map((color) => (
+                  <Button
+                    key={color.value}
+                    variant="ghost"
+                    className={cn(
+                      "h-8 w-full justify-start px-2 hover:bg-accent",
+                      themeColor === color.value && "bg-accent"
+                    )}
+                    onClick={() => setThemeColor(color.value as any)}
+                  >
+                    <div className={`h-4 w-4 rounded-full ${color.color} mr-2`} />
+                    <span className="text-xs">{color.name}</span>
+                  </Button>
+                ))}
+              </div>
             </DropdownMenuContent>
           </DropdownMenu>
 

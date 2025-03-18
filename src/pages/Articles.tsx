@@ -10,7 +10,7 @@ import ArticleGrid from "@/components/blog/ArticleGrid";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Filter, Newspaper, RefreshCw } from "lucide-react";
+import { Search, Filter, Newspaper, RefreshCw, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import {
   Pagination,
@@ -21,8 +21,9 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 const convertDbArticleToArticle = (dbArticle: DbArticle): Article => {
   return {
@@ -44,7 +45,8 @@ const convertDbArticleToArticle = (dbArticle: DbArticle): Article => {
     category: dbArticle.category,
     tags: dbArticle.tags,
     coverImage: dbArticle.cover_image || "/placeholder.svg",
-    published: dbArticle.published
+    published: dbArticle.published,
+    viewCount: dbArticle.view_count || 0
   };
 };
 
@@ -60,6 +62,7 @@ const Articles = () => {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [totalPages, setTotalPages] = useState(1);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const articlesPerPage = 9;
 
   useEffect(() => {
@@ -102,7 +105,7 @@ const Articles = () => {
 
       const uniqueCategories = Array.from(
         new Set(articlesData.map(article => article.category))
-      );
+      ).filter(Boolean);
       setCategories(uniqueCategories);
     } catch (error) {
       console.error("Error fetching articles:", error);
@@ -180,55 +183,85 @@ const Articles = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        <PageHeader
-          title="All Articles"
-          description="Browse our collection of articles on web development, design, and technology."
-        />
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="bg-gradient-to-b from-primary/5 to-background pt-8 pb-16"
+      >
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <PageHeader
+            title="All Articles"
+            description="Browse our collection of articles on web development, design, and technology."
+          />
 
-        <Card className="mb-8 border shadow-sm bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-xl">
-              <Newspaper className="h-5 w-5 text-primary" />
-              Browse Articles
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSearchSubmit} className="relative mb-6">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <div className="max-w-5xl mx-auto">
+            <form onSubmit={handleSearchSubmit} className="relative mb-8">
+              <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="search"
                 placeholder="Search articles..."
-                className="pl-10"
+                className="pl-10 h-12 rounded-full border-primary/20 focus-visible:ring-primary"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </form>
 
             {categories.length > 0 && (
-              <div className="flex flex-wrap gap-2 items-center">
-                <Filter className="h-4 w-4 text-muted-foreground mr-1" />
-                <span className="text-sm text-muted-foreground mr-2">Categories:</span>
-                {categories.map((category) => (
-                  <Badge
-                    key={category}
-                    variant={selectedCategory === category ? "default" : "outline"}
-                    className={cn(
-                      "cursor-pointer transition-colors",
-                      selectedCategory === category 
-                        ? "bg-primary text-primary-foreground" 
-                        : "hover:bg-primary/10"
+              <Card className="mb-8 border shadow-sm bg-card/50 backdrop-blur-sm">
+                <CardContent className="p-4">
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setIsFilterOpen(!isFilterOpen)}
+                      className="gap-1"
+                    >
+                      <Filter className="h-4 w-4" />
+                      Filter
+                      <ChevronDown className={cn("h-4 w-4 transition-transform", isFilterOpen && "rotate-180")} />
+                    </Button>
+                    
+                    {isFilterOpen && (
+                      <div className="flex flex-wrap gap-2 items-center mt-3 w-full">
+                        <Badge
+                          variant={!selectedCategory ? "default" : "outline"}
+                          className={cn(
+                            "cursor-pointer transition-colors",
+                            !selectedCategory 
+                              ? "bg-primary text-primary-foreground" 
+                              : "hover:bg-primary/10"
+                          )}
+                          onClick={() => setSelectedCategory(null)}
+                        >
+                          All
+                        </Badge>
+                        
+                        {categories.map((category) => (
+                          <Badge
+                            key={category}
+                            variant={selectedCategory === category ? "default" : "outline"}
+                            className={cn(
+                              "cursor-pointer transition-colors",
+                              selectedCategory === category 
+                                ? "bg-primary text-primary-foreground" 
+                                : "hover:bg-primary/10"
+                            )}
+                            onClick={() => handleCategoryClick(category)}
+                          >
+                            {category}
+                          </Badge>
+                        ))}
+                      </div>
                     )}
-                    onClick={() => handleCategoryClick(category)}
-                  >
-                    {category}
-                  </Badge>
-                ))}
-              </div>
+                  </div>
+                </CardContent>
+              </Card>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
+      </motion.div>
 
+      <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8 -mt-12">
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -249,6 +282,18 @@ const Articles = () => {
           </div>
         ) : filteredArticles.length > 0 ? (
           <>
+            <div className="mb-6 flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <Newspaper className="h-5 w-5 text-primary" />
+                <h2 className="text-xl font-medium">
+                  {selectedCategory ? `${selectedCategory} Articles` : 'All Articles'}
+                </h2>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Showing {filteredArticles.length} of {articles.length} articles
+              </p>
+            </div>
+            
             <ArticleGrid articles={filteredArticles} columns={3} />
             
             {totalPages > 1 && (
