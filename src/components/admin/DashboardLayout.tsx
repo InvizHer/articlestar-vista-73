@@ -20,7 +20,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   
   // Set sidebar state when component mounts or when screen size changes
   useEffect(() => {
-    // Always closed for mobile, always closed for desktop too as per new requirements
+    // Always closed for mobile and desktop
     setSidebarOpen(false);
   }, [isMobile]);
   
