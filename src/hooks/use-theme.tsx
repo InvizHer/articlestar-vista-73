@@ -28,6 +28,34 @@ const initialState: ThemeProviderState = {
 
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 
+// Define CSS variables for each theme color
+const themeColorVariables = {
+  default: {
+    '--primary': '222.2 47.4% 11.2%',
+    '--primary-foreground': '210 40% 98%',
+  },
+  blue: {
+    '--primary': '221.2 83.2% 53.3%',
+    '--primary-foreground': '210 40% 98%',
+  },
+  purple: {
+    '--primary': '267.2 76.5% 58.2%',
+    '--primary-foreground': '210 40% 98%',
+  },
+  green: {
+    '--primary': '142.1 76.2% 36.3%',
+    '--primary-foreground': '210 40% 98%',
+  },
+  orange: {
+    '--primary': '24.6 95% 53.1%',
+    '--primary-foreground': '210 40% 98%',
+  },
+  pink: {
+    '--primary': '331.3 81.1% 60.4%',
+    '--primary-foreground': '210 40% 98%',
+  }
+};
+
 export function ThemeProvider({
   children,
   defaultTheme = "system",
@@ -44,6 +72,7 @@ export function ThemeProvider({
     () => (localStorage.getItem(colorKey) as ThemeColor) || defaultColor
   );
 
+  // Apply theme (light/dark)
   useEffect(() => {
     const root = window.document.documentElement;
     
@@ -73,8 +102,17 @@ export function ThemeProvider({
     }
   }, [theme]);
   
+  // Apply theme color
   useEffect(() => {
     const root = window.document.documentElement;
+    
+    // Apply theme color CSS variables
+    const colorVars = themeColorVariables[themeColor];
+    if (colorVars) {
+      Object.entries(colorVars).forEach(([property, value]) => {
+        root.style.setProperty(property, value);
+      });
+    }
     
     // Remove all theme color classes
     root.classList.remove(

@@ -2,10 +2,9 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Article } from "@/types/blog";
-import { CalendarIcon, Clock, ArrowUpRight, Bookmark, Eye } from "lucide-react";
+import { CalendarIcon, Clock, ArrowUpRight, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
-import { useBookmarks } from "@/hooks/use-bookmarks";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -23,13 +22,6 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
   const isFeatured = variant === "featured";
   const isCompact = variant === "compact";
   const isEditorPick = variant === "editor-pick";
-  const { isBookmarked, toggleBookmark } = useBookmarks();
-  
-  const handleBookmarkClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    toggleBookmark(article);
-  };
   
   if (isEditorPick) {
     return (
@@ -47,22 +39,6 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
           <Badge className="bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm">
             Editor's Pick
           </Badge>
-        </div>
-        
-        <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-full bg-black/10 backdrop-blur-sm hover:bg-black/20 text-white"
-            onClick={handleBookmarkClick}
-          >
-            <Bookmark 
-              className={cn(
-                "h-4 w-4 transition-colors",
-                isBookmarked(article.id) ? "fill-white" : ""
-              )} 
-            />
-          </Button>
         </div>
         
         <Link 
@@ -158,24 +134,6 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
             {article.viewCount || 0}
           </Badge>
         </div>
-        
-        {!isCompact && (
-          <div className="absolute bottom-3 right-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/40"
-              onClick={handleBookmarkClick}
-            >
-              <Bookmark 
-                className={cn(
-                  "h-4 w-4 text-white transition-colors",
-                  isBookmarked(article.id) ? "fill-white" : ""
-                )} 
-              />
-            </Button>
-          </div>
-        )}
       </Link>
       
       <div className={cn(

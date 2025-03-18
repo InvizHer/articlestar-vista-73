@@ -2,10 +2,9 @@
 import React from "react";
 import { Article } from "@/types/blog";
 import { Link } from "react-router-dom";
-import { CalendarIcon, Clock, ArrowUpRight, Bookmark, Eye } from "lucide-react";
+import { CalendarIcon, Clock, ArrowUpRight, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
-import { useBookmarks } from "@/hooks/use-bookmarks";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -14,14 +13,6 @@ interface FeaturedArticleProps {
 }
 
 const FeaturedArticle: React.FC<FeaturedArticleProps> = ({ article }) => {
-  const { isBookmarked, toggleBookmark } = useBookmarks();
-  
-  const handleBookmarkClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    toggleBookmark(article);
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -53,22 +44,6 @@ const FeaturedArticle: React.FC<FeaturedArticleProps> = ({ article }) => {
               {article.viewCount}
             </Badge>
           )}
-        </div>
-        
-        <div className="absolute top-5 right-5 z-10">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/40"
-            onClick={handleBookmarkClick}
-          >
-            <Bookmark 
-              className={cn(
-                "h-5 w-5 text-white transition-colors",
-                isBookmarked(article.id) ? "fill-white" : ""
-              )} 
-            />
-          </Button>
         </div>
         
         <div className="absolute bottom-0 left-0 right-0 z-10 p-8">

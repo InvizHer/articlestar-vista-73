@@ -2,7 +2,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ChevronRight, Github as GitHub, Instagram, Linkedin, Youtube, Mail } from "lucide-react";
+import { ChevronRight, GitHub, Instagram, Linkedin, Youtube, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -44,8 +44,13 @@ const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="bg-muted/30 relative">
-      <div className="container mx-auto px-4 py-12 md:py-16">
+    <footer className="bg-gradient-to-b from-background to-primary/5 relative">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -left-40 w-80 h-80 bg-primary/10 rounded-full filter blur-3xl opacity-30"></div>
+        <div className="absolute -bottom-40 -right-40 w-80 h-80 bg-primary/10 rounded-full filter blur-3xl opacity-30"></div>
+      </div>
+      
+      <div className="container mx-auto px-4 py-16">
         <motion.div 
           variants={footerVariants}
           initial="hidden"
@@ -54,7 +59,7 @@ const Footer: React.FC = () => {
           className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8"
         >
           <motion.div variants={itemVariants} className="lg:col-span-1">
-            <Link to="/" className="flex items-center gap-2 mb-4">
+            <Link to="/" className="flex items-center gap-2 mb-6">
               <div className="w-10 h-10 rounded-md bg-primary flex items-center justify-center">
                 <span className="text-white font-bold text-lg">B</span>
               </div>
@@ -70,7 +75,7 @@ const Footer: React.FC = () => {
                   href={link.href} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="w-9 h-9 rounded-full bg-background flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors border"
+                  className="w-9 h-9 rounded-full bg-primary/10 hover:bg-primary/20 flex items-center justify-center text-primary transition-colors"
                   aria-label={link.title}
                 >
                   {link.icon}

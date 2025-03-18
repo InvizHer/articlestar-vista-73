@@ -7,58 +7,33 @@ import {
   Calendar,
   Clock,
   Eye,
-  Bookmark,
   Award
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { useBookmarks } from "@/hooks/use-bookmarks";
 
 interface EditorsPickProps {
   article: Article;
 }
 
 const EditorsPick: React.FC<EditorsPickProps> = ({ article }) => {
-  const { isBookmarked, toggleBookmark, maxBookmarksReached } = useBookmarks();
-  
-  const handleBookmarkClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    toggleBookmark(article);
-  };
-
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-background border shadow-xl">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+      viewport={{ once: true }}
+      className="relative overflow-hidden rounded-3xl bg-gradient-to-tr from-background to-primary/5 border shadow-xl"
+    >
+      <div className="absolute -top-20 -right-20 h-40 w-40 rounded-full bg-primary/20 filter blur-3xl opacity-70"></div>
+      <div className="absolute -bottom-20 -left-20 h-40 w-40 rounded-full bg-primary/20 filter blur-3xl opacity-70"></div>
+      
       <div className="absolute top-6 left-6 z-10">
         <Badge className="bg-primary/80 text-white shadow-md flex items-center gap-1.5 px-3 py-1.5">
           <Award className="h-3.5 w-3.5" />
           Editor's Pick
         </Badge>
-      </div>
-      
-      <div className="absolute top-6 right-6 z-10">
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn(
-            "h-10 w-10 rounded-full backdrop-blur-sm transition-colors",
-            isBookmarked(article.id) 
-              ? "bg-primary/20 hover:bg-primary/30 text-primary" 
-              : "bg-black/20 hover:bg-black/30 text-white"
-          )}
-          onClick={handleBookmarkClick}
-          disabled={maxBookmarksReached && !isBookmarked(article.id)}
-          title={maxBookmarksReached && !isBookmarked(article.id) ? "Bookmark limit reached" : "Toggle bookmark"}
-        >
-          <Bookmark 
-            className={cn(
-              "h-5 w-5 transition-transform",
-              isBookmarked(article.id) ? "fill-primary scale-110" : ""
-            )} 
-          />
-        </Button>
       </div>
       
       <div className="grid md:grid-cols-2">
@@ -119,7 +94,7 @@ const EditorsPick: React.FC<EditorsPickProps> = ({ article }) => {
           </div>
         </div>
         
-        <div className="p-6 md:p-8 md:block hidden">
+        <div className="p-6 md:p-8 md:block hidden bg-gradient-to-br from-transparent to-primary/5">
           <div className="flex items-center mb-5">
             <div className="w-12 h-12 rounded-full border-2 border-primary/20 overflow-hidden mr-4">
               <img 
@@ -143,7 +118,7 @@ const EditorsPick: React.FC<EditorsPickProps> = ({ article }) => {
           
           <div className="flex flex-wrap gap-2 mb-6">
             {article.tags?.map((tag, index) => (
-              <Badge key={index} variant="outline" className="bg-muted/50">
+              <Badge key={index} variant="outline" className="bg-primary/5 hover:bg-primary/10">
                 {tag}
               </Badge>
             ))}
@@ -175,7 +150,7 @@ const EditorsPick: React.FC<EditorsPickProps> = ({ article }) => {
             </div>
           </div>
           
-          <Button asChild size="sm" variant="outline" className="gap-1.5">
+          <Button asChild size="sm" variant="default" className="gap-1.5">
             <Link to={`/article/${article.slug}`}>
               Read
               <ArrowRight className="h-3.5 w-3.5" />
@@ -183,7 +158,7 @@ const EditorsPick: React.FC<EditorsPickProps> = ({ article }) => {
           </Button>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -12,7 +13,7 @@ import {
   Hash,
   ExternalLink,
   Eye,
-  Github as GitHub,
+  GitHub,
   Mail
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -109,7 +110,8 @@ const Index = () => {
 
   return (
     <Layout>
-      <section className="relative overflow-hidden">
+      {/* Hero Section with Animation */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-primary/5 to-background">
         <div className="absolute inset-0 -z-10 overflow-hidden">
           <div className="absolute -top-[30%] -right-[20%] h-[500px] w-[500px] rounded-full bg-primary/5"></div>
           <div className="absolute -bottom-[10%] -left-[10%] h-[300px] w-[300px] rounded-full bg-blue-500/5"></div>
@@ -137,11 +139,11 @@ const Index = () => {
             <div className="max-w-lg mx-auto relative">
               <form onSubmit={handleSearch} className="flex items-center">
                 <div className="relative flex-grow">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     type="text"
                     placeholder="Search articles..."
-                    className="pl-10 py-6 pr-4 rounded-l-full border-r-0"
+                    className="pl-10 py-6 pr-4 rounded-l-full border-r-0 bg-background/80 backdrop-blur-sm focus-visible:ring-primary/50"
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
                   />
@@ -165,6 +167,7 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Editor's Pick Section */}
       {loading ? (
         <section className="container mx-auto px-4 py-12">
           <div className="animate-pulse">
@@ -192,6 +195,7 @@ const Index = () => {
         </section>
       ) : null}
 
+      {/* Recent Stories Section */}
       {loading ? (
         <section className="container mx-auto px-4 py-12">
           <div className="animate-pulse">
@@ -204,7 +208,7 @@ const Index = () => {
           </div>
         </section>
       ) : recentArticlesToShow.length > 0 ? (
-        <section className="container mx-auto px-4 py-12">
+        <section className="container mx-auto px-4 py-12 bg-gradient-to-b from-background to-primary/5">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -248,18 +252,20 @@ const Index = () => {
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-60"></div>
-                    <div className="absolute bottom-3 left-3 flex items-center gap-2">
-                      <div className="bg-black/70 backdrop-blur-sm text-white text-xs font-medium px-2 py-0.5 rounded">
+                    <div className="absolute top-3 left-3 flex items-center gap-2">
+                      <div className="bg-primary text-primary-foreground text-xs font-medium px-2.5 py-1 rounded-full shadow-sm">
                         {article.category}
                       </div>
-                      <div className="bg-black/70 backdrop-blur-sm text-white text-xs font-medium px-2 py-0.5 rounded flex items-center gap-1">
+                    </div>
+                    <div className="absolute top-3 right-3">
+                      <div className="bg-black/50 backdrop-blur-sm text-white text-xs font-medium px-2 py-0.5 rounded-full flex items-center gap-1">
                         <Eye className="h-3 w-3" />
                         {article.viewCount}
                       </div>
                     </div>
                   </div>
                   
-                  <div className="p-5 flex flex-col flex-grow">
+                  <div className="p-5 flex flex-col flex-grow bg-gradient-to-br from-card to-primary/5">
                     <div className="flex items-center mb-3 text-xs text-muted-foreground">
                       <span>{article.date}</span>
                       <span className="mx-2">•</span>
@@ -276,7 +282,7 @@ const Index = () => {
                     
                     <div className="mt-auto pt-4 border-t flex items-center justify-between">
                       <div className="flex items-center">
-                        <div className="w-6 h-6 rounded-full overflow-hidden mr-2">
+                        <div className="w-6 h-6 rounded-full overflow-hidden mr-2 border border-primary/20">
                           <img 
                             src={article.author.avatar} 
                             alt={article.author.name}
@@ -307,7 +313,8 @@ const Index = () => {
         </section>
       ) : null}
 
-      <section className="bg-gradient-to-b from-slate-50/50 to-white dark:from-slate-900/50 dark:to-slate-900 py-16">
+      {/* Categories and Tags Section */}
+      <section className="bg-gradient-to-b from-primary/5 to-background py-16">
         <div className="container mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -333,7 +340,7 @@ const Index = () => {
               >
                 <Link 
                   to={`/articles?category=${category.name}`}
-                  className="group relative flex items-center h-28 rounded-xl overflow-hidden bg-gradient-to-r from-blue-500/90 to-primary/90 text-white shadow-md hover:shadow-lg transition-all duration-300"
+                  className="group relative flex items-center h-28 rounded-xl overflow-hidden bg-gradient-to-r from-primary/80 to-primary/40 text-white shadow-md hover:shadow-lg transition-all duration-300"
                 >
                   <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.6),transparent)]"></div>
                   <div className="absolute top-0 left-0 h-full w-2 bg-white/20"></div>
@@ -386,12 +393,9 @@ const Index = () => {
                   >
                     <Link 
                       to={`/articles?tag=${tag}`}
-                      className={cn(
-                        "flex items-center rounded-full px-4 py-2 text-sm font-medium transition-colors",
-                        "bg-card border hover:bg-primary/10 hover:border-primary/20"
-                      )}
+                      className="flex items-center rounded-full px-4 py-2 text-sm font-medium bg-card hover:bg-primary/10 border hover:border-primary/20 transition-colors"
                     >
-                      <Hash className="h-3.5 w-3.5 mr-1.5" />
+                      <Hash className="h-3.5 w-3.5 mr-1.5 text-primary" />
                       {tag}
                     </Link>
                   </motion.div>
@@ -401,86 +405,77 @@ const Index = () => {
           )}
         </div>
       </section>
-      
-      <section className="container mx-auto px-4 py-16">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          viewport={{ once: true }}
-          className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-primary/90 via-purple-600/90 to-blue-600/90 text-white"
-        >
-          <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            <div className="absolute -top-24 -right-24 w-64 h-64 rounded-full bg-white/10 blur-2xl"></div>
-            <div className="absolute bottom-0 left-1/3 w-32 h-32 rounded-full bg-white/10 blur-xl"></div>
-            <div className="absolute top-1/4 left-1/4 w-24 h-24 rounded-full bg-white/10 blur-lg"></div>
-            <svg className="absolute bottom-0 left-0 right-0 text-white/5" viewBox="0 0 1440 320">
-              <path fill="currentColor" d="M0,256L48,229.3C96,203,192,149,288,154.7C384,160,480,224,576,218.7C672,213,768,139,864,128C960,117,1056,171,1152,197.3C1248,224,1344,224,1392,224L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
-            </svg>
-          </div>
-          
-          <div className="relative z-10 grid md:grid-cols-2 gap-8 p-8 md:p-12">
-            <div className="space-y-6">
-              <div className="inline-flex items-center px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-sm">
-                <Sparkles className="h-3.5 w-3.5 mr-2" />
-                <span>Join 10,000+ readers</span>
-              </div>
-              
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold">Become part of our growing community</h2>
-              
-              <p className="text-white/80">
-                Connect with like-minded individuals, share ideas, and stay updated with the latest content from our authors.
-              </p>
-              
-              <div className="flex flex-wrap gap-3 pt-2">
-                <Button className="bg-white hover:bg-white/90 text-primary rounded-full" size="lg">
-                  Subscribe Now
-                </Button>
-                <Button variant="outline" className="bg-transparent border-white/30 text-white hover:bg-white/10 rounded-full" size="lg">
-                  Learn More
-                </Button>
-              </div>
-            </div>
+
+      {/* Join Community Section */}
+      <section className="py-16 bg-gradient-to-b from-background to-primary/5">
+        <div className="container mx-auto px-4">
+          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-primary/20 to-primary/5 p-8 md:p-12">
+            <div className="absolute -top-20 right-0 h-40 w-40 rounded-full bg-primary/20 filter blur-3xl opacity-50"></div>
+            <div className="absolute -bottom-20 left-0 h-40 w-40 rounded-full bg-primary/20 filter blur-3xl opacity-50"></div>
             
-            <div className="relative flex items-center justify-center">
-              <div className="relative w-full max-w-sm">
-                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-white/5 rounded-xl blur-sm"></div>
-                <div className="relative bg-white/20 backdrop-blur-md rounded-xl p-6 border border-white/20">
-                  <h3 className="text-xl font-semibold mb-4">Connect with us</h3>
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                    <a 
-                      href="https://github.com" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 transition-colors backdrop-blur-sm rounded-lg p-3"
-                    >
-                      <GitHub className="h-5 w-5" />
-                      <span>GitHub</span>
-                    </a>
-                    
-                    <a 
-                      href="https://twitter.com" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 transition-colors backdrop-blur-sm rounded-lg p-3"
-                    >
-                      <ExternalLink className="h-5 w-5" />
-                      <span>Twitter</span>
-                    </a>
-                    
-                    <Button asChild variant="ghost" className="col-span-2 bg-white/10 hover:bg-white/20 text-white">
-                      <Link to="/contact" className="gap-2">
-                        <Mail className="h-5 w-5" />
-                        Contact Us
-                      </Link>
-                    </Button>
+            <div className="max-w-3xl mx-auto relative">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                viewport={{ once: true }}
+                className="text-center mb-8"
+              >
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">Join Our Community</h2>
+                <p className="text-muted-foreground">
+                  Connect with fellow readers and writers, participate in discussions, and share your ideas.
+                </p>
+              </motion.div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5 }}
+                  viewport={{ once: true }}
+                  className="bg-card rounded-xl p-6 border shadow-sm hover:shadow-md transition-all"
+                >
+                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                    <GitHub className="h-6 w-6 text-primary" />
                   </div>
-                </div>
+                  <h3 className="text-xl font-semibold mb-2">GitHub Discussions</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Join our open source community on GitHub to contribute and help improve our platform.
+                  </p>
+                  <a 
+                    href="https://github.com" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-colors font-medium"
+                  >
+                    <GitHub className="h-4 w-4" />
+                    <span>GitHub</span>
+                  </a>
+                </motion.div>
+                
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5, delay: 0.1 }}
+                  viewport={{ once: true }}
+                  className="bg-card rounded-xl p-6 border shadow-sm hover:shadow-md transition-all"
+                >
+                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                    <Mail className="h-6 w-6 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2">Newsletter</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Subscribe to our newsletter and get the latest articles and updates delivered to your inbox.
+                  </p>
+                  <Button className="gap-2">
+                    <Mail className="h-4 w-4" />
+                    <span>Subscribe</span>
+                  </Button>
+                </motion.div>
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
       </section>
     </Layout>
   );

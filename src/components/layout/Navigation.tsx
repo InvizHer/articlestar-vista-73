@@ -16,7 +16,6 @@ import { useTheme } from "@/hooks/use-theme";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { BookmarksDialog } from "@/components/common/BookmarksDialog";
 
 const Navigation = () => {
   const { theme, setTheme, themeColor, setThemeColor } = useTheme();
@@ -73,8 +72,6 @@ const Navigation = () => {
         </nav>
 
         <div className="flex items-center gap-2">
-          <BookmarksDialog />
-          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-full hover:bg-primary/10">
