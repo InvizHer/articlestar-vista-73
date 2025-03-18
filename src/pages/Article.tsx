@@ -177,15 +177,76 @@ const Article = () => {
           className="flex flex-col lg:flex-row gap-8"
         >
           <div className="w-full lg:w-3/4">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="mb-6 text-muted-foreground hover:text-primary"
-              onClick={() => navigate(-1)}
-            >
-              <ChevronLeft className="mr-1 h-4 w-4" />
-              Back
-            </Button>
+            <div className="flex items-center justify-between mb-6">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-muted-foreground hover:text-primary"
+                onClick={() => navigate(-1)}
+              >
+                <ChevronLeft className="mr-1 h-4 w-4" />
+                Back
+              </Button>
+              
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="rounded-full"
+                  onClick={() => toggleBookmark(article)}
+                >
+                  <Bookmark 
+                    className={`h-4 w-4 ${isBookmarked(article.id) ? "fill-primary text-primary" : ""}`} 
+                  />
+                </Button>
+                
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="icon" className="rounded-full">
+                      <Share2 className="h-4 w-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-2" align="end">
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="rounded-full text-[#1DA1F2] hover:bg-[#1DA1F2]/10"
+                        onClick={() => handleShare('twitter')}
+                      >
+                        <Twitter className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="rounded-full text-[#1877F2] hover:bg-[#1877F2]/10"
+                        onClick={() => handleShare('facebook')}
+                      >
+                        <Facebook className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="rounded-full text-[#0A66C2] hover:bg-[#0A66C2]/10"
+                        onClick={() => handleShare('linkedin')}
+                      >
+                        <Linkedin className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="rounded-full"
+                        onClick={() => handleShare('')}
+                      >
+                        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M5 2V1H10V2H5ZM4.75 0C4.33579 0 4 0.335786 4 0.75V1H3.5C2.67157 1 2 1.67157 2 2.5V12.5C2 13.3284 2.67157 14 3.5 14H11.5C12.3284 14 13 13.3284 13 12.5V2.5C13 1.67157 12.3284 1 11.5 1H11V0.75C11 0.335786 10.6642 0 10.25 0H4.75ZM11 2V2.25C11 2.66421 10.6642 3 10.25 3H4.75C4.33579 3 4 2.66421 4 2.25V2H3.5C3.22386 2 3 2.22386 3 2.5V12.5C3 12.7761 3.22386 13 3.5 13H11.5C11.7761 13 12 12.7761 12 12.5V2.5C12 2.22386 11.7761 2 11.5 2H11Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
+                        </svg>
+                      </Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
             
             <article>
               <div className="mb-8">
@@ -224,64 +285,6 @@ const Article = () => {
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4" />
                     <span>{article.readTime}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="rounded-full"
-                      onClick={() => toggleBookmark(article)}
-                    >
-                      <Bookmark 
-                        className={`h-4 w-4 ${isBookmarked(article.id) ? "fill-primary text-primary" : ""}`} 
-                      />
-                    </Button>
-                    
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" size="icon" className="rounded-full">
-                          <Share2 className="h-4 w-4" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-2" align="end">
-                        <div className="flex gap-2">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="rounded-full text-[#1DA1F2] hover:bg-[#1DA1F2]/10"
-                            onClick={() => handleShare('twitter')}
-                          >
-                            <Twitter className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="rounded-full text-[#1877F2] hover:bg-[#1877F2]/10"
-                            onClick={() => handleShare('facebook')}
-                          >
-                            <Facebook className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="rounded-full text-[#0A66C2] hover:bg-[#0A66C2]/10"
-                            onClick={() => handleShare('linkedin')}
-                          >
-                            <Linkedin className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="rounded-full"
-                            onClick={() => handleShare('')}
-                          >
-                            <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M5 2V1H10V2H5ZM4.75 0C4.33579 0 4 0.335786 4 0.75V1H3.5C2.67157 1 2 1.67157 2 2.5V12.5C2 13.3284 2.67157 14 3.5 14H11.5C12.3284 14 13 13.3284 13 12.5V2.5C13 1.67157 12.3284 1 11.5 1H11V0.75C11 0.335786 10.6642 0 10.25 0H4.75ZM11 2V2.25C11 2.66421 10.6642 3 10.25 3H4.75C4.33579 3 4 2.66421 4 2.25V2H3.5C3.22386 2 3 2.22386 3 2.5V12.5C3 12.7761 3.22386 13 3.5 13H11.5C11.7761 13 12 12.7761 12 12.5V2.5C12 2.22386 11.7761 2 11.5 2H11Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
-                            </svg>
-                          </Button>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
                   </div>
                 </div>
               </div>
