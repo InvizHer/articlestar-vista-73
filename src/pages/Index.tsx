@@ -9,8 +9,24 @@ import FeaturedArticle from "@/components/blog/FeaturedArticle";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { ChevronRight, BookOpen, TrendingUp, Clock, Sparkles } from "lucide-react";
+import { 
+  BookOpen, 
+  TrendingUp, 
+  Sparkles, 
+  ChevronRight, 
+  ArrowRight, 
+  BookMarked,
+  Bookmark,
+  LayoutGrid, 
+  Github,
+  Instagram,
+  Linkedin,
+  Youtube,
+  Tag
+} from "lucide-react";
 import { motion } from "framer-motion";
+import { Card, CardContent } from "@/components/ui/card";
+import CategoryBadge from "@/components/blog/CategoryBadge";
 
 // Helper function to convert DbArticle to Article
 const convertDbArticleToArticle = (dbArticle: DbArticle): Article => {
@@ -57,6 +73,8 @@ const staggerContainer = {
 
 const Index = () => {
   const [recentArticles, setRecentArticles] = useState<Article[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [popularTags, setPopularTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -70,7 +88,7 @@ const Index = () => {
         .select("*")
         .eq("published", true)
         .order("date", { ascending: false })
-        .limit(5);
+        .limit(7); // Fetch 7 articles (1 featured + 6 recent)
 
       if (error) {
         throw error;
@@ -78,6 +96,22 @@ const Index = () => {
 
       const articles = (data || []).map(convertDbArticleToArticle);
       setRecentArticles(articles);
+      
+      // Extract unique categories and tags
+      const uniqueCategories = [...new Set(articles.map(article => article.category))];
+      setCategories(uniqueCategories);
+      
+      // Extract and count tags to find popular ones
+      const allTags = articles.flatMap(article => article.tags);
+      const tagCounts = allTags.reduce((acc: {[key: string]: number}, tag) => {
+        acc[tag] = (acc[tag] || 0) + 1;
+        return acc;
+      }, {});
+      
+      // Sort tags by count and take top 6
+      const sortedTags = Object.keys(tagCounts).sort((a, b) => tagCounts[b] - tagCounts[a]).slice(0, 6);
+      setPopularTags(sortedTags);
+      
     } catch (error) {
       console.error("Error fetching articles:", error);
       toast.error("Failed to load articles");
@@ -87,12 +121,12 @@ const Index = () => {
   };
 
   const featuredArticle = recentArticles.length > 0 ? recentArticles[0] : null;
-  const otherArticles = recentArticles.length > 1 ? recentArticles.slice(1) : [];
+  const recentArticlesDisplay = recentArticles.length > 1 ? recentArticles.slice(1, 7) : [];
 
   return (
     <Layout fullWidth>
-      {/* Hero Section */}
-      <section className="bg-gradient-to-b from-primary/5 to-background pt-12 pb-20 px-4 sm:px-6 lg:px-8">
+      {/* Hero Section with Gradient Background */}
+      <section className="bg-gradient-to-b from-primary/10 via-background to-background pt-16 pb-24 px-4 sm:px-6 lg:px-8">
         <div className="container mx-auto">
           <motion.div 
             className="max-w-3xl mx-auto text-center"
@@ -160,8 +194,8 @@ const Index = () => {
         </div>
       ) : (
         <>
-          {/* Featured Article */}
-          <section id="featured" className="container mx-auto py-20">
+          {/* Featured Article Section */}
+          <section id="featured" className="container mx-auto py-16">
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -169,9 +203,17 @@ const Index = () => {
               viewport={{ once: true }}
               className="flex items-center justify-between mb-10"
             >
-              <div>
-                <h2 className="text-3xl font-bold tracking-tight">Featured Story</h2>
-                <p className="text-muted-foreground mt-1">Our top pick for you</p>
+              <div className="flex items-center">
+                <div className="h-10 w-1 bg-primary rounded-full mr-4"></div>
+                <div>
+                  <h2 className="text-3xl font-bold tracking-tight">Featured Story</h2>
+                  <p className="text-muted-foreground mt-1">Our top pick for you</p>
+                </div>
+              </div>
+              
+              <div className="hidden md:flex items-center space-x-2 text-muted-foreground">
+                <BookMarked className="w-5 h-5" />
+                <span>Editor's Choice</span>
               </div>
             </motion.div>
             
@@ -185,9 +227,32 @@ const Index = () => {
             </motion.div>
           </section>
 
+          {/* Categories Section */}
+          <section className="bg-muted/30 py-12">
+            <div className="container mx-auto">
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                viewport={{ once: true }}
+              >
+                <div className="flex items-center mb-8">
+                  <Tag className="w-5 h-5 mr-2 text-primary" />
+                  <h2 className="text-2xl font-bold">Explore Categories</h2>
+                </div>
+                
+                <div className="flex flex-wrap gap-3">
+                  {categories.map((category, index) => (
+                    <CategoryBadge key={index} category={category} count={index + 3} link={`/articles?category=${category}`} />
+                  ))}
+                </div>
+              </motion.div>
+            </div>
+          </section>
+
           {/* Recent Articles */}
-          {otherArticles.length > 0 && (
-            <section className="container mx-auto py-20">
+          {recentArticlesDisplay.length > 0 && (
+            <section className="container mx-auto py-16">
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -195,57 +260,132 @@ const Index = () => {
                 viewport={{ once: true }}
                 className="flex flex-col sm:flex-row sm:items-center justify-between mb-10"
               >
-                <div>
-                  <h2 className="text-3xl font-bold tracking-tight">Latest Articles</h2>
-                  <p className="text-muted-foreground mt-1">Stay up to date with our newest content</p>
+                <div className="flex items-center">
+                  <div className="h-10 w-1 bg-primary rounded-full mr-4"></div>
+                  <div>
+                    <h2 className="text-3xl font-bold tracking-tight">Latest Articles</h2>
+                    <p className="text-muted-foreground mt-1">Stay up to date with our newest content</p>
+                  </div>
                 </div>
                 
                 <Button asChild variant="outline" className="mt-4 sm:mt-0 rounded-full group">
                   <Link to="/articles" className="inline-flex items-center">
-                    View All
+                    View All Articles
                     <ChevronRight className="w-4 h-4 ml-1 transition-transform duration-300 group-hover:translate-x-1" />
                   </Link>
                 </Button>
               </motion.div>
               
-              <ArticleGrid articles={otherArticles} columns={3} />
+              <ArticleGrid articles={recentArticlesDisplay} columns={3} />
             </section>
           )}
+          
+          {/* Popular Tags Section */}
+          <section className="bg-gradient-to-r from-primary/5 to-background py-14">
+            <div className="container mx-auto">
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                viewport={{ once: true }}
+                className="mb-10 text-center"
+              >
+                <h2 className="text-2xl font-bold mb-2">Popular Topics</h2>
+                <p className="text-muted-foreground">Discover content by popular tags</p>
+              </motion.div>
+              
+              <div className="flex flex-wrap justify-center gap-3">
+                {popularTags.map((tag, index) => (
+                  <Link 
+                    key={index} 
+                    to={`/articles?tag=${tag}`}
+                    className="py-2 px-4 rounded-full border border-border bg-card hover:bg-primary hover:text-primary-foreground transition-colors duration-300"
+                  >
+                    #{tag}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </section>
+          
+          {/* Connect With Us Section (Replacing Newsletter) */}
+          <section className="container mx-auto py-16">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              viewport={{ once: true }}
+            >
+              <Card className="bg-gradient-to-r from-primary/5 via-background to-primary/5 border-none shadow-md rounded-2xl overflow-hidden">
+                <CardContent className="p-0">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="p-8 md:p-10 flex flex-col justify-center">
+                      <h2 className="text-3xl font-bold mb-4">Connect With Us</h2>
+                      <p className="text-muted-foreground mb-6">
+                        Follow us on social media to stay updated with the latest articles, 
+                        industry news, and behind-the-scenes content.
+                      </p>
+                      
+                      <div className="flex flex-wrap gap-4">
+                        <a 
+                          href="https://github.com" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center w-12 h-12 rounded-full bg-background shadow-sm hover:shadow-md transition-all border border-border"
+                        >
+                          <Github className="h-5 w-5" />
+                        </a>
+                        <a 
+                          href="https://instagram.com" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center w-12 h-12 rounded-full bg-background shadow-sm hover:shadow-md transition-all border border-border"
+                        >
+                          <Instagram className="h-5 w-5" />
+                        </a>
+                        <a 
+                          href="https://linkedin.com" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center w-12 h-12 rounded-full bg-background shadow-sm hover:shadow-md transition-all border border-border"
+                        >
+                          <Linkedin className="h-5 w-5" />
+                        </a>
+                        <a 
+                          href="https://youtube.com" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center w-12 h-12 rounded-full bg-background shadow-sm hover:shadow-md transition-all border border-border"
+                        >
+                          <Youtube className="h-5 w-5" />
+                        </a>
+                      </div>
+                      
+                      <div className="mt-8">
+                        <Button asChild className="rounded-full">
+                          <Link to="/contact">
+                            Get In Touch
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="hidden md:block relative h-full min-h-[300px] bg-muted">
+                      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent">
+                        <div className="absolute inset-0 opacity-10 bg-[url('/placeholder.svg')] bg-center bg-cover"></div>
+                      </div>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <LayoutGrid className="w-20 h-20 text-primary/20" />
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </section>
         </>
       )}
-      
-      {/* Newsletter Section */}
-      <section className="bg-muted/50 py-20 px-4 sm:px-6 lg:px-8">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          viewport={{ once: true }}
-          className="container mx-auto max-w-4xl"
-        >
-          <div className="bg-gradient-to-br from-background to-background/80 border backdrop-blur-sm rounded-2xl p-8 md:p-12 shadow-sm">
-            <div className="text-center mb-8">
-              <span className="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full bg-primary/10 text-primary mb-4">
-                <Clock className="w-4 h-4 mr-1" />
-                Stay Updated
-              </span>
-              <h2 className="text-2xl md:text-3xl font-bold mb-4">Subscribe to Our Newsletter</h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto">
-                Get the latest articles and insights delivered straight to your inbox. No spam, just valuable content.
-              </p>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-lg mx-auto">
-              <input
-                type="email"
-                placeholder="Your email address"
-                className="flex h-12 w-full rounded-full border border-input bg-background px-6 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              />
-              <Button type="submit" className="h-12 rounded-full px-6">Subscribe</Button>
-            </div>
-          </div>
-        </motion.div>
-      </section>
     </Layout>
   );
 };

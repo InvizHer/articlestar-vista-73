@@ -2,7 +2,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Article } from "@/types/blog";
-import { CalendarIcon, Clock, ArrowUpRight, Bookmark, Eye } from "lucide-react";
+import { CalendarIcon, Clock, ArrowUpRight, Bookmark, Eye, Tag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { useBookmarks } from "@/hooks/use-bookmarks";
@@ -41,19 +41,28 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, variant = "default",
       <Link 
         to={`/article/${article.slug}`} 
         className={cn(
-          "block overflow-hidden bg-muted relative",
-          isFeatured ? "md:w-2/5 h-60 md:h-auto" : isCompact ? "aspect-square w-full" : "aspect-video w-full"
+          "block overflow-hidden relative",
+          isFeatured ? "md:w-2/5 h-60 md:h-auto" : isCompact ? "aspect-square w-full" : "aspect-video w-full",
+          "bg-gradient-to-br from-primary/5 to-muted"
         )}
       >
         <img
           src={article.coverImage}
           alt={article.title}
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
         <div className="absolute bottom-3 right-3 bg-primary text-primary-foreground p-2 rounded-full transform translate-y-full opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
           <ArrowUpRight className="w-4 h-4" />
         </div>
+        
+        {!isCompact && article.category && (
+          <div className="absolute top-3 left-3">
+            <Badge variant="outline" className="bg-background/80 backdrop-blur-sm hover:bg-primary hover:text-primary-foreground">
+              {article.category}
+            </Badge>
+          </div>
+        )}
       </Link>
       
       <div className={cn(
@@ -78,11 +87,13 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, variant = "default",
           </Button>
         </div>
 
-        <div className="mb-3">
-          <Badge variant="outline" className="hover:bg-primary hover:text-primary-foreground">
-            {article.category}
-          </Badge>
-        </div>
+        {isCompact && article.category && (
+          <div className="mb-2">
+            <Badge variant="outline" className="text-xs px-2 py-0.5 hover:bg-primary hover:text-primary-foreground">
+              {article.category}
+            </Badge>
+          </div>
+        )}
 
         <Link to={`/article/${article.slug}`} className="group/title">
           <h3 className={cn(
@@ -97,6 +108,17 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, variant = "default",
           <p className="text-muted-foreground mb-4 line-clamp-2 flex-grow">
             {article.excerpt}
           </p>
+        )}
+
+        {article.tags && article.tags.length > 0 && !isCompact && (
+          <div className="mb-4 flex flex-wrap gap-2">
+            {article.tags.slice(0, 3).map((tag, idx) => (
+              <span key={idx} className="text-xs text-muted-foreground bg-muted/50 rounded-full px-2 py-0.5 inline-flex items-center">
+                <Tag className="w-3 h-3 mr-1" />
+                {tag}
+              </span>
+            ))}
+          </div>
         )}
 
         <div className="mt-auto flex items-center justify-between text-sm text-muted-foreground">
