@@ -2,7 +2,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ChevronRight, Github, Instagram, Linkedin, Youtube, Mail } from "lucide-react";
+import { ChevronRight, Github as GitHub, Instagram, Linkedin, Youtube, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -22,7 +22,7 @@ const Footer: React.FC = () => {
   ];
   
   const socialLinks = [
-    { title: "GitHub", icon: <Github className="h-5 w-5" />, href: "https://github.com" },
+    { title: "GitHub", icon: <GitHub className="h-5 w-5" />, href: "https://github.com" },
     { title: "Instagram", icon: <Instagram className="h-5 w-5" />, href: "https://instagram.com" },
     { title: "LinkedIn", icon: <Linkedin className="h-5 w-5" />, href: "https://linkedin.com" },
     { title: "YouTube", icon: <Youtube className="h-5 w-5" />, href: "https://youtube.com" }

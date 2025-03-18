@@ -11,7 +11,9 @@ import {
   Search,
   Hash,
   ExternalLink,
-  Eye
+  Eye,
+  Github as GitHub,
+  Mail
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -453,7 +455,7 @@ const Index = () => {
                       rel="noopener noreferrer"
                       className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 transition-colors backdrop-blur-sm rounded-lg p-3"
                     >
-                      <Github className="h-5 w-5" />
+                      <GitHub className="h-5 w-5" />
                       <span>GitHub</span>
                     </a>
                     
