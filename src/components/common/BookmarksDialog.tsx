@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useBookmarks } from '@/hooks/use-bookmarks';
 import {
@@ -11,39 +11,70 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from '@/components/ui/button';
-import { Bookmark, Clock, Trash2, XCircle } from 'lucide-react';
+import { Bookmark, Clock, Trash2, XCircle, X, Loader2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { Article } from '@/types/blog';
 
 interface BookmarksDialogProps {
   className?: string;
 }
 
 export function BookmarksDialog({ className }: BookmarksDialogProps) {
-  const { bookmarks, removeBookmark, clearBookmarks } = useBookmarks();
-  const [open, setOpen] = React.useState(false);
+  const { bookmarks, removeBookmark, clearBookmarks, isLoaded } = useBookmarks();
+  const [open, setOpen] = useState(false);
+  const [localBookmarks, setLocalBookmarks] = useState<Article[]>([]);
+
+  // Update local state when bookmarks change
+  useEffect(() => {
+    if (isLoaded) {
+      setLocalBookmarks(bookmarks);
+    }
+  }, [bookmarks, isLoaded]);
+
+  const handleRemoveBookmark = (articleId: string) => {
+    // Update local state immediately for UI responsiveness
+    setLocalBookmarks(current => current.filter(item => item.id !== articleId));
+    // Then update the actual state
+    removeBookmark(articleId);
+  };
+
+  const handleClearBookmarks = () => {
+    setLocalBookmarks([]);
+    clearBookmarks();
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="icon" className={cn("relative", className)}>
           <Bookmark className="h-5 w-5" />
-          {bookmarks.length > 0 && (
+          {localBookmarks.length > 0 && (
             <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center">
-              {bookmarks.length}
+              {localBookmarks.length}
             </span>
           )}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Bookmarked Articles</DialogTitle>
-          <DialogDescription>
-            Your saved articles for reading later.
-          </DialogDescription>
+        <DialogHeader className="flex flex-row items-center justify-between">
+          <div>
+            <DialogTitle>Bookmarked Articles</DialogTitle>
+            <DialogDescription>
+              Your saved articles for reading later.
+            </DialogDescription>
+          </div>
+          <Button variant="ghost" size="icon" onClick={() => setOpen(false)}>
+            <X className="h-4 w-4" />
+          </Button>
         </DialogHeader>
         
-        {bookmarks.length === 0 ? (
+        {!isLoaded ? (
+          <div className="py-12 text-center">
+            <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
+            <p className="mt-2 text-muted-foreground">Loading bookmarks...</p>
+          </div>
+        ) : localBookmarks.length === 0 ? (
           <div className="py-12 text-center">
             <XCircle className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
             <p className="text-muted-foreground">No bookmarks yet. Save articles to read later!</p>
@@ -52,7 +83,7 @@ export function BookmarksDialog({ className }: BookmarksDialogProps) {
           <>
             <ScrollArea className="max-h-[60vh]">
               <div className="space-y-4">
-                {bookmarks.map(article => (
+                {localBookmarks.map(article => (
                   <div 
                     key={article.id} 
                     className="flex gap-3 p-3 rounded-lg hover:bg-accent/10 transition-colors group relative"
@@ -80,7 +111,7 @@ export function BookmarksDialog({ className }: BookmarksDialogProps) {
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      onClick={() => removeBookmark(article.id)}
+                      onClick={() => handleRemoveBookmark(article.id)}
                       className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity absolute top-3 right-3"
                     >
                       <Trash2 className="h-4 w-4 text-muted-foreground" />
@@ -94,7 +125,7 @@ export function BookmarksDialog({ className }: BookmarksDialogProps) {
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={clearBookmarks}
+                onClick={handleClearBookmarks}
                 className="text-xs"
               >
                 <Trash2 className="h-3 w-3 mr-1" />
