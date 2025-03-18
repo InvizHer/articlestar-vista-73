@@ -37,9 +37,9 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
       transition={{ duration: 0.5, delay: index * 0.1 }}
       viewport={{ once: true }}
       className={cn(
-        "group h-full overflow-hidden rounded-xl border bg-card transition-all hover:shadow-lg",
+        "group h-full overflow-hidden rounded-xl border bg-card transition-all hover:shadow-md hover:border-primary/20",
         isFeatured ? "flex flex-col md:flex-row" : "flex flex-col",
-        isCompact && "border-0 shadow-none",
+        isCompact && "border-0 shadow-none hover:shadow-none",
         "relative"
       )}
     >
@@ -66,14 +66,12 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
           </div>
         )}
         
-        {article.viewCount !== undefined && (
-          <div className="absolute top-3 right-3">
-            <Badge variant="outline" className="bg-black/40 text-white backdrop-blur-sm flex items-center gap-1">
-              <Eye className="h-3 w-3" />
-              {article.viewCount}
-            </Badge>
-          </div>
-        )}
+        <div className="absolute top-3 right-3 flex items-center gap-2">
+          <Badge variant="outline" className="bg-black/40 text-white backdrop-blur-sm flex items-center gap-1">
+            <Eye className="h-3 w-3" />
+            {article.viewCount || 0}
+          </Badge>
+        </div>
         
         {!isCompact && (
           <div className="absolute bottom-3 right-3">
@@ -120,7 +118,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
 
         <div className="mt-auto flex items-center justify-between text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full overflow-hidden border flex-shrink-0">
+            <div className="w-7 h-7 rounded-full overflow-hidden border flex-shrink-0 group-hover:ring-2 ring-primary/20 transition-all">
               <img 
                 src={article.author.avatar} 
                 alt={article.author.name} 
@@ -145,8 +143,8 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
       </div>
       
       <div className="absolute top-0 left-0 w-full h-full opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-300">
-        <div className="absolute bottom-3 left-0 right-0 mx-auto w-12 h-12 rounded-full bg-primary flex items-center justify-center opacity-0 transform translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 delay-100">
-          <ArrowUpRight className="h-5 w-5 text-primary-foreground" />
+        <div className="absolute bottom-3 left-0 right-0 mx-auto w-10 h-10 rounded-full bg-primary flex items-center justify-center opacity-0 transform translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 delay-100 shadow-lg">
+          <ArrowUpRight className="h-4 w-4 text-primary-foreground" />
         </div>
       </div>
     </motion.article>

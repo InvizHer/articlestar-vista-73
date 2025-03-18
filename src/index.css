@@ -114,6 +114,10 @@
     --primary-foreground: 210 40% 98%;
     --ring: 323 73% 57%;
   }
+  
+  .theme-default {
+    /* Default theme colors already defined in :root */
+  }
 }
 
 @layer base {
@@ -128,24 +132,70 @@
 
 /* Custom styles */
 .prose a {
-  @apply transition-colors;
+  @apply transition-colors text-primary hover:text-primary/80;
 }
 
 .prose h1, 
 .prose h2, 
 .prose h3, 
 .prose h4 {
-  @apply scroll-mt-24;
+  @apply scroll-mt-24 font-bold;
 }
 
 .prose pre {
-  @apply rounded-lg shadow-md;
+  @apply rounded-lg shadow-md p-4 bg-muted;
 }
 
 .prose blockquote {
-  @apply italic not-italic bg-muted/50 px-6 py-4 rounded-r-lg;
+  @apply italic bg-muted/50 px-6 py-4 rounded-r-lg border-l-4 border-primary/50;
 }
 
 .prose img {
-  @apply shadow-md mx-auto;
+  @apply shadow-md mx-auto rounded-lg;
+}
+
+/* Animations */
+.animated-item {
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animated-gradient {
+  background-size: 200% 200%;
+  animation: gradientAnimation 8s ease infinite;
+}
+
+@keyframes gradientAnimation {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Interactive elements */
+.hover-scale {
+  @apply transition-transform duration-300;
+}
+
+.hover-scale:hover {
+  @apply transform scale-105;
+}
+
+.link-underline {
+  @apply relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-primary after:origin-bottom-right after:scale-x-0 after:transition-transform after:duration-300 hover:after:origin-bottom-left hover:after:scale-x-100;
 }

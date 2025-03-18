@@ -18,6 +18,7 @@ import ArticleEditor from "./pages/ArticleEditor";
 import { AdminProvider } from "./context/AdminContext";
 import ProtectedRoute from "./components/admin/ProtectedRoute";
 import { ThemeProvider } from "./hooks/use-theme";
+import ScrollToTop from "./components/common/ScrollToTop";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <ScrollToTop threshold={500} />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/articles" element={<Articles />} />
