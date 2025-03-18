@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -11,15 +10,16 @@ import {
   TrendingUp, 
   Search,
   Hash,
-  ExternalLink
+  ExternalLink,
+  Eye
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import EditorsPick from "@/components/blog/EditorsPick";
 
-// Helper function to convert DbArticle to Article
 const convertDbArticleToArticle = (dbArticle: DbArticle): Article => {
   return {
     id: dbArticle.id,
@@ -69,7 +69,6 @@ const Index = () => {
       const articles = (data || []).map(convertDbArticleToArticle);
       setRecentArticles(articles);
       
-      // Extract categories and count them
       const categoryCount: {[key: string]: number} = {};
       articles.forEach(article => {
         if (article.category) {
@@ -77,7 +76,6 @@ const Index = () => {
         }
       });
       
-      // Convert to array and sort by count
       const sortedCategories = Object.entries(categoryCount)
         .map(([name, count]) => ({ name, count }))
         .sort((a, b) => b.count - a.count)
@@ -85,7 +83,6 @@ const Index = () => {
       
       setPopularCategories(sortedCategories);
       
-      // Get trending tags (if any)
       const allTags = articles.flatMap(article => article.tags || []);
       const uniqueTags = [...new Set(allTags)].slice(0, 6);
       setTrendingTags(uniqueTags);
@@ -110,9 +107,7 @@ const Index = () => {
 
   return (
     <Layout>
-      {/* Hero Section */}
       <section className="relative overflow-hidden">
-        {/* Background Elements */}
         <div className="absolute inset-0 -z-10 overflow-hidden">
           <div className="absolute -top-[30%] -right-[20%] h-[500px] w-[500px] rounded-full bg-primary/5"></div>
           <div className="absolute -bottom-[10%] -left-[10%] h-[300px] w-[300px] rounded-full bg-blue-500/5"></div>
@@ -137,7 +132,6 @@ const Index = () => {
               Explore thought-provoking articles on design, technology, and culture that shape our digital landscape.
             </p>
             
-            {/* Search Bar */}
             <div className="max-w-lg mx-auto relative">
               <form onSubmit={handleSearch} className="flex items-center">
                 <div className="relative flex-grow">
@@ -158,7 +152,6 @@ const Index = () => {
           </motion.div>
         </div>
         
-        {/* Wave Divider */}
         <div className="absolute bottom-0 left-0 right-0">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 120" className="w-full">
             <path 
@@ -170,7 +163,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Featured Article */}
       {loading ? (
         <section className="container mx-auto px-4 py-12">
           <div className="animate-pulse">
@@ -194,71 +186,10 @@ const Index = () => {
             </div>
           </motion.div>
           
-          <Link to={`/article/${featuredArticle.slug}`}>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              viewport={{ once: true }}
-              className="group rounded-xl overflow-hidden bg-card border shadow-sm hover:shadow-md transition-all duration-300"
-            >
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="relative aspect-[4/3] md:aspect-auto md:h-full overflow-hidden bg-muted">
-                  <img 
-                    src={featuredArticle.coverImage} 
-                    alt={featuredArticle.title}
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-70"></div>
-                  <div className="absolute bottom-4 left-4 bg-primary text-white text-xs font-medium px-2.5 py-1 rounded">
-                    {featuredArticle.category}
-                  </div>
-                </div>
-                
-                <div className="p-6 md:p-8 flex flex-col justify-center">
-                  <div className="flex items-center mb-4">
-                    <div className="w-6 h-6 rounded-full overflow-hidden mr-2">
-                      <img 
-                        src={featuredArticle.author.avatar} 
-                        alt={featuredArticle.author.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <span className="text-sm text-muted-foreground">{featuredArticle.author.name}</span>
-                    <span className="mx-2 text-muted-foreground">•</span>
-                    <span className="text-sm text-muted-foreground">{featuredArticle.date}</span>
-                  </div>
-                  
-                  <h3 className="text-2xl md:text-3xl font-bold mb-4 group-hover:text-primary transition-colors">
-                    {featuredArticle.title}
-                  </h3>
-                  
-                  <p className="text-muted-foreground mb-6 line-clamp-3">
-                    {featuredArticle.excerpt}
-                  </p>
-                  
-                  <div className="mt-auto flex items-center">
-                    <Button variant="outline" className="gap-2 group/btn">
-                      Read Article
-                      <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover/btn:translate-x-1" />
-                    </Button>
-                    
-                    <div className="ml-auto flex items-center gap-4 text-sm text-muted-foreground">
-                      <div className="flex items-center">
-                        <TrendingUp className="h-4 w-4 mr-1" />
-                        <span>{featuredArticle.viewCount} views</span>
-                      </div>
-                      <div>{featuredArticle.readTime} read</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </Link>
+          <EditorsPick article={featuredArticle} />
         </section>
       ) : null}
 
-      {/* Recent Articles */}
       {loading ? (
         <section className="container mx-auto px-4 py-12">
           <div className="animate-pulse">
@@ -315,8 +246,14 @@ const Index = () => {
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-60"></div>
-                    <div className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-sm text-white text-xs font-medium px-2 py-0.5 rounded">
-                      {article.category}
+                    <div className="absolute bottom-3 left-3 flex items-center gap-2">
+                      <div className="bg-black/70 backdrop-blur-sm text-white text-xs font-medium px-2 py-0.5 rounded">
+                        {article.category}
+                      </div>
+                      <div className="bg-black/70 backdrop-blur-sm text-white text-xs font-medium px-2 py-0.5 rounded flex items-center gap-1">
+                        <Eye className="h-3 w-3" />
+                        {article.viewCount}
+                      </div>
                     </div>
                   </div>
                   
@@ -368,7 +305,6 @@ const Index = () => {
         </section>
       ) : null}
 
-      {/* Discover Section */}
       <section className="bg-gradient-to-b from-slate-50/50 to-white dark:from-slate-900/50 dark:to-slate-900 py-16">
         <div className="container mx-auto px-4">
           <motion.div
@@ -385,7 +321,6 @@ const Index = () => {
           </motion.div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-            {/* Category Cards */}
             {popularCategories.map((category, index) => (
               <motion.div
                 key={index}
@@ -419,7 +354,6 @@ const Index = () => {
             ))}
           </div>
           
-          {/* Tags */}
           {trendingTags.length > 0 && (
             <div className="mt-12">
               <motion.div
@@ -466,53 +400,82 @@ const Index = () => {
         </div>
       </section>
       
-      {/* Join Community */}
       <section className="container mx-auto px-4 py-16">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           viewport={{ once: true }}
-          className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-primary/80 to-blue-500/80 text-white"
+          className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-primary/90 via-purple-600/90 to-blue-600/90 text-white"
         >
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-96 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.2),transparent)] opacity-60"></div>
-            <div className="absolute bottom-0 right-0 w-96 h-96 bg-[radial-gradient(circle_at_bottom_left,rgba(0,0,0,0.2),transparent)] opacity-40"></div>
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            <div className="absolute -top-24 -right-24 w-64 h-64 rounded-full bg-white/10 blur-2xl"></div>
+            <div className="absolute bottom-0 left-1/3 w-32 h-32 rounded-full bg-white/10 blur-xl"></div>
+            <div className="absolute top-1/4 left-1/4 w-24 h-24 rounded-full bg-white/10 blur-lg"></div>
+            <svg className="absolute bottom-0 left-0 right-0 text-white/5" viewBox="0 0 1440 320">
+              <path fill="currentColor" d="M0,256L48,229.3C96,203,192,149,288,154.7C384,160,480,224,576,218.7C672,213,768,139,864,128C960,117,1056,171,1152,197.3C1248,224,1344,224,1392,224L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+            </svg>
           </div>
           
-          <div className="relative z-10 p-8 md:p-12 lg:p-16 max-w-3xl">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Join Our Community</h2>
-            <p className="text-lg mb-6 text-white/90">
-              Connect with like-minded individuals, share ideas, and stay updated with the latest content from our authors.
-            </p>
+          <div className="relative z-10 grid md:grid-cols-2 gap-8 p-8 md:p-12">
+            <div className="space-y-6">
+              <div className="inline-flex items-center px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-sm">
+                <Sparkles className="h-3.5 w-3.5 mr-2" />
+                <span>Join 10,000+ readers</span>
+              </div>
+              
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold">Become part of our growing community</h2>
+              
+              <p className="text-white/80">
+                Connect with like-minded individuals, share ideas, and stay updated with the latest content from our authors.
+              </p>
+              
+              <div className="flex flex-wrap gap-3 pt-2">
+                <Button className="bg-white hover:bg-white/90 text-primary rounded-full" size="lg">
+                  Subscribe Now
+                </Button>
+                <Button variant="outline" className="bg-transparent border-white/30 text-white hover:bg-white/10 rounded-full" size="lg">
+                  Learn More
+                </Button>
+              </div>
+            </div>
             
-            <div className="flex flex-wrap gap-4">
-              <a 
-                href="https://github.com" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 transition-colors backdrop-blur-sm rounded-lg px-5 py-3"
-              >
-                <span>Follow on GitHub</span>
-                <ExternalLink className="h-4 w-4" />
-              </a>
-              
-              <a 
-                href="https://twitter.com" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 transition-colors backdrop-blur-sm rounded-lg px-5 py-3"
-              >
-                <span>Join Twitter</span>
-                <ExternalLink className="h-4 w-4" />
-              </a>
-              
-              <Button asChild variant="secondary" className="bg-white text-primary hover:bg-white/90">
-                <Link to="/contact">
-                  Get in Touch
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
+            <div className="relative flex items-center justify-center">
+              <div className="relative w-full max-w-sm">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-white/5 rounded-xl blur-sm"></div>
+                <div className="relative bg-white/20 backdrop-blur-md rounded-xl p-6 border border-white/20">
+                  <h3 className="text-xl font-semibold mb-4">Connect with us</h3>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <a 
+                      href="https://github.com" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 transition-colors backdrop-blur-sm rounded-lg p-3"
+                    >
+                      <Github className="h-5 w-5" />
+                      <span>GitHub</span>
+                    </a>
+                    
+                    <a 
+                      href="https://twitter.com" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 transition-colors backdrop-blur-sm rounded-lg p-3"
+                    >
+                      <ExternalLink className="h-5 w-5" />
+                      <span>Twitter</span>
+                    </a>
+                    
+                    <Button asChild variant="ghost" className="col-span-2 bg-white/10 hover:bg-white/20 text-white">
+                      <Link to="/contact" className="gap-2">
+                        <Mail className="h-5 w-5" />
+                        Contact Us
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </motion.div>

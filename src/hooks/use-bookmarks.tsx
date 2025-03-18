@@ -4,7 +4,7 @@ import { Article } from '@/types/blog';
 import { toast } from 'sonner';
 
 const STORAGE_KEY = 'bloghub-bookmarks';
-const MAX_BOOKMARKS = 3;
+const MAX_BOOKMARKS = 5;
 
 export function useBookmarks() {
   const [bookmarks, setBookmarks] = useState<Article[]>([]);

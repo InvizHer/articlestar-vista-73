@@ -2,18 +2,11 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ChevronRight, Github, Instagram, Linkedin, Youtube, Mail, ArrowUp } from "lucide-react";
+import { ChevronRight, Github, Instagram, Linkedin, Youtube, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const Footer: React.FC = () => {
-  const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth"
-    });
-  };
-  
   const links = [
     { title: "Home", href: "/" },
     { title: "Articles", href: "/articles" },
@@ -52,15 +45,6 @@ const Footer: React.FC = () => {
 
   return (
     <footer className="bg-muted/30 relative">
-      {/* Go To Top Button */}
-      <Button 
-        onClick={scrollToTop}
-        className="absolute -top-5 left-1/2 transform -translate-x-1/2 rounded-full w-10 h-10 p-0 shadow-md"
-        aria-label="Go to top"
-      >
-        <ArrowUp className="h-5 w-5" />
-      </Button>
-      
       <div className="container mx-auto px-4 py-12 md:py-16">
         <motion.div 
           variants={footerVariants}
