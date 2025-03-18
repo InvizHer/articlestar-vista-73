@@ -20,7 +20,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   
   // Set sidebar state when component mounts or when screen size changes
   useEffect(() => {
-    // Always closed for all screen sizes
+    // Always closed for mobile, always closed for desktop too as per new requirements
     setSidebarOpen(false);
   }, [isMobile]);
   
@@ -33,13 +33,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       <div className="flex h-screen overflow-hidden">
         <DashboardSidebar isOpen={sidebarOpen} toggle={toggleSidebar} />
         
-        <div className="flex flex-col flex-1 w-full overflow-hidden">
+        <div className="flex flex-col flex-1 w-full overflow-hidden transition-all duration-300 ease-in-out">
           <DashboardHeader toggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen} />
           
           <main className={cn(
-            "flex-1 overflow-y-auto pb-10",
+            "flex-1 overflow-y-auto pb-10 transition-all duration-300",
             isMobile ? "pb-safe" : "",
-            fullWidth ? "px-0" : ""
+            fullWidth ? "px-0" : "px-4 md:px-6 lg:px-8"
           )}>
             <AnimatePresence mode="wait">
               <motion.div
@@ -49,8 +49,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3 }}
                 className={cn(
-                  "py-2",
-                  fullWidth ? "w-full" : "w-full"
+                  "mx-auto py-6",
+                  fullWidth ? "w-full" : "max-w-7xl"
                 )}
               >
                 {children}
