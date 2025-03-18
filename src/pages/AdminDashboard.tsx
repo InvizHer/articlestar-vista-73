@@ -237,9 +237,9 @@ const AdminDashboard = () => {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="recent" className="space-y-4">
-              <TabsList>
-                <TabsTrigger value="recent">Recently Created</TabsTrigger>
-                <TabsTrigger value="views">Most Viewed</TabsTrigger>
+              <TabsList className="w-full sm:w-auto flex flex-wrap">
+                <TabsTrigger value="recent" className="flex-1 sm:flex-none">Recently Created</TabsTrigger>
+                <TabsTrigger value="views" className="flex-1 sm:flex-none">Most Viewed</TabsTrigger>
               </TabsList>
               
               <TabsContent value="recent" className="space-y-4">
@@ -271,13 +271,13 @@ const AdminDashboard = () => {
                         />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <h3 className="font-medium text-sm line-clamp-1">{article.title}</h3>
-                          <Badge variant={article.published ? "default" : "outline"} className="ml-2">
+                          <Badge variant={article.published ? "default" : "outline"} className="ml-auto sm:ml-2 mt-1 sm:mt-0">
                             {article.published ? "Published" : "Draft"}
                           </Badge>
                         </div>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-1">
                           <span className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
                             {formatDistanceToNow(new Date(article.date), { addSuffix: true })}
@@ -288,7 +288,7 @@ const AdminDashboard = () => {
                           </span>
                         </div>
                       </div>
-                      <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
+                      <ArrowUpRight className="h-4 w-4 text-muted-foreground shrink-0" />
                     </Link>
                   ))
                 ) : (
@@ -337,13 +337,13 @@ const AdminDashboard = () => {
                           />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <h3 className="font-medium text-sm line-clamp-1">{article.title}</h3>
-                            <Badge variant={article.published ? "default" : "outline"} className="ml-2">
+                            <Badge variant={article.published ? "default" : "outline"} className="ml-auto sm:ml-2 mt-1 sm:mt-0">
                               {article.published ? "Published" : "Draft"}
                             </Badge>
                           </div>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-1">
                             <span className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
                               {formatDistanceToNow(new Date(article.date), { addSuffix: true })}
@@ -354,7 +354,7 @@ const AdminDashboard = () => {
                             </span>
                           </div>
                         </div>
-                        <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
+                        <ArrowUpRight className="h-4 w-4 text-muted-foreground shrink-0" />
                       </Link>
                     ))
                 ) : (

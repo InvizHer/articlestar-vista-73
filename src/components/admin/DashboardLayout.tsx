@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import DashboardSidebar from "./DashboardSidebar";
 import DashboardHeader from "./DashboardHeader";
@@ -16,7 +16,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   fullWidth = false 
 }) => {
   const isMobile = useIsMobile();
-  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  // Set sidebar to closed by default on mobile when component mounts
+  useEffect(() => {
+    setSidebarOpen(!isMobile);
+  }, [isMobile]);
   
   const toggleSidebar = () => {
     setSidebarOpen(prev => !prev);

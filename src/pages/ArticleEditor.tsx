@@ -13,7 +13,6 @@ import {
   ArrowLeft, 
   Save, 
   EyeIcon, 
-  ListChecks, 
   User, 
   Clock, 
   Calendar as CalendarIcon, 
@@ -25,7 +24,7 @@ import {
   Maximize2,
   Minimize2,
   ChevronDown,
-  SettingsIcon
+  Plus
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { slugify } from "@/lib/utils";
@@ -41,22 +40,29 @@ import {
 } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { motion } from "framer-motion";
-import AdminLayout from "@/components/admin/AdminLayout";
+import DashboardLayout from "@/components/admin/DashboardLayout";
 import { 
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { 
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 
 const modules = {
   toolbar: [
@@ -121,6 +127,12 @@ const ArticleEditor = () => {
   const [editorValue, setEditorValue] = useState("");
   const [activeTab, setActiveTab] = useState("editor");
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [authors, setAuthors] = useState<string[]>([]);
+  const [tagsList, setTagsList] = useState<string[]>([]);
+  const [newCategory, setNewCategory] = useState("");
+  const [newTag, setNewTag] = useState("");
+  const [newAuthor, setNewAuthor] = useState("");
 
   const form = useForm<ArticleFormValues>({
     resolver: zodResolver(articleSchema),
@@ -150,6 +162,8 @@ const ArticleEditor = () => {
     } else {
       setInitialLoading(false);
     }
+    
+    fetchMetadata();
   }, [isEditMode, articleId, isAuthenticated, navigate]);
 
   useEffect(() => {
@@ -159,6 +173,45 @@ const ArticleEditor = () => {
       shouldTouch: true
     });
   }, [editorValue, form]);
+
+  const fetchMetadata = async () => {
+    try {
+      // Fetch unique categories
+      const { data: categoryData } = await supabase
+        .from("articles")
+        .select("category")
+        .not("category", "is", null);
+      
+      if (categoryData) {
+        const uniqueCategories = [...new Set(categoryData.map(item => item.category))];
+        setCategories(uniqueCategories);
+      }
+      
+      // Fetch unique authors
+      const { data: authorData } = await supabase
+        .from("articles")
+        .select("author_name")
+        .not("author_name", "is", null);
+      
+      if (authorData) {
+        const uniqueAuthors = [...new Set(authorData.map(item => item.author_name))];
+        setAuthors(uniqueAuthors);
+      }
+      
+      // Fetch unique tags
+      const { data: tagsData } = await supabase
+        .from("articles")
+        .select("tags");
+      
+      if (tagsData) {
+        const allTags = tagsData.flatMap(item => item.tags || []);
+        const uniqueTags = [...new Set(allTags)];
+        setTagsList(uniqueTags);
+      }
+    } catch (error) {
+      console.error("Error fetching metadata:", error);
+    }
+  };
 
   const fetchArticle = async (id: string) => {
     try {
@@ -240,7 +293,7 @@ const ArticleEditor = () => {
         toast.success("Article created successfully");
       }
 
-      navigate("/admin/dashboard");
+      navigate("/admin/articles");
     } catch (error) {
       console.error("Error saving article:", error);
       toast.error("Failed to save article");
@@ -278,33 +331,69 @@ const ArticleEditor = () => {
     });
   };
 
+  const handleAddNewCategory = () => {
+    if (newCategory.trim() && !categories.includes(newCategory.trim())) {
+      setCategories([...categories, newCategory.trim()]);
+      form.setValue("category", newCategory.trim());
+      setNewCategory("");
+    }
+  };
+
+  const handleAddNewTag = () => {
+    if (newTag.trim() && !tagsList.includes(newTag.trim())) {
+      setTagsList([...tagsList, newTag.trim()]);
+      const currentTags = form.getValues("tags");
+      const updatedTags = currentTags ? `${currentTags}, ${newTag.trim()}` : newTag.trim();
+      form.setValue("tags", updatedTags);
+      setNewTag("");
+    }
+  };
+
+  const handleAddNewAuthor = () => {
+    if (newAuthor.trim() && !authors.includes(newAuthor.trim())) {
+      setAuthors([...authors, newAuthor.trim()]);
+      form.setValue("author_name", newAuthor.trim());
+      setNewAuthor("");
+    }
+  };
+
+  const handleSelectTag = (tag: string) => {
+    const currentTags = form.getValues("tags");
+    const tagsArray = currentTags.split(",").map(t => t.trim()).filter(t => t);
+    
+    if (!tagsArray.includes(tag)) {
+      const updatedTags = [...tagsArray, tag].join(", ");
+      form.setValue("tags", updatedTags);
+    }
+  };
+
   if (initialLoading) {
     return (
-      <AdminLayout>
+      <DashboardLayout>
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center space-y-4">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
             <p className="text-lg">Loading article...</p>
           </div>
         </div>
-      </AdminLayout>
+      </DashboardLayout>
     );
   }
 
   return (
-    <AdminLayout fullWidth={isFullScreen}>
+    <DashboardLayout fullWidth={isFullScreen}>
       <div className={cn(
         "py-6 transition-all duration-300",
         isFullScreen ? "px-0" : "px-4 md:px-0"
       )}>
-        <div className="bg-white border rounded-lg shadow-sm dark:bg-slate-800 dark:border-slate-700 mb-6">
-          <div className="px-6 py-4">
+        <div className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg shadow-sm mb-6">
+          <div className="px-4 sm:px-6 py-4">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-4">
-                <Button variant="outline" onClick={() => navigate("/admin/dashboard")}>
+                <Button variant="outline" size="sm" onClick={() => navigate("/admin/articles")}>
                   <ArrowLeft className="mr-2 h-4 w-4" /> Back
                 </Button>
-                <h1 className="text-xl font-bold">
+                <h1 className="text-xl font-bold truncate">
                   {isEditMode ? "Edit Article" : "Create New Article"}
                 </h1>
               </div>
@@ -321,6 +410,7 @@ const ArticleEditor = () => {
                 )}
                 <Button 
                   variant="outline"
+                  size="sm"
                   disabled={saving}
                   onClick={handlePreview}
                 >
@@ -329,6 +419,7 @@ const ArticleEditor = () => {
                 </Button>
                 <Button 
                   variant="outline"
+                  size="sm"
                   onClick={toggleFullScreen}
                 >
                   {isFullScreen ? 
@@ -336,10 +427,11 @@ const ArticleEditor = () => {
                     <Maximize2 className="mr-2 h-4 w-4" />
                   }
                   <span className="hidden sm:inline">
-                    {isFullScreen ? "Exit Fullscreen" : "Fullscreen"}
+                    {isFullScreen ? "Exit" : "Fullscreen"}
                   </span>
                 </Button>
                 <Button 
+                  size="sm"
                   disabled={saving}
                   onClick={form.handleSubmit(onSubmit)}
                 >
@@ -366,11 +458,11 @@ const ArticleEditor = () => {
           transition={{ duration: 0.3 }}
         >
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="bg-white border rounded-lg shadow-sm dark:bg-slate-800 dark:border-slate-700 mb-6">
-              <div className="px-6 py-4 flex justify-between items-center">
+            <div className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg shadow-sm mb-6">
+              <div className="px-4 sm:px-6 py-4 flex flex-wrap justify-between items-center gap-4">
                 <TabsList>
                   <TabsTrigger value="editor" className="flex items-center gap-2">
-                    <ListChecks className="h-4 w-4" />
+                    <FileText className="h-4 w-4" />
                     Editor
                   </TabsTrigger>
                   <TabsTrigger value="preview" className="flex items-center gap-2">
@@ -413,7 +505,7 @@ const ArticleEditor = () => {
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <Card className="shadow-sm lg:col-span-2 border dark:bg-slate-800 dark:border-slate-700">
+                    <Card className="shadow-sm lg:col-span-2 border dark:bg-gray-800 dark:border-gray-700">
                       <CardContent className="pt-6">
                         <FormField
                           control={form.control}
@@ -483,30 +575,10 @@ const ArticleEditor = () => {
                       </CardContent>
                     </Card>
 
-                    <Card className="shadow-sm border dark:bg-slate-800 dark:border-slate-700">
+                    <Card className="shadow-sm border dark:bg-gray-800 dark:border-gray-700">
                       <CardContent className="pt-6">
-                        <div className="mb-4 flex justify-between items-center">
+                        <div className="mb-4">
                           <h3 className="text-lg font-medium">Article Settings</h3>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <SettingsIcon className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem onClick={() => calculateReadTime(editorValue)}>
-                                Calculate Read Time
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => window.open(`/article/${form.getValues('slug')}`, '_blank')}
-                                disabled={!isEditMode || !form.getValues('published')}
-                              >
-                                <ExternalLink className="mr-2 h-4 w-4" />
-                                View Live
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
                         </div>
 
                         <div className="grid grid-cols-1 gap-6">
@@ -518,9 +590,42 @@ const ArticleEditor = () => {
                                 <FormLabel className="flex items-center gap-2">
                                   <Tag className="h-4 w-4" /> Category
                                 </FormLabel>
-                                <FormControl>
-                                  <Input placeholder="Development, Design, etc." {...field} />
-                                </FormControl>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                  <FormControl>
+                                    <Select
+                                      value={field.value}
+                                      onValueChange={(value) => {
+                                        field.onChange(value);
+                                      }}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Select category" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {categories.map((category) => (
+                                          <SelectItem key={category} value={category}>
+                                            {category}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </FormControl>
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      placeholder="New category"
+                                      value={newCategory}
+                                      onChange={(e) => setNewCategory(e.target.value)}
+                                    />
+                                    <Button 
+                                      type="button" 
+                                      size="sm" 
+                                      variant="outline"
+                                      onClick={handleAddNewCategory}
+                                    >
+                                      <Plus className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
                                 <FormMessage />
                               </FormItem>
                             )}
@@ -535,7 +640,62 @@ const ArticleEditor = () => {
                                   <Tag className="h-4 w-4" /> Tags
                                 </FormLabel>
                                 <FormControl>
-                                  <Input placeholder="React, TypeScript, etc. (comma-separated)" {...field} />
+                                  <div className="space-y-2">
+                                    <Textarea 
+                                      placeholder="React, TypeScript, etc. (comma-separated)" 
+                                      {...field}
+                                    />
+                                    <div className="flex flex-wrap gap-1 mb-2">
+                                      {field.value.split(',').map((tag, i) => (
+                                        tag.trim() && (
+                                          <Badge key={i} variant="secondary" className="font-normal">
+                                            {tag.trim()}
+                                          </Badge>
+                                        )
+                                      ))}
+                                    </div>
+                                    <Popover>
+                                      <PopoverTrigger asChild>
+                                        <Button variant="outline" size="sm" className="w-full justify-start">
+                                          <Plus className="mr-2 h-4 w-4" />
+                                          Add from existing tags
+                                        </Button>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="p-0" align="start">
+                                        <Command>
+                                          <CommandInput placeholder="Search tags..." />
+                                          <CommandList>
+                                            <CommandEmpty>No tags found.</CommandEmpty>
+                                            <CommandGroup>
+                                              {tagsList.map((tag) => (
+                                                <CommandItem
+                                                  key={tag}
+                                                  onSelect={() => handleSelectTag(tag)}
+                                                >
+                                                  {tag}
+                                                </CommandItem>
+                                              ))}
+                                            </CommandGroup>
+                                          </CommandList>
+                                          <div className="border-t p-2 flex gap-2">
+                                            <Input
+                                              size={1}
+                                              placeholder="New tag"
+                                              value={newTag}
+                                              onChange={(e) => setNewTag(e.target.value)}
+                                            />
+                                            <Button 
+                                              type="button" 
+                                              size="sm" 
+                                              onClick={handleAddNewTag}
+                                            >
+                                              Add
+                                            </Button>
+                                          </div>
+                                        </Command>
+                                      </PopoverContent>
+                                    </Popover>
+                                  </div>
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -551,9 +711,42 @@ const ArticleEditor = () => {
                                   <FormLabel className="flex items-center gap-2">
                                     <User className="h-4 w-4" /> Author
                                   </FormLabel>
-                                  <FormControl>
-                                    <Input placeholder="Author name" {...field} />
-                                  </FormControl>
+                                  <div className="space-y-2">
+                                    <FormControl>
+                                      <Select
+                                        value={field.value}
+                                        onValueChange={(value) => {
+                                          field.onChange(value);
+                                        }}
+                                      >
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Select author" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {authors.map((author) => (
+                                            <SelectItem key={author} value={author}>
+                                              {author}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </FormControl>
+                                    <div className="flex items-center gap-2">
+                                      <Input
+                                        placeholder="New author"
+                                        value={newAuthor}
+                                        onChange={(e) => setNewAuthor(e.target.value)}
+                                      />
+                                      <Button 
+                                        type="button" 
+                                        size="sm" 
+                                        variant="outline"
+                                        onClick={handleAddNewAuthor}
+                                      >
+                                        <Plus className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </div>
                                   <FormMessage />
                                 </FormItem>
                               )}
@@ -567,9 +760,19 @@ const ArticleEditor = () => {
                                   <FormLabel className="flex items-center gap-2">
                                     <Clock className="h-4 w-4" /> Read Time
                                   </FormLabel>
-                                  <FormControl>
-                                    <Input placeholder="5 min read" {...field} />
-                                  </FormControl>
+                                  <div className="flex items-center gap-2">
+                                    <FormControl>
+                                      <Input placeholder="5 min read" {...field} />
+                                    </FormControl>
+                                    <Button 
+                                      type="button" 
+                                      size="sm" 
+                                      variant="outline" 
+                                      onClick={() => calculateReadTime(editorValue)}
+                                    >
+                                      Calculate
+                                    </Button>
+                                  </div>
                                   <FormMessage />
                                 </FormItem>
                               )}
@@ -610,7 +813,7 @@ const ArticleEditor = () => {
                     </Card>
                   </div>
 
-                  <Card className="shadow-sm border dark:bg-slate-800 dark:border-slate-700">
+                  <Card className="shadow-sm border dark:bg-gray-800 dark:border-gray-700">
                     <CardContent className="pt-6">
                       <FormField
                         control={form.control}
@@ -650,7 +853,7 @@ const ArticleEditor = () => {
             </TabsContent>
             
             <TabsContent value="preview" className="mt-0">
-              <Card className="shadow-sm border overflow-hidden dark:bg-slate-800 dark:border-slate-700">
+              <Card className="shadow-sm border overflow-hidden dark:bg-gray-800 dark:border-gray-700">
                 <div className="aspect-video w-full overflow-hidden bg-muted">
                   <img
                     src={form.getValues("cover_image") || "/placeholder.svg"}
@@ -708,7 +911,7 @@ const ArticleEditor = () => {
           </Tabs>
         </motion.div>
       </div>
-    </AdminLayout>
+    </DashboardLayout>
   );
 };
 
