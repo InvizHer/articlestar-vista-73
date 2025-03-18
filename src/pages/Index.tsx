@@ -13,7 +13,7 @@ import {
   Hash,
   ExternalLink,
   Eye,
-  GitHub,
+  Github,
   Mail
 } from "lucide-react";
 import { motion } from "framer-motion";

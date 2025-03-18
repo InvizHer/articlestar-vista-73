@@ -1,17 +1,15 @@
-
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { supabase } from "@/integrations/supabase/client";
 import { DbArticle } from "@/types/database";
 import { Article as ArticleType } from "@/types/blog";
-import { CalendarIcon, Clock, ChevronLeft, Share2, Bookmark, Twitter, Facebook, Linkedin, Eye, User, MessageCircle, Heart, UserCircle, MessageSquare } from "lucide-react";
+import { CalendarIcon, Clock, ChevronLeft, Share2, Twitter, Facebook, Linkedin, Eye, User, MessageCircle, Heart, UserCircle, MessageSquare } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { TableOfContents } from "@/components/blog/TableOfContents";
-import { useBookmarks } from "@/hooks/use-bookmarks";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Popover,
@@ -152,7 +150,6 @@ const Article = () => {
   const [article, setArticle] = useState<ArticleType | null>(null);
   const [loading, setLoading] = useState(true);
   const contentRef = useRef<HTMLDivElement>(null);
-  const { isBookmarked, toggleBookmark, maxBookmarksReached } = useBookmarks();
   const viewCountedRef = useRef(false);
   const isMobile = useIsMobile();
 
@@ -326,21 +323,6 @@ const Article = () => {
                       </div>
                       
                       <div className="flex items-center gap-2">
-                        <Button
-                          variant={isBookmarked(article.id) ? "default" : "outline"}
-                          size="sm"
-                          className={cn(
-                            "rounded-full gap-1",
-                            isBookmarked(article.id) && "bg-gradient-to-r from-primary to-purple-500 text-white"
-                          )}
-                          onClick={() => toggleBookmark(article)}
-                          disabled={maxBookmarksReached && !isBookmarked(article.id)}
-                          title={maxBookmarksReached && !isBookmarked(article.id) ? "Maximum bookmarks reached" : ""}
-                        >
-                          <Bookmark className={`h-4 w-4 ${isBookmarked(article.id) ? "fill-white text-white" : ""}`} />
-                          <span className={isMobile ? "sr-only" : ""}>{isBookmarked(article.id) ? "Saved" : "Save"}</span>
-                        </Button>
-                        
                         <Popover>
                           <PopoverTrigger asChild>
                             <Button variant="outline" size="sm" className="rounded-full gap-1">
@@ -443,21 +425,6 @@ const Article = () => {
 
               <div className="mt-8 pt-6 border-t">
                 <div className="flex flex-wrap items-center justify-between gap-4">
-                  <Button 
-                    variant={isBookmarked(article.id) ? "default" : "outline"}
-                    size="sm" 
-                    className={cn(
-                      "rounded-full gap-2",
-                      isBookmarked(article.id) && "bg-gradient-to-r from-primary to-purple-500 text-white"
-                    )}
-                    onClick={() => toggleBookmark(article)}
-                    disabled={maxBookmarksReached && !isBookmarked(article.id)}
-                    title={maxBookmarksReached && !isBookmarked(article.id) ? "Maximum bookmarks reached" : ""}
-                  >
-                    <Bookmark className={`h-4 w-4 ${isBookmarked(article.id) ? "fill-white text-white" : ""}`} />
-                    {isBookmarked(article.id) ? "Saved to Reading List" : "Save to Reading List"}
-                  </Button>
-                  
                   <div className="flex gap-2">
                     <Button 
                       variant="outline" 
