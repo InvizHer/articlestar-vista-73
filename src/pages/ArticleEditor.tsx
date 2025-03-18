@@ -382,16 +382,16 @@ const ArticleEditor = () => {
   return (
     <DashboardLayout>
       <div className="w-full">
-        {/* New Header Design */}
+        {/* Improved Header Design for better mobile responsiveness */}
         <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 rounded-xl shadow-sm mb-6 overflow-hidden">
-          <div className="p-6 sm:px-8">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="p-4 sm:p-6">
+            <div className="flex flex-col gap-4">
               <div className="flex items-center gap-3">
                 <Button variant="ghost" size="sm" onClick={() => navigate("/admin/articles")} className="h-9 w-9 p-0 rounded-full">
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
                 <div>
-                  <h1 className="text-2xl font-bold tracking-tight">
+                  <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
                     {isEditMode ? "Edit Article" : "Create New Article"}
                   </h1>
                   <p className="text-muted-foreground mt-1 text-sm">
@@ -400,7 +400,7 @@ const ArticleEditor = () => {
                 </div>
               </div>
               
-              <div className="flex items-center gap-3 mt-3 sm:mt-0">
+              <div className="flex flex-wrap items-center gap-3">
                 {form.formState.isDirty && (
                   <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700/50">
                     Unsaved changes
@@ -431,33 +431,35 @@ const ArticleEditor = () => {
                   )}
                 />
                 
-                <Button 
-                  variant="outline"
-                  size="sm"
-                  onClick={handlePreview}
-                >
-                  <EyeIcon className="mr-2 h-4 w-4" />
-                  Preview
-                </Button>
-                
-                <Button 
-                  size="sm"
-                  className="bg-primary hover:bg-primary/90"
-                  disabled={saving}
-                  onClick={form.handleSubmit(onSubmit)}
-                >
-                  {saving ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Saving
-                    </>
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-4 w-4" />
-                      Save
-                    </>
-                  )}
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePreview}
+                  >
+                    <EyeIcon className="mr-2 h-4 w-4" />
+                    Preview
+                  </Button>
+                  
+                  <Button 
+                    size="sm"
+                    className="bg-primary hover:bg-primary/90"
+                    disabled={saving}
+                    onClick={form.handleSubmit(onSubmit)}
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Save
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -510,14 +512,14 @@ const ArticleEditor = () => {
                               URL Slug
                             </FormLabel>
                             <FormControl>
-                              <div className="flex">
-                                <div className="bg-muted flex items-center px-3 rounded-l-md border-y border-l text-muted-foreground">
+                              <div className="flex flex-wrap sm:flex-nowrap">
+                                <div className="bg-muted flex items-center px-3 py-2 sm:py-0 w-full sm:w-auto rounded-t-md sm:rounded-l-md sm:rounded-tr-none border-x border-t sm:border-y sm:border-r-0 text-muted-foreground">
                                   <span className="text-sm">/article/</span>
                                 </div>
                                 <Input 
                                   placeholder="article-slug" 
                                   {...field} 
-                                  className="rounded-l-none" 
+                                  className="rounded-b-md sm:rounded-r-md sm:rounded-bl-none" 
                                 />
                               </div>
                             </FormControl>
@@ -831,7 +833,7 @@ const ArticleEditor = () => {
                           </FormLabel>
                           <Card className="border shadow-none">
                             <CardContent className="p-1 sm:p-3">
-                              <div className="min-h-[400px] sm:min-h-[450px] md:min-h-[500px] overflow-hidden rounded-md">
+                              <div className="min-h-[250px] sm:min-h-[350px] md:min-h-[450px] overflow-hidden rounded-md">
                                 <ReactQuill
                                   theme="snow"
                                   modules={modules}
@@ -840,7 +842,7 @@ const ArticleEditor = () => {
                                   onChange={(value) => {
                                     setEditorValue(value);
                                   }}
-                                  className="h-[400px] sm:h-[450px] md:h-[500px] w-full"
+                                  className="h-[250px] sm:h-[350px] md:h-[450px] w-full"
                                 />
                               </div>
                             </CardContent>

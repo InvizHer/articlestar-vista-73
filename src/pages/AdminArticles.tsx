@@ -17,7 +17,8 @@ import {
   CardContent, 
   CardDescription, 
   CardHeader, 
-  CardTitle 
+  CardTitle,
+  CardFooter 
 } from "@/components/ui/card";
 import { 
   FilePlus,
@@ -28,7 +29,14 @@ import {
   Calendar,
   CircleOff,
   CircleCheck,
-  Loader2
+  Loader2,
+  LayoutDashboard,
+  ArrowDownUp,
+  ArrowUp,
+  ArrowDown,
+  BookOpen,
+  BarChart3,
+  ListFilter
 } from "lucide-react";
 import { Article } from "@/types/blog";
 import { DbArticle } from "@/types/database";
@@ -45,8 +53,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuRadioGroup,
-  DropdownMenuRadioItem
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import { formatDistanceToNow } from "date-fns";
 
 const AdminArticles = () => {
   const [articles, setArticles] = useState<Article[]>([]);
@@ -55,6 +68,7 @@ const AdminArticles = () => {
   const [filter, setFilter] = useState<"all" | "published" | "draft">("all");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "views" | "title">("newest");
   const [articleToDelete, setArticleToDelete] = useState<Article | null>(null);
+  const [activeTab, setActiveTab] = useState<"all" | "published" | "draft">("all");
   
   useEffect(() => {
     fetchArticles();
@@ -122,30 +136,34 @@ const AdminArticles = () => {
   };
   
   // Filter and sort articles
-  const filteredArticles = articles
-    .filter(article => {
-      // Filter by status
-      if (filter === "published" && !article.published) return false;
-      if (filter === "draft" && article.published) return false;
-      
-      // Filter by search term
-      if (searchTerm && !article.title.toLowerCase().includes(searchTerm.toLowerCase())) return false;
-      
-      return true;
-    })
-    .sort((a, b) => {
-      // Sort articles
-      if (sortBy === "newest") {
-        return new Date(b.date).getTime() - new Date(a.date).getTime();
-      } else if (sortBy === "oldest") {
-        return new Date(a.date).getTime() - new Date(b.date).getTime();
-      } else if (sortBy === "views") {
-        return (b.viewCount || 0) - (a.viewCount || 0);
-      } else if (sortBy === "title") {
-        return a.title.localeCompare(b.title);
-      }
-      return 0;
-    });
+  const getFilteredArticles = () => {
+    return articles
+      .filter(article => {
+        // Filter by status
+        if (activeTab === "published" && !article.published) return false;
+        if (activeTab === "draft" && article.published) return false;
+        
+        // Filter by search term
+        if (searchTerm && !article.title.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+        
+        return true;
+      })
+      .sort((a, b) => {
+        // Sort articles
+        if (sortBy === "newest") {
+          return new Date(b.date).getTime() - new Date(a.date).getTime();
+        } else if (sortBy === "oldest") {
+          return new Date(a.date).getTime() - new Date(b.date).getTime();
+        } else if (sortBy === "views") {
+          return (b.viewCount || 0) - (a.viewCount || 0);
+        } else if (sortBy === "title") {
+          return a.title.localeCompare(b.title);
+        }
+        return 0;
+      });
+  };
+  
+  const filteredArticles = getFilteredArticles();
     
   // Counts
   const totalArticles = articles.length;
@@ -167,68 +185,136 @@ const AdminArticles = () => {
     show: { opacity: 1, y: 0 }
   };
 
+  const handleTabChange = (value: string) => {
+    setActiveTab(value as "all" | "published" | "draft");
+  };
+
+  const getSortIcon = () => {
+    switch (sortBy) {
+      case "newest":
+      case "views":
+        return <ArrowDown className="h-3.5 w-3.5" />;
+      case "oldest":
+        return <ArrowUp className="h-3.5 w-3.5" />;
+      case "title":
+        return <ArrowDownUp className="h-3.5 w-3.5" />;
+      default:
+        return <ArrowDownUp className="h-3.5 w-3.5" />;
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">Articles</h1>
-            <p className="text-muted-foreground">Manage your blog articles</p>
+        {/* Header with actions */}
+        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 rounded-xl p-6 shadow-sm">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h1 className="text-2xl font-bold">
+                Articles
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                Manage your blog content in one place
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Button asChild variant="outline" className="shadow-sm">
+                <Link to="/admin/dashboard" className="flex items-center gap-2">
+                  <LayoutDashboard className="h-4 w-4" />
+                  Dashboard
+                </Link>
+              </Button>
+              <Button asChild className="shadow-sm bg-primary">
+                <Link to="/admin/article/new" className="flex items-center gap-2">
+                  <FilePlus className="h-4 w-4" />
+                  New Article
+                </Link>
+              </Button>
+            </div>
           </div>
-          <Button asChild>
-            <Link to="/admin/article/new" className="flex items-center gap-2">
-              <FilePlus className="h-4 w-4" />
-              New Article
-            </Link>
-          </Button>
         </div>
         
+        {/* Stats summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
+          <Card 
+            className={cn(
+              "border shadow-sm hover:shadow-md transition-shadow cursor-pointer",
+              activeTab === "all" ? "ring-2 ring-primary/20" : ""
+            )}
+            onClick={() => handleTabChange("all")}
+          >
             <CardContent className="p-6 flex justify-between items-center">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Articles</p>
+                <p className="text-sm font-medium text-muted-foreground">All Articles</p>
                 <h3 className="text-2xl font-bold">{totalArticles}</h3>
               </div>
-              <div className="p-3 bg-primary/10 text-primary rounded-full">
-                <Eye className="h-5 w-5" />
+              <div className="p-3 bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 rounded-full">
+                <BookOpen className="h-5 w-5" />
               </div>
             </CardContent>
           </Card>
           
-          <Card>
+          <Card 
+            className={cn(
+              "border shadow-sm hover:shadow-md transition-shadow cursor-pointer",
+              activeTab === "published" ? "ring-2 ring-primary/20" : ""
+            )}
+            onClick={() => handleTabChange("published")}
+          >
             <CardContent className="p-6 flex justify-between items-center">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Published</p>
                 <h3 className="text-2xl font-bold">{publishedArticles}</h3>
               </div>
-              <div className="p-3 bg-green-500/10 text-green-500 rounded-full">
+              <div className="p-3 bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400 rounded-full">
                 <CircleCheck className="h-5 w-5" />
               </div>
             </CardContent>
           </Card>
           
-          <Card>
+          <Card 
+            className={cn(
+              "border shadow-sm hover:shadow-md transition-shadow cursor-pointer",
+              activeTab === "draft" ? "ring-2 ring-primary/20" : ""
+            )}
+            onClick={() => handleTabChange("draft")}
+          >
             <CardContent className="p-6 flex justify-between items-center">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Drafts</p>
                 <h3 className="text-2xl font-bold">{draftArticles}</h3>
               </div>
-              <div className="p-3 bg-orange-500/10 text-orange-500 rounded-full">
+              <div className="p-3 bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400 rounded-full">
                 <CircleOff className="h-5 w-5" />
               </div>
             </CardContent>
           </Card>
         </div>
         
-        <Card>
-          <CardHeader>
-            <CardTitle>All Articles</CardTitle>
-            <CardDescription>
-              {filteredArticles.length} {filteredArticles.length === 1 ? 'article' : 'articles'} found
-            </CardDescription>
+        {/* Articles list */}
+        <Card className="border shadow-sm">
+          <CardHeader className="pb-3">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <CardTitle className="text-xl">
+                  {activeTab === "all" ? "All Articles" : 
+                   activeTab === "published" ? "Published Articles" : "Draft Articles"}
+                </CardTitle>
+                <CardDescription>
+                  {filteredArticles.length} {filteredArticles.length === 1 ? 'article' : 'articles'} found
+                </CardDescription>
+              </div>
+              
+              <Button variant="outline" asChild size="sm">
+                <Link to="/admin/analytics" className="flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  View Analytics
+                </Link>
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent>
+          
+          <CardContent className="pb-0">
             <div className="mb-6 flex flex-col sm:flex-row gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -244,12 +330,15 @@ const AdminArticles = () => {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="flex items-center gap-2">
-                      <Filter className="h-4 w-4" />
-                      {filter === "all" ? "All" : filter === "published" ? "Published" : "Drafts"}
+                      <ListFilter className="h-4 w-4" />
+                      <span className="hidden sm:inline">Filter</span>
+                      <Badge className="ml-1" variant="secondary">
+                        {activeTab === "all" ? "All" : activeTab === "published" ? "Published" : "Drafts"}
+                      </Badge>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuRadioGroup value={filter} onValueChange={(value: any) => setFilter(value)}>
+                    <DropdownMenuRadioGroup value={activeTab} onValueChange={(value: any) => handleTabChange(value)}>
                       <DropdownMenuRadioItem value="all">All Articles</DropdownMenuRadioItem>
                       <DropdownMenuRadioItem value="published">Published</DropdownMenuRadioItem>
                       <DropdownMenuRadioItem value="draft">Drafts</DropdownMenuRadioItem>
@@ -260,16 +349,34 @@ const AdminArticles = () => {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      Sort By
+                      {getSortIcon()}
+                      <span className="hidden sm:inline">Sort</span>
+                      <Badge className="ml-1" variant="secondary">
+                        {sortBy === "newest" ? "Newest" : 
+                         sortBy === "oldest" ? "Oldest" : 
+                         sortBy === "views" ? "Views" : "Title"}
+                      </Badge>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuRadioGroup value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
-                      <DropdownMenuRadioItem value="newest">Newest First</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="oldest">Oldest First</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="views">Most Views</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="title">Title (A-Z)</DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="newest">
+                        <ArrowDown className="mr-2 h-3.5 w-3.5" />
+                        Newest First
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="oldest">
+                        <ArrowUp className="mr-2 h-3.5 w-3.5" />
+                        Oldest First
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuRadioItem value="views">
+                        <Eye className="mr-2 h-3.5 w-3.5" />
+                        Most Views
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="title">
+                        <ArrowDownUp className="mr-2 h-3.5 w-3.5" />
+                        Title (A-Z)
+                      </DropdownMenuRadioItem>
                     </DropdownMenuRadioGroup>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -297,25 +404,49 @@ const AdminArticles = () => {
                 ))}
               </motion.div>
             ) : (
-              <div className="text-center py-12 text-muted-foreground">
-                {searchTerm ? (
-                  <>
-                    <p className="mb-2">No articles found matching "{searchTerm}"</p>
-                    <Button variant="outline" onClick={() => setSearchTerm("")}>
+              <div className="text-center py-12">
+                <div className="max-w-md mx-auto">
+                  <p className="text-muted-foreground mb-6">
+                    {searchTerm 
+                      ? `No articles found matching "${searchTerm}"`
+                      : activeTab !== "all" 
+                        ? `No ${activeTab} articles found` 
+                        : "No articles found"}
+                  </p>
+                  {searchTerm ? (
+                    <Button variant="outline" onClick={() => setSearchTerm("")} className="mr-2">
                       Clear Search
                     </Button>
-                  </>
-                ) : (
-                  <>
-                    <p className="mb-2">No articles found</p>
+                  ) : (
                     <Button asChild>
                       <Link to="/admin/article/new">Create Your First Article</Link>
                     </Button>
-                  </>
-                )}
+                  )}
+                </div>
               </div>
             )}
           </CardContent>
+          
+          {filteredArticles.length > 0 && (
+            <CardFooter className="py-4 mt-6 border-t flex justify-between items-center">
+              <p className="text-sm text-muted-foreground">
+                Showing {filteredArticles.length} of {
+                  activeTab === "all" 
+                    ? totalArticles 
+                    : activeTab === "published" 
+                      ? publishedArticles 
+                      : draftArticles
+                } articles
+              </p>
+              
+              <Button asChild>
+                <Link to="/admin/article/new" className="flex items-center gap-2">
+                  <FilePlus className="h-4 w-4" />
+                  New Article
+                </Link>
+              </Button>
+            </CardFooter>
+          )}
         </Card>
       </div>
       

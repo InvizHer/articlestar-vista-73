@@ -37,7 +37,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           <DashboardHeader toggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen} />
           
           <main className={cn(
-            "flex-1 overflow-y-auto pb-10 transition-all duration-300",
+            "flex-1 overflow-y-auto pb-0 transition-all duration-300",
             isMobile ? "pb-safe" : "",
             fullWidth ? "px-0" : "px-4 md:px-6 lg:px-8"
           )}>

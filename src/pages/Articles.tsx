@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -9,7 +10,7 @@ import ArticleGrid from "@/components/blog/ArticleGrid";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, Newspaper, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import {
   Pagination,
@@ -20,6 +21,8 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 const convertDbArticleToArticle = (dbArticle: DbArticle): Article => {
   return {
@@ -177,40 +180,54 @@ const Articles = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-12 sm:px-6 lg:px-8">
+      <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
         <PageHeader
           title="All Articles"
           description="Browse our collection of articles on web development, design, and technology."
         />
 
-        <div className="mb-8">
-          <form onSubmit={handleSearchSubmit} className="relative mb-6">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search articles..."
-              className="pl-10"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </form>
+        <Card className="mb-8 border shadow-sm bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <Newspaper className="h-5 w-5 text-primary" />
+              Browse Articles
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSearchSubmit} className="relative mb-6">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search articles..."
+                className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </form>
 
-          {categories.length > 0 && (
-            <div className="flex flex-wrap gap-2 items-center">
-              <Filter className="h-4 w-4 text-muted-foreground mr-1" />
-              {categories.map((category) => (
-                <Badge
-                  key={category}
-                  variant={selectedCategory === category ? "default" : "outline"}
-                  className="cursor-pointer"
-                  onClick={() => handleCategoryClick(category)}
-                >
-                  {category}
-                </Badge>
-              ))}
-            </div>
-          )}
-        </div>
+            {categories.length > 0 && (
+              <div className="flex flex-wrap gap-2 items-center">
+                <Filter className="h-4 w-4 text-muted-foreground mr-1" />
+                <span className="text-sm text-muted-foreground mr-2">Categories:</span>
+                {categories.map((category) => (
+                  <Badge
+                    key={category}
+                    variant={selectedCategory === category ? "default" : "outline"}
+                    className={cn(
+                      "cursor-pointer transition-colors",
+                      selectedCategory === category 
+                        ? "bg-primary text-primary-foreground" 
+                        : "hover:bg-primary/10"
+                    )}
+                    onClick={() => handleCategoryClick(category)}
+                  >
+                    {category}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -235,67 +252,76 @@ const Articles = () => {
             <ArticleGrid articles={filteredArticles} columns={3} />
             
             {totalPages > 1 && (
-              <Pagination className="mt-12">
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious 
-                      href="#" 
-                      onClick={(e) => { 
-                        e.preventDefault(); 
-                        if (currentPage > 1) handlePageChange(currentPage - 1); 
-                      }}
-                      className={currentPage === 1 ? "opacity-50 pointer-events-none" : ""}
-                    />
-                  </PaginationItem>
-                  
-                  {generatePagination().map((page, i) => (
-                    typeof page === 'number' ? (
-                      <PaginationItem key={`page-${page}`}>
-                        <PaginationLink 
-                          href="#" 
-                          onClick={(e) => { e.preventDefault(); handlePageChange(page); }}
-                          isActive={page === currentPage}
-                        >
-                          {page}
-                        </PaginationLink>
-                      </PaginationItem>
-                    ) : (
-                      <PaginationItem key={`ellipsis-${i}`}>
-                        <PaginationEllipsis />
-                      </PaginationItem>
-                    )
-                  ))}
-                  
-                  <PaginationItem>
-                    <PaginationNext 
-                      href="#" 
-                      onClick={(e) => { 
-                        e.preventDefault(); 
-                        if (currentPage < totalPages) handlePageChange(currentPage + 1); 
-                      }}
-                      className={currentPage === totalPages ? "opacity-50 pointer-events-none" : ""}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
+              <div className="mt-12 flex justify-center">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        href="#" 
+                        onClick={(e) => { 
+                          e.preventDefault(); 
+                          if (currentPage > 1) handlePageChange(currentPage - 1); 
+                        }}
+                        className={currentPage === 1 ? "opacity-50 pointer-events-none" : ""}
+                      />
+                    </PaginationItem>
+                    
+                    {generatePagination().map((page, i) => (
+                      typeof page === 'number' ? (
+                        <PaginationItem key={`page-${page}`}>
+                          <PaginationLink 
+                            href="#" 
+                            onClick={(e) => { e.preventDefault(); handlePageChange(page); }}
+                            isActive={page === currentPage}
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ) : (
+                        <PaginationItem key={`ellipsis-${i}`}>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      )
+                    ))}
+                    
+                    <PaginationItem>
+                      <PaginationNext 
+                        href="#" 
+                        onClick={(e) => { 
+                          e.preventDefault(); 
+                          if (currentPage < totalPages) handlePageChange(currentPage + 1); 
+                        }}
+                        className={currentPage === totalPages ? "opacity-50 pointer-events-none" : ""}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
             )}
           </>
         ) : (
-          <div className="text-center py-12">
-            <div className="max-w-md mx-auto">
-              <h3 className="text-lg font-semibold mb-2">No articles found</h3>
-              <p className="text-muted-foreground mb-6">Try a different search term or category.</p>
-              <Button 
-                onClick={() => { 
-                  setSearchTerm(''); 
-                  setSelectedCategory(null); 
-                  setCurrentPage(1);
-                }}
-              >
-                Reset Filters
-              </Button>
-            </div>
-          </div>
+          <Card className="text-center py-12 border shadow-sm">
+            <CardContent className="pt-6">
+              <div className="max-w-md mx-auto">
+                <h3 className="text-lg font-semibold mb-2">No articles found</h3>
+                <p className="text-muted-foreground mb-6">Try a different search term or category.</p>
+                <div className="flex gap-3 justify-center">
+                  <Button 
+                    variant="outline"
+                    onClick={() => { 
+                      setSearchTerm(''); 
+                      setSelectedCategory(null); 
+                      setCurrentPage(1);
+                    }}
+                    className="flex items-center gap-2"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Reset Filters
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
       </div>
     </Layout>
