@@ -60,6 +60,10 @@ const ArticleListItem: React.FC<ArticleListItemProps> = ({
             <Clock className="h-3 w-3" />
             {article.readTime}
           </span>
+          <span className="flex items-center gap-1">
+            <Eye className="h-3 w-3" />
+            {article.viewCount || 0} views
+          </span>
           <Badge variant="secondary" className="font-normal text-xs">
             {article.category}
           </Badge>

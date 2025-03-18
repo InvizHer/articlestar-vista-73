@@ -2,7 +2,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Article } from "@/types/blog";
-import { CalendarIcon, Clock, ArrowUpRight, Bookmark } from "lucide-react";
+import { CalendarIcon, Clock, ArrowUpRight, Bookmark, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { useBookmarks } from "@/hooks/use-bookmarks";
@@ -121,6 +121,13 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, variant = "default",
               <Clock className="h-3 w-3" />
               <span>{article.readTime}</span>
             </div>
+
+            {article.viewCount !== undefined && (
+              <div className="flex items-center gap-1">
+                <Eye className="h-3 w-3" />
+                <span>{article.viewCount}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>

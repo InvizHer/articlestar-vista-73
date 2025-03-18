@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -60,6 +59,18 @@ import {
   TabsList,
   TabsTrigger
 } from "@/components/ui/tabs";
+import {
+  Bar,
+  BarChart,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  PieChart,
+  Pie,
+  Cell
+} from "recharts";
 
 const AdminDashboard = () => {
   const [articles, setArticles] = useState<DbArticle[]>([]);
@@ -67,7 +78,7 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "published" | "draft">("all");
-  const [sortField, setSortField] = useState<"date" | "title" | "category">("date");
+  const [sortField, setSortField] = useState<"date" | "title" | "category" | "view_count">("date");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [viewMode, setViewMode] = useState<"table" | "cards">("table");
   const { admin } = useAdmin();
@@ -130,6 +141,8 @@ const AdminDashboard = () => {
         comparison = a.title.localeCompare(b.title);
       } else if (sortField === "category") {
         comparison = a.category.localeCompare(b.category);
+      } else if (sortField === "view_count") {
+        comparison = (b.view_count || 0) - (a.view_count || 0);
       }
       
       return sortDirection === "asc" ? comparison : -comparison;
@@ -199,7 +212,7 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleSort = (field: "date" | "title" | "category") => {
+  const handleSort = (field: "date" | "title" | "category" | "view_count") => {
     if (sortField === field) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
@@ -216,13 +229,14 @@ const AdminDashboard = () => {
     const total = articles.length;
     const published = articles.filter(a => a.published).length;
     const drafts = total - published;
+    const totalViews = articles.reduce((sum, article) => sum + (article.view_count || 0), 0);
     
-    return { total, published, drafts };
+    return { total, published, drafts, totalViews };
   };
 
   const stats = getArticleStats();
 
-  const renderSortIcon = (field: "date" | "title" | "category") => {
+  const renderSortIcon = (field: "date" | "title" | "category" | "view_count") => {
     if (sortField !== field) return null;
     
     return sortDirection === "asc" ? (
@@ -231,6 +245,45 @@ const AdminDashboard = () => {
       <ChevronDown className="h-4 w-4 ml-1" />
     );
   };
+
+  const getMostViewedArticles = () => {
+    return [...articles]
+      .sort((a, b) => (b.view_count || 0) - (a.view_count || 0))
+      .slice(0, 5);
+  };
+
+  const getCategoryData = () => {
+    const categoryMap = new Map();
+    
+    articles.forEach(article => {
+      const category = article.category;
+      const views = article.view_count || 0;
+      
+      if (categoryMap.has(category)) {
+        categoryMap.set(category, {
+          count: categoryMap.get(category).count + 1,
+          views: categoryMap.get(category).views + views
+        });
+      } else {
+        categoryMap.set(category, { count: 1, views });
+      }
+    });
+    
+    return Array.from(categoryMap).map(([name, data]) => ({
+      name,
+      articles: data.count,
+      views: data.views
+    }));
+  };
+
+  const getViewsChartData = () => {
+    return getMostViewedArticles().map(article => ({
+      name: article.title.length > 20 ? article.title.substring(0, 20) + '...' : article.title,
+      views: article.view_count || 0
+    }));
+  };
+
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
   const renderTableView = () => (
     <div className="bg-white rounded-lg border shadow-sm dark:bg-slate-800 dark:border-slate-700 overflow-hidden">
@@ -256,6 +309,14 @@ const AdminDashboard = () => {
                 </div>
               </TableHead>
               <TableHead 
+                className="hidden md:table-cell w-24 cursor-pointer"
+                onClick={() => handleSort("view_count")}
+              >
+                <div className="flex items-center">
+                  Views {renderSortIcon("view_count")}
+                </div>
+              </TableHead>
+              <TableHead 
                 className="hidden md:table-cell w-40 cursor-pointer"
                 onClick={() => handleSort("date")}
               >
@@ -269,7 +330,7 @@ const AdminDashboard = () => {
           <TableBody>
             {filteredArticles.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8">
+                <TableCell colSpan={6} className="text-center py-8">
                   {searchTerm || statusFilter !== "all" ? (
                     <div>
                       <FileCheck className="mx-auto h-12 w-12 text-muted-foreground/50" />
@@ -322,6 +383,12 @@ const AdminDashboard = () => {
                     <Badge variant="secondary" className="font-normal">
                       {article.category}
                     </Badge>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    <span className="flex items-center gap-1">
+                      <Eye className="h-3 w-3" />
+                      {article.view_count || 0}
+                    </span>
                   </TableCell>
                   <TableCell className="text-muted-foreground hidden md:table-cell">
                     <div className="flex items-center gap-2">
@@ -508,7 +575,7 @@ const AdminDashboard = () => {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <Card className="bg-white dark:bg-slate-800">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -537,6 +604,16 @@ const AdminDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-amber-500">{stats.drafts}</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white dark:bg-slate-800">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Eye className="h-4 w-4 text-blue-500" /> Total Views
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-blue-500">{stats.totalViews}</div>
             </CardContent>
           </Card>
         </div>
@@ -632,18 +709,148 @@ const AdminDashboard = () => {
                 )}
               </TabsContent>
               
-              <TabsContent value="analytics" className="mt-0">
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="flex flex-col items-center justify-center py-12 text-center">
-                      <TrendingUp className="h-12 w-12 text-muted-foreground/50" />
-                      <h3 className="mt-4 text-xl font-semibold">Analytics Coming Soon</h3>
-                      <p className="text-muted-foreground mt-2">
-                        Detailed analytics for your blog will be available in the future.
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
+              <TabsContent value="analytics" className="mt-0 space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Most Viewed Articles</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {articles.length === 0 ? (
+                        <div className="text-center py-8">
+                          <TrendingUp className="h-12 w-12 text-muted-foreground/50 mx-auto" />
+                          <p className="text-muted-foreground mt-2">No articles to analyze</p>
+                        </div>
+                      ) : (
+                        <div className="h-[300px]">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={getViewsChartData()}>
+                              <XAxis dataKey="name" />
+                              <YAxis />
+                              <Tooltip />
+                              <Legend />
+                              <Bar dataKey="views" fill="#0088FE" name="Views" />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Categories Distribution</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {articles.length === 0 ? (
+                        <div className="text-center py-8">
+                          <Tag className="h-12 w-12 text-muted-foreground/50 mx-auto" />
+                          <p className="text-muted-foreground mt-2">No categories to analyze</p>
+                        </div>
+                      ) : (
+                        <div className="h-[300px]">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Tooltip />
+                              <Legend />
+                              <Pie
+                                data={getCategoryData()}
+                                dataKey="articles"
+                                nameKey="name"
+                                cx="50%"
+                                cy="50%"
+                                outerRadius={60}
+                                fill="#8884d8"
+                                label
+                              >
+                                {getCategoryData().map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                ))}
+                              </Pie>
+                              <Pie
+                                data={getCategoryData()}
+                                dataKey="views"
+                                nameKey="name"
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={70}
+                                outerRadius={90}
+                                fill="#82ca9d"
+                                label
+                              >
+                                {getCategoryData().map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                ))}
+                              </Pie>
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                
+                  <Card className="lg:col-span-2">
+                    <CardHeader>
+                      <CardTitle>Top Articles by Views</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {getMostViewedArticles().length === 0 ? (
+                        <div className="text-center py-8">
+                          <Eye className="h-12 w-12 text-muted-foreground/50 mx-auto" />
+                          <p className="text-muted-foreground mt-2">No article views to display</p>
+                        </div>
+                      ) : (
+                        <div className="overflow-hidden">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Title</TableHead>
+                                <TableHead>Category</TableHead>
+                                <TableHead className="text-right">Views</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {getMostViewedArticles().map((article) => (
+                                <TableRow key={article.id}>
+                                  <TableCell className="font-medium">{article.title}</TableCell>
+                                  <TableCell>
+                                    <Badge variant="secondary" className="font-normal">
+                                      {article.category}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <span className="font-bold">{article.view_count || 0}</span>
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <div className="flex justify-end gap-2">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                        onClick={() => handleViewArticle(article.slug)}
+                                      >
+                                        <Eye className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8"
+                                        onClick={() => handleEditArticle(article.id)}
+                                      >
+                                        <Edit className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
               </TabsContent>
             </Tabs>
           </div>

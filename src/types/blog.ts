@@ -1,4 +1,3 @@
-
 export interface Article {
   id: string;
   title: string;
@@ -15,4 +14,5 @@ export interface Article {
   tags: string[];
   coverImage: string;
   published?: boolean;
+  viewCount?: number;
 }

@@ -5,7 +5,7 @@ import Layout from "@/components/layout/Layout";
 import { supabase } from "@/integrations/supabase/client";
 import { DbArticle } from "@/types/database";
 import { Article as ArticleType } from "@/types/blog";
-import { CalendarIcon, Clock, User, ChevronLeft, Share2, Bookmark, Twitter, Facebook, Linkedin } from "lucide-react";
+import { CalendarIcon, Clock, User, ChevronLeft, Share2, Bookmark, Twitter, Facebook, Linkedin, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import ArticleGrid from "@/components/blog/ArticleGrid";
 import { Button } from "@/components/ui/button";
@@ -40,7 +40,8 @@ const convertDbArticleToArticle = (dbArticle: DbArticle): ArticleType => {
     category: dbArticle.category,
     tags: dbArticle.tags,
     coverImage: dbArticle.cover_image || "/placeholder.svg",
-    published: dbArticle.published
+    published: dbArticle.published,
+    viewCount: dbArticle.view_count || 0
   };
 };
 
@@ -52,13 +53,31 @@ const Article = () => {
   const [loading, setLoading] = useState(true);
   const contentRef = useRef<HTMLDivElement>(null);
   const { isBookmarked, toggleBookmark } = useBookmarks();
+  const viewCountedRef = useRef(false);
 
   useEffect(() => {
     if (slug) {
       fetchArticle(slug);
+      viewCountedRef.current = false;
     }
     window.scrollTo(0, 0);
   }, [slug]);
+
+  const incrementViewCount = async (articleId: string) => {
+    if (viewCountedRef.current) return;
+    
+    try {
+      const { error } = await supabase.rpc('increment_view_count', { article_id: articleId });
+      
+      if (error) {
+        console.error("Error incrementing view count:", error);
+      } else {
+        viewCountedRef.current = true;
+      }
+    } catch (error) {
+      console.error("Error incrementing view count:", error);
+    }
+  };
 
   const fetchArticle = async (slug: string) => {
     try {
@@ -77,6 +96,9 @@ const Article = () => {
         const articleData = convertDbArticleToArticle(data);
         setArticle(articleData);
         fetchRelatedArticles(data.category, data.tags, data.id);
+        
+        // Increment view count
+        incrementViewCount(data.id);
         
         // Add IDs to headings for table of contents
         setTimeout(() => {
@@ -282,9 +304,15 @@ const Article = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    <span>{article.readTime}</span>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      <span>{article.readTime}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Eye className="h-4 w-4" />
+                      <span>{article.viewCount} views</span>
+                    </div>
                   </div>
                 </div>
               </div>

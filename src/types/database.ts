@@ -1,4 +1,3 @@
-
 export interface Admin {
   id: string;
   username: string;
@@ -19,7 +18,8 @@ export interface DbArticle {
   category: string;
   tags: string[];
   cover_image: string | null;
-  published: boolean;
   created_at: string;
   updated_at: string;
+  published: boolean;
+  view_count: number;
 }

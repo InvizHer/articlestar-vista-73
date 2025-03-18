@@ -47,6 +47,7 @@ export type Database = {
           tags: string[]
           title: string
           updated_at: string
+          view_count: number
         }
         Insert: {
           author_avatar?: string | null
@@ -64,6 +65,7 @@ export type Database = {
           tags: string[]
           title: string
           updated_at?: string
+          view_count?: number
         }
         Update: {
           author_avatar?: string | null
@@ -81,6 +83,7 @@ export type Database = {
           tags?: string[]
           title?: string
           updated_at?: string
+          view_count?: number
         }
         Relationships: []
       }
@@ -89,7 +92,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      increment_view_count: {
+        Args: {
+          article_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
