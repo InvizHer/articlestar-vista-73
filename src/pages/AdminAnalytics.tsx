@@ -25,7 +25,18 @@ import {
   ListFilter,
   Activity
 } from "lucide-react";
-import { ResponsiveContainer, Bar, XAxis, YAxis, Tooltip, Cell, Pie, Sector } from "recharts";
+import { 
+  ResponsiveContainer, 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  Tooltip, 
+  Cell, 
+  PieChart,
+  Pie, 
+  Sector 
+} from "recharts";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
