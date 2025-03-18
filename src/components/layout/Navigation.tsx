@@ -1,140 +1,174 @@
 
-import React, { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { Menu, X, Search } from "lucide-react";
+import React, { useState } from "react";
+import { Link, NavLink } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useAdmin } from "@/context/AdminContext";
+import { BookOpen, Menu, X, Moon, Sun, Search } from "lucide-react";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { useTheme } from "@/hooks/use-theme";
+import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { BookmarksDialog } from "@/components/common/BookmarksDialog";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
-const Navigation: React.FC = () => {
+const Navigation = () => {
+  const { theme, setTheme } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const location = useLocation();
-  const { isAuthenticated } = useAdmin();
+  const isMobile = useIsMobile();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-    };
-    
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      window.location.href = `/articles?search=${encodeURIComponent(searchQuery)}`;
+      setSearchOpen(false);
+    }
+  };
 
-  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
+  const navItems = [
+    { path: "/", label: "Home" },
+    { path: "/articles", label: "Articles" },
+    { path: "/about", label: "About" },
+    { path: "/contact", label: "Contact" }
+  ];
 
   return (
-    <header 
-      className={`sticky top-0 z-40 w-full transition-all duration-300 ${
-        scrolled ? "bg-background/95 backdrop-blur-md shadow-sm" : "bg-background"
-      }`}
-    >
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
-          <div className="flex items-center">
-            <Link to="/" className="flex items-center group">
-              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-600 transition-all duration-300">
-                BlogHub
-              </span>
+    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur">
+      <div className="container mx-auto flex h-16 items-center justify-between px-4">
+        <div className="flex items-center gap-2">
+          <Link to="/" className="flex items-center space-x-2">
+            <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
+              <span className="text-white font-bold">B</span>
+            </div>
+            <span className="hidden sm:inline-block font-bold text-xl">BlogHub</span>
+          </Link>
+        </div>
+
+        <nav className="hidden md:flex items-center gap-6">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              className={({ isActive }) =>
+                cn(
+                  "text-sm font-medium transition-colors hover:text-primary",
+                  isActive ? "text-primary" : "text-muted-foreground"
+                )
+              }
+            >
+              {item.label}
+            </NavLink>
+          ))}
+        </nav>
+
+        <div className="flex items-center gap-2">
+          <Dialog open={searchOpen} onOpenChange={setSearchOpen}>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Search className="h-5 w-5" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <form onSubmit={handleSearch} className="flex gap-2">
+                <Input
+                  placeholder="Search articles..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="flex-1"
+                />
+                <Button type="submit">Search</Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          <BookmarksDialog />
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                {theme === "dark" ? (
+                  <Moon className="h-5 w-5" />
+                ) : (
+                  <Sun className="h-5 w-5" />
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setTheme("light")}>
+                <Sun className="mr-2 h-4 w-4" />
+                Light
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTheme("dark")}>
+                <Moon className="mr-2 h-4 w-4" />
+                Dark
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Button asChild size="sm" className="hidden sm:flex">
+            <Link to="/articles">
+              <BookOpen className="h-4 w-4 mr-2" />
+              Read Articles
             </Link>
-          </div>
+          </Button>
 
-          {/* Desktop menu */}
-          <nav className="hidden md:flex items-center space-x-1">
-            <NavLink to="/" label="Home" />
-            <NavLink to="/articles" label="Articles" />
-            <NavLink to="/about" label="About" />
-            <NavLink to="/contact" label="Contact" />
-            {isAuthenticated && (
-              <NavLink to="/admin/dashboard" label="Dashboard" />
-            )}
-            <Button variant="ghost" size="icon" className="ml-2 text-muted-foreground hover:text-primary">
-              <Search className="h-5 w-5" />
-            </Button>
-          </nav>
-
-          {/* Mobile menu button */}
-          <div className="md:hidden flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-muted-foreground hover:text-primary"
-            >
-              <Search className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleMenu}
-              aria-label="Toggle menu"
-              className={isMenuOpen ? "text-primary" : "text-muted-foreground hover:text-primary"}
-            >
-              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            onClick={toggleMenu}
+          >
+            {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
         </div>
       </div>
 
-      {/* Mobile menu */}
+      {/* Mobile Menu */}
       {isMenuOpen && (
-        <div className="md:hidden animate-fade-in">
-          <div className="container mx-auto px-4 py-4 space-y-4">
-            <MobileNavLink to="/" label="Home" onClick={() => setIsMenuOpen(false)} />
-            <MobileNavLink to="/articles" label="Articles" onClick={() => setIsMenuOpen(false)} />
-            <MobileNavLink to="/about" label="About" onClick={() => setIsMenuOpen(false)} />
-            <MobileNavLink to="/contact" label="Contact" onClick={() => setIsMenuOpen(false)} />
-            {isAuthenticated && (
-              <MobileNavLink to="/admin/dashboard" label="Dashboard" onClick={() => setIsMenuOpen(false)} />
-            )}
-          </div>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.2 }}
+          className="md:hidden border-t"
+        >
+          <nav className="container mx-auto py-4 px-4 flex flex-col">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={({ isActive }) =>
+                  cn(
+                    "py-2 text-sm font-medium transition-colors hover:text-primary",
+                    isActive ? "text-primary" : "text-muted-foreground"
+                  )
+                }
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {item.label}
+              </NavLink>
+            ))}
+            <Button asChild size="sm" className="mt-4">
+              <Link to="/articles" onClick={() => setIsMenuOpen(false)}>
+                <BookOpen className="h-4 w-4 mr-2" />
+                Read Articles
+              </Link>
+            </Button>
+          </nav>
+        </motion.div>
       )}
     </header>
-  );
-};
-
-// Desktop nav link component
-const NavLink = ({ to, label }: { to: string; label: string }) => {
-  const location = useLocation();
-  const isActive = location.pathname === to || 
-    (to !== "/" && location.pathname.startsWith(to));
-  
-  return (
-    <Link
-      to={to}
-      className={`px-3 py-2 text-sm font-medium rounded-md transition-colors relative group ${
-        isActive 
-          ? "text-primary" 
-          : "text-muted-foreground hover:text-primary"
-      }`}
-    >
-      {label}
-      <span 
-        className={`absolute bottom-0 left-0 w-full h-0.5 bg-primary transform origin-left transition-transform duration-300 ${
-          isActive ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
-        }`}
-      />
-    </Link>
-  );
-};
-
-// Mobile nav link component
-const MobileNavLink = ({ to, label, onClick }: { to: string; label: string; onClick: () => void }) => {
-  const location = useLocation();
-  const isActive = location.pathname === to || 
-    (to !== "/" && location.pathname.startsWith(to));
-  
-  return (
-    <Link
-      to={to}
-      className={`block py-2 px-4 text-base font-medium rounded-md transition-colors ${
-        isActive 
-          ? "bg-primary/10 text-primary" 
-          : "text-muted-foreground hover:bg-muted hover:text-primary"
-      }`}
-      onClick={onClick}
-    >
-      {label}
-    </Link>
   );
 };
 

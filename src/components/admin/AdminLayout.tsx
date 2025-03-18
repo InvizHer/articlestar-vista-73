@@ -27,7 +27,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
           
           <main className={cn(
             "flex-1 overflow-y-auto pb-10",
-            isMobile ? "pb-safe" : "",
+            isMobile ? "pb-safe pt-16" : "",
             fullWidth ? "px-0" : "px-4 md:px-6 lg:px-8"
           )}>
             <motion.div

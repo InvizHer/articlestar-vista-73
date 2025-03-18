@@ -2,18 +2,29 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Article } from "@/types/blog";
-import { CalendarIcon, Clock, ArrowUpRight } from "lucide-react";
+import { CalendarIcon, Clock, ArrowUpRight, Bookmark } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
+import { useBookmarks } from "@/hooks/use-bookmarks";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface ArticleCardProps {
   article: Article;
-  variant?: "default" | "featured";
+  variant?: "default" | "featured" | "compact";
   index?: number;
 }
 
 const ArticleCard: React.FC<ArticleCardProps> = ({ article, variant = "default", index = 0 }) => {
   const isFeatured = variant === "featured";
+  const isCompact = variant === "compact";
+  const { isBookmarked, toggleBookmark } = useBookmarks();
+  
+  const handleBookmarkClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleBookmark(article);
+  };
   
   return (
     <motion.article 
@@ -21,13 +32,18 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, variant = "default",
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: index * 0.1 }}
       viewport={{ once: true }}
-      className={`group h-full overflow-hidden rounded-xl border bg-card shadow-sm transition-all hover:shadow-md ${
-        isFeatured ? "flex flex-col md:flex-row" : "flex flex-col"
-      }`}
+      className={cn(
+        "group h-full overflow-hidden rounded-xl border bg-card shadow-sm transition-all hover:shadow-md",
+        isFeatured ? "flex flex-col md:flex-row" : "flex flex-col",
+        isCompact && "border-0 shadow-none"
+      )}
     >
       <Link 
         to={`/article/${article.slug}`} 
-        className={`block ${isFeatured ? "md:w-2/5 h-60 md:h-auto" : "aspect-video w-full"} overflow-hidden bg-muted relative`}
+        className={cn(
+          "block overflow-hidden bg-muted relative",
+          isFeatured ? "md:w-2/5 h-60 md:h-auto" : isCompact ? "aspect-square w-full" : "aspect-video w-full"
+        )}
       >
         <img
           src={article.coverImage}
@@ -40,7 +56,28 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, variant = "default",
         </div>
       </Link>
       
-      <div className={`flex flex-col p-6 ${isFeatured ? "md:w-3/5" : ""} flex-grow`}>
+      <div className={cn(
+        "flex flex-col p-6",
+        isFeatured ? "md:w-3/5" : "",
+        isCompact && "p-4",
+        "flex-grow relative"
+      )}>
+        <div className="absolute top-6 right-6">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-full hover:bg-background/80"
+            onClick={handleBookmarkClick}
+          >
+            <Bookmark 
+              className={cn(
+                "h-4 w-4 transition-colors",
+                isBookmarked(article.id) ? "fill-primary text-primary" : "text-muted-foreground"
+              )} 
+            />
+          </Button>
+        </div>
+
         <div className="mb-3">
           <Badge variant="outline" className="hover:bg-primary hover:text-primary-foreground">
             {article.category}
@@ -48,14 +85,19 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, variant = "default",
         </div>
 
         <Link to={`/article/${article.slug}`} className="group/title">
-          <h3 className={`${isFeatured ? "text-2xl md:text-3xl" : "text-xl"} font-bold leading-tight tracking-tight mb-3 group-hover/title:text-primary transition-colors`}>
+          <h3 className={cn(
+            "font-bold leading-tight tracking-tight mb-3 group-hover/title:text-primary transition-colors",
+            isFeatured ? "text-2xl md:text-3xl" : isCompact ? "text-lg" : "text-xl"
+          )}>
             {article.title}
           </h3>
         </Link>
 
-        <p className="text-muted-foreground mb-4 line-clamp-2 flex-grow">
-          {article.excerpt}
-        </p>
+        {!isCompact && (
+          <p className="text-muted-foreground mb-4 line-clamp-2 flex-grow">
+            {article.excerpt}
+          </p>
+        )}
 
         <div className="mt-auto flex items-center justify-between text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
