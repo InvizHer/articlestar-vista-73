@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -110,7 +109,6 @@ const Index = () => {
 
   return (
     <Layout>
-      {/* Hero Section with Animation */}
       <section className="relative overflow-hidden bg-gradient-to-b from-primary/5 to-background">
         <div className="absolute inset-0 -z-10 overflow-hidden">
           <div className="absolute -top-[30%] -right-[20%] h-[500px] w-[500px] rounded-full bg-primary/5"></div>
@@ -167,7 +165,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Editor's Pick Section */}
       {loading ? (
         <section className="container mx-auto px-4 py-12">
           <div className="animate-pulse">
@@ -195,7 +192,6 @@ const Index = () => {
         </section>
       ) : null}
 
-      {/* Recent Stories Section */}
       {loading ? (
         <section className="container mx-auto px-4 py-12">
           <div className="animate-pulse">
@@ -313,7 +309,6 @@ const Index = () => {
         </section>
       ) : null}
 
-      {/* Categories and Tags Section */}
       <section className="bg-gradient-to-b from-primary/5 to-background py-16">
         <div className="container mx-auto px-4">
           <motion.div
@@ -406,7 +401,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Join Community Section */}
       <section className="py-16 bg-gradient-to-b from-background to-primary/5">
         <div className="container mx-auto px-4">
           <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-primary/20 to-primary/5 p-8 md:p-12">
@@ -436,7 +430,7 @@ const Index = () => {
                   className="bg-card rounded-xl p-6 border shadow-sm hover:shadow-md transition-all"
                 >
                   <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                    <GitHub className="h-6 w-6 text-primary" />
+                    <Github className="h-6 w-6 text-primary" />
                   </div>
                   <h3 className="text-xl font-semibold mb-2">GitHub Discussions</h3>
                   <p className="text-muted-foreground mb-4">
@@ -448,7 +442,7 @@ const Index = () => {
                     rel="noopener noreferrer"
                     className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-colors font-medium"
                   >
-                    <GitHub className="h-4 w-4" />
+                    <Github className="h-4 w-4" />
                     <span>GitHub</span>
                   </a>
                 </motion.div>
