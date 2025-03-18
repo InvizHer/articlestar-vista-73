@@ -18,15 +18,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Bookmark, BookmarkCheck, ChevronDown, Clock, MoreHorizontal, Eye, Info, Search, Trash2, X, RefreshCw } from "lucide-react";
+import { Bookmark, BookmarkCheck, ChevronDown, Clock, MoreHorizontal, Eye, Info, Search, Trash2, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 
 export const BookmarksDialog = () => {
-  const { bookmarks, removeBookmark, clearBookmarks, refreshBookmarks, maxBookmarksReached } = useBookmarks();
+  const { bookmarks, removeBookmark, clearBookmarks, maxBookmarksReached } = useBookmarks();
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
@@ -60,7 +61,7 @@ export const BookmarksDialog = () => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog>
       <DialogTrigger asChild>
         <Button variant="ghost" size="icon" className="relative rounded-full hover:bg-primary/10">
           <Bookmark className="h-5 w-5" />
@@ -76,15 +77,12 @@ export const BookmarksDialog = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <BookmarkCheck className="h-5 w-5 text-primary" />
-              <DialogTitle>Reading List ({bookmarkCount}/5)</DialogTitle>
+              <DialogTitle>Reading List ({bookmarkCount}/3)</DialogTitle>
             </div>
             
-            <div className={cn(
-              "bookmark-limit-badge flex items-center gap-2 bg-gradient-to-r from-primary/10 to-purple-500/10 px-3 py-1.5 rounded-full text-xs font-medium",
-              maxBookmarksReached ? "from-destructive/20 to-destructive text-destructive" : ""
-            )}>
-              <span>
-                {bookmarkCount}/5 articles saved
+            <div className="bookmark-limit-badge flex items-center gap-2 bg-gradient-to-r from-primary/10 to-purple-500/10 px-3 py-1.5 rounded-full text-xs font-medium">
+              <span className={maxBookmarksReached ? "text-destructive" : "text-primary"}>
+                {bookmarkCount}/3 articles saved
               </span>
               <Info className="h-3 w-3 text-muted-foreground" />
             </div>
@@ -114,16 +112,6 @@ export const BookmarksDialog = () => {
                 </Button>
               )}
             </div>
-            
-            <Button
-              variant="outline"
-              size="icon"
-              className="rounded-full"
-              onClick={refreshBookmarks}
-              title="Refresh bookmarks"
-            >
-              <RefreshCw className="h-4 w-4" />
-            </Button>
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -274,4 +262,4 @@ export const BookmarksDialog = () => {
       </DialogContent>
     </Dialog>
   );
-}
+};

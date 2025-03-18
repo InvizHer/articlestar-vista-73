@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
-// WhatsApp Icon Component
+// Define the WhatsAppIcon component
 const WhatsAppIcon = ({ className }: { className?: string }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -146,37 +146,10 @@ const AuthorProfile = ({ author }: { author: ArticleType['author'] }) => {
   );
 };
 
-const RelatedArticleCard = ({ article }: { article: ArticleType }) => {
-  return (
-    <div className="rounded-lg overflow-hidden border border-border shadow-sm hover:shadow-md transition-shadow">
-      <div className="h-32 overflow-hidden bg-muted">
-        <img src={article.coverImage} alt={article.title} className="w-full h-full object-cover" />
-      </div>
-      <div className="p-4">
-        <Badge variant="outline" className="mb-2 text-xs">{article.category}</Badge>
-        <Link to={`/article/${article.slug}`} className="font-medium text-sm line-clamp-2 mb-2 hover:text-primary transition-colors">
-          {article.title}
-        </Link>
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Clock className="h-3 w-3" />
-            <span>{article.readTime}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Eye className="h-3 w-3" />
-            <span>{article.viewCount} views</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const Article = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [article, setArticle] = useState<ArticleType | null>(null);
-  const [relatedArticles, setRelatedArticles] = useState<ArticleType[]>([]);
   const [loading, setLoading] = useState(true);
   const contentRef = useRef<HTMLDivElement>(null);
   const { isBookmarked, toggleBookmark, maxBookmarksReached } = useBookmarks();
@@ -225,7 +198,6 @@ const Article = () => {
         setArticle(articleData);
         
         incrementViewCount(data.id);
-        fetchRelatedArticles(data.category, data.id);
         
         setTimeout(() => {
           if (contentRef.current) {
@@ -246,29 +218,6 @@ const Article = () => {
       navigate("/not-found");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchRelatedArticles = async (category: string, currentArticleId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("articles")
-        .select("*")
-        .eq("category", category)
-        .eq("published", true)
-        .neq("id", currentArticleId)
-        .limit(3);
-
-      if (error) {
-        throw error;
-      }
-
-      if (data) {
-        const relatedArticlesData = data.map(convertDbArticleToArticle);
-        setRelatedArticles(relatedArticlesData);
-      }
-    } catch (error) {
-      console.error("Error fetching related articles:", error);
     }
   };
 
@@ -493,86 +442,57 @@ const Article = () => {
               )}
 
               <div className="mt-8 pt-6 border-t">
-                <div className="flex items-center justify-between flex-wrap gap-4 bg-gradient-to-r from-purple-50/50 to-background dark:from-purple-950/10 dark:to-background rounded-xl p-4 border border-purple-100/50 dark:border-purple-900/20">
-                  <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <Button 
+                    variant={isBookmarked(article.id) ? "default" : "outline"}
+                    size="sm" 
+                    className={cn(
+                      "rounded-full gap-2",
+                      isBookmarked(article.id) && "bg-gradient-to-r from-primary to-purple-500 text-white"
+                    )}
+                    onClick={() => toggleBookmark(article)}
+                    disabled={maxBookmarksReached && !isBookmarked(article.id)}
+                    title={maxBookmarksReached && !isBookmarked(article.id) ? "Maximum bookmarks reached" : ""}
+                  >
+                    <Bookmark className={`h-4 w-4 ${isBookmarked(article.id) ? "fill-white text-white" : ""}`} />
+                    {isBookmarked(article.id) ? "Saved to Reading List" : "Save to Reading List"}
+                  </Button>
+                  
+                  <div className="flex gap-2">
                     <Button 
-                      variant={isBookmarked(article.id) ? "default" : "outline"}
-                      size="sm" 
-                      className={cn(
-                        "rounded-full gap-2",
-                        isBookmarked(article.id) && "bg-gradient-to-r from-primary to-purple-500 text-white"
-                      )}
-                      onClick={() => toggleBookmark(article)}
-                      disabled={maxBookmarksReached && !isBookmarked(article.id)}
-                      title={maxBookmarksReached && !isBookmarked(article.id) ? "Maximum bookmarks reached" : ""}
+                      variant="outline" 
+                      size="icon" 
+                      className="rounded-full text-[#1DA1F2] hover:bg-[#1DA1F2]/10"
+                      onClick={() => handleShare('twitter')}
                     >
-                      <Bookmark className={`h-4 w-4 ${isBookmarked(article.id) ? "fill-white text-white" : ""}`} />
-                      {isBookmarked(article.id) ? "Saved" : "Add to Reading List"}
+                      <Twitter className="h-4 w-4" />
                     </Button>
-                    
-                    <div className="h-6 border-r border-muted-foreground/20"></div>
-                    
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="icon" 
-                        className="rounded-full text-[#1DA1F2] hover:bg-[#1DA1F2]/10 h-9 w-9"
-                        onClick={() => handleShare('twitter')}
-                      >
-                        <Twitter className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="icon" 
-                        className="rounded-full text-[#1877F2] hover:bg-[#1877F2]/10 h-9 w-9"
-                        onClick={() => handleShare('facebook')}
-                      >
-                        <Facebook className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="icon" 
-                        className="rounded-full text-[#0A66C2] hover:bg-[#0A66C2]/10 h-9 w-9"
-                        onClick={() => handleShare('linkedin')}
-                      >
-                        <Linkedin className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="icon" 
-                        className="rounded-full text-[#25D366] hover:bg-[#25D366]/10 h-9 w-9"
-                        onClick={() => handleShare('whatsapp')}
-                      >
-                        <WhatsAppIcon className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="icon" 
-                        className="rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 h-9 w-9"
-                        onClick={() => handleShare('')}
-                        title="Copy link"
-                      >
-                        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4">
-                          <path d="M5 2V1H10V2H5ZM4.75 0C4.33579 0 4 0.335786 4 0.75V1H3.5C2.67157 1 2 1.67157 2 2.5V12.5C2 13.3284 2.67157 14 3.5 14H11.5C12.3284 14 13 13.3284 13 12.5V2.5C13 1.67157 12.3284 1 11.5 1H11V0.75C11 0.335786 10.6642 0 10.25 0H4.75ZM11 2V2.25C11 2.66421 10.6642 3 10.25 3H4.75C4.33579 3 4 2.66421 4 2.25V2H3.5C3.22386 2 3 2.22386 3 2.5V12.5C3 12.7761 3.22386 13 3.5 13H11.5C11.7761 13 12 12.7761 12 12.5V2.5C12 2.22386 11.7761 2 11.5 2H11Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
-                        </svg>
-                      </Button>
-                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="rounded-full text-[#1877F2] hover:bg-[#1877F2]/10"
+                      onClick={() => handleShare('facebook')}
+                    >
+                      <Facebook className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="rounded-full text-[#0A66C2] hover:bg-[#0A66C2]/10"
+                      onClick={() => handleShare('linkedin')}
+                    >
+                      <Linkedin className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="rounded-full text-[#25D366] hover:bg-[#25D366]/10"
+                      onClick={() => handleShare('whatsapp')}
+                    >
+                      <WhatsAppIcon className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
-              </div>
-              
-              {/* Related Articles - Mobile View */}
-              <div className="mt-8 pt-6 border-t block lg:hidden">
-                <h3 className="font-medium text-lg mb-4">Related Articles</h3>
-                {relatedArticles.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {relatedArticles.map((relatedArticle) => (
-                      <RelatedArticleCard key={relatedArticle.id} article={relatedArticle} />
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground">No related articles found</p>
-                )}
               </div>
             </div>
             
@@ -618,41 +538,6 @@ const Article = () => {
                   
                   <AuthorProfile author={article.author} />
                 </div>
-              </div>
-              
-              {/* Related Articles - Desktop View */}
-              <div className="hidden lg:block rounded-xl border bg-gradient-to-r from-purple-50/50 to-background dark:from-purple-950/10 dark:to-background shadow-sm p-6 overflow-hidden">
-                <h3 className="font-medium mb-4">Related Articles</h3>
-                {relatedArticles.length > 0 ? (
-                  <div className="space-y-4">
-                    {relatedArticles.map((relatedArticle) => (
-                      <div key={relatedArticle.id} className="flex gap-3 group">
-                        <div className="w-20 h-16 rounded-md overflow-hidden bg-muted flex-shrink-0">
-                          <img 
-                            src={relatedArticle.coverImage} 
-                            alt={relatedArticle.title}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div>
-                          <Link 
-                            to={`/article/${relatedArticle.slug}`} 
-                            className="text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors"
-                          >
-                            {relatedArticle.title}
-                          </Link>
-                          <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                            <span>{relatedArticle.readTime}</span>
-                            <span>•</span>
-                            <span>{relatedArticle.category}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No related articles found</p>
-                )}
               </div>
             </div>
           </motion.div>
