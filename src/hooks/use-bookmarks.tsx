@@ -4,22 +4,14 @@ import { Article } from '@/types/blog';
 import { toast } from 'sonner';
 
 const STORAGE_KEY = 'bloghub-bookmarks';
-const MAX_BOOKMARKS = 3;
+const MAX_BOOKMARKS = 10; // Increasing the maximum bookmarks from 3 to 10
 
 export function useBookmarks() {
   const [bookmarks, setBookmarks] = useState<Article[]>([]);
 
   // Load bookmarks from localStorage on mount
   useEffect(() => {
-    const storedBookmarks = localStorage.getItem(STORAGE_KEY);
-    if (storedBookmarks) {
-      try {
-        setBookmarks(JSON.parse(storedBookmarks));
-      } catch (error) {
-        console.error('Error parsing bookmarks:', error);
-        localStorage.removeItem(STORAGE_KEY);
-      }
-    }
+    loadBookmarksFromStorage();
   }, []);
 
   // Save bookmarks to localStorage when they change
@@ -30,6 +22,20 @@ export function useBookmarks() {
       localStorage.removeItem(STORAGE_KEY);
     }
   }, [bookmarks]);
+
+  const loadBookmarksFromStorage = () => {
+    const storedBookmarks = localStorage.getItem(STORAGE_KEY);
+    if (storedBookmarks) {
+      try {
+        const parsedBookmarks = JSON.parse(storedBookmarks);
+        setBookmarks(Array.isArray(parsedBookmarks) ? parsedBookmarks : []);
+      } catch (error) {
+        console.error('Error parsing bookmarks:', error);
+        localStorage.removeItem(STORAGE_KEY);
+        setBookmarks([]);
+      }
+    }
+  };
 
   const addBookmark = (article: Article) => {
     setBookmarks(prev => {
@@ -74,6 +80,11 @@ export function useBookmarks() {
     toast.success('All bookmarks cleared');
   };
 
+  const refreshBookmarks = () => {
+    loadBookmarksFromStorage();
+    toast.success('Bookmarks refreshed');
+  };
+
   return {
     bookmarks,
     addBookmark,
@@ -81,6 +92,7 @@ export function useBookmarks() {
     toggleBookmark,
     isBookmarked,
     clearBookmarks,
+    refreshBookmarks,
     maxBookmarksReached: bookmarks.length >= MAX_BOOKMARKS
   };
 }
