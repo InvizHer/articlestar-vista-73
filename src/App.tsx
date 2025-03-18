@@ -12,6 +12,8 @@ import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminArticles from "./pages/AdminArticles";
+import AdminAnalytics from "./pages/AdminAnalytics";
 import ArticleEditor from "./pages/ArticleEditor";
 import { AdminProvider } from "./context/AdminContext";
 import ProtectedRoute from "./components/admin/ProtectedRoute";
@@ -39,6 +41,22 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <AdminDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/articles" 
+                element={
+                  <ProtectedRoute>
+                    <AdminArticles />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/analytics" 
+                element={
+                  <ProtectedRoute>
+                    <AdminAnalytics />
                   </ProtectedRoute>
                 } 
               />
