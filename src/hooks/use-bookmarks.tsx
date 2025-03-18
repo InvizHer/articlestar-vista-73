@@ -4,7 +4,7 @@ import { Article } from '@/types/blog';
 import { toast } from 'sonner';
 
 const STORAGE_KEY = 'bloghub-bookmarks';
-const MAX_BOOKMARKS = 10; // Increasing the maximum bookmarks from 3 to 10
+const MAX_BOOKMARKS = 5; // Setting the maximum bookmarks to 5 as requested
 
 export function useBookmarks() {
   const [bookmarks, setBookmarks] = useState<Article[]>([]);

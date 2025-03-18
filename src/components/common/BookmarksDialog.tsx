@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useBookmarks } from "@/hooks/use-bookmarks";
 import {
@@ -20,7 +21,6 @@ import { Button } from "@/components/ui/button";
 import { Bookmark, BookmarkCheck, ChevronDown, Clock, MoreHorizontal, Eye, Info, Search, Trash2, X, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -76,12 +76,12 @@ export const BookmarksDialog = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <BookmarkCheck className="h-5 w-5 text-primary" />
-              <DialogTitle>Reading List ({bookmarkCount}/10)</DialogTitle>
+              <DialogTitle>Reading List ({bookmarkCount}/5)</DialogTitle>
             </div>
             
             <div className="bookmark-limit-badge flex items-center gap-2 bg-gradient-to-r from-primary/10 to-purple-500/10 px-3 py-1.5 rounded-full text-xs font-medium">
               <span className={maxBookmarksReached ? "text-destructive" : "text-primary"}>
-                {bookmarkCount}/10 articles saved
+                {bookmarkCount}/5 articles saved
               </span>
               <Info className="h-3 w-3 text-muted-foreground" />
             </div>
