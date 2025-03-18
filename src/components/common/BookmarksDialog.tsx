@@ -19,11 +19,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Bookmark, BookmarkCheck, ChevronDown, Clock, MoreHorizontal, Eye, Info, Search, Trash2, X, RefreshCw } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 export const BookmarksDialog = () => {
   const { bookmarks, removeBookmark, clearBookmarks, refreshBookmarks, maxBookmarksReached } = useBookmarks();
@@ -60,7 +60,7 @@ export const BookmarksDialog = () => {
   };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="icon" className="relative rounded-full hover:bg-primary/10">
           <Bookmark className="h-5 w-5" />
@@ -79,8 +79,11 @@ export const BookmarksDialog = () => {
               <DialogTitle>Reading List ({bookmarkCount}/5)</DialogTitle>
             </div>
             
-            <div className="bookmark-limit-badge flex items-center gap-2 bg-gradient-to-r from-primary/10 to-purple-500/10 px-3 py-1.5 rounded-full text-xs font-medium">
-              <span className={maxBookmarksReached ? "text-destructive" : "text-primary"}>
+            <div className={cn(
+              "bookmark-limit-badge flex items-center gap-2 bg-gradient-to-r from-primary/10 to-purple-500/10 px-3 py-1.5 rounded-full text-xs font-medium",
+              maxBookmarksReached ? "from-destructive/20 to-destructive text-destructive" : ""
+            )}>
+              <span>
                 {bookmarkCount}/5 articles saved
               </span>
               <Info className="h-3 w-3 text-muted-foreground" />
@@ -271,4 +274,4 @@ export const BookmarksDialog = () => {
       </DialogContent>
     </Dialog>
   );
-};
+}

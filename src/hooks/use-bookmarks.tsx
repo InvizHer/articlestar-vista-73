@@ -4,7 +4,7 @@ import { Article } from '@/types/blog';
 import { toast } from 'sonner';
 
 const STORAGE_KEY = 'bloghub-bookmarks';
-const MAX_BOOKMARKS = 5; // Setting the maximum bookmarks to 5 as requested
+const MAX_BOOKMARKS = 5;
 
 export function useBookmarks() {
   const [bookmarks, setBookmarks] = useState<Article[]>([]);
@@ -24,29 +24,36 @@ export function useBookmarks() {
   }, [bookmarks]);
 
   const loadBookmarksFromStorage = () => {
-    const storedBookmarks = localStorage.getItem(STORAGE_KEY);
-    if (storedBookmarks) {
-      try {
+    try {
+      const storedBookmarks = localStorage.getItem(STORAGE_KEY);
+      if (storedBookmarks) {
         const parsedBookmarks = JSON.parse(storedBookmarks);
-        setBookmarks(Array.isArray(parsedBookmarks) ? parsedBookmarks : []);
-      } catch (error) {
-        console.error('Error parsing bookmarks:', error);
-        localStorage.removeItem(STORAGE_KEY);
-        setBookmarks([]);
+        if (Array.isArray(parsedBookmarks)) {
+          setBookmarks(parsedBookmarks);
+        } else {
+          setBookmarks([]);
+        }
       }
+    } catch (error) {
+      console.error('Error loading bookmarks:', error);
+      localStorage.removeItem(STORAGE_KEY);
+      setBookmarks([]);
     }
   };
 
   const addBookmark = (article: Article) => {
     setBookmarks(prev => {
+      // Check if article already exists in bookmarks
       const exists = prev.some(item => item.id === article.id);
       if (exists) return prev;
       
+      // Check if max bookmarks limit reached
       if (prev.length >= MAX_BOOKMARKS) {
         toast.error(`Maximum ${MAX_BOOKMARKS} bookmarks allowed. Please remove one to add more.`);
         return prev;
       }
       
+      // Add new bookmark and show success message
       toast.success(`"${article.title}" added to bookmarks`);
       return [...prev, article];
     });
@@ -77,6 +84,7 @@ export function useBookmarks() {
 
   const clearBookmarks = () => {
     setBookmarks([]);
+    localStorage.removeItem(STORAGE_KEY);
     toast.success('All bookmarks cleared');
   };
 
