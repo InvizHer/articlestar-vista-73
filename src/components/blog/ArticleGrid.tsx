@@ -12,8 +12,8 @@ interface ArticleGridProps {
 const ArticleGrid: React.FC<ArticleGridProps> = ({ articles, columns = 3 }) => {
   const gridCols = {
     1: "grid-cols-1",
-    2: "grid-cols-1 md:grid-cols-2 gap-8",
-    3: "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8",
+    2: "grid-cols-1 md:grid-cols-2 gap-6",
+    3: "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6",
   };
 
   return (
