@@ -1,720 +1,506 @@
 
 import React, { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Article } from "@/types/blog";
-import { DbArticle } from "@/types/database";
 import DashboardLayout from "@/components/admin/DashboardLayout";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Loader2,
-  BarChart3,
-  PieChart as PieChartIcon,
-  TrendingUp,
-  Eye,
-  Clock,
-  Award,
-  Filter,
-  Calendar,
-  ChevronUp,
-  ChevronDown,
-  ArrowUpRight,
-  FileText,
-  BookOpen,
-  ListFilter,
-  Activity
-} from "lucide-react";
-import { 
-  ResponsiveContainer, 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  Tooltip, 
-  Cell, 
-  PieChart,
-  Pie, 
-  Sector 
-} from "recharts";
-import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import { formatDistanceToNow } from "date-fns";
-import { Link } from "react-router-dom";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { toast } from "sonner";
+import { motion } from "framer-motion";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
+} from "recharts";
+import {
+  Eye,
+  Heart,
+  TrendingUp,
+  FileText,
+  BarChart as BarChartIcon,
+  RefreshCw,
+  Calendar,
+  CircleCheck,
+  CircleOff,
+} from "lucide-react";
+import { format, subDays } from "date-fns";
+import { Article } from "@/types/blog";
 
-interface CategoryStat {
-  name: string;
-  count: number;
-  views: number;
+interface ArticleAnalytics {
+  id: string;
+  title: string;
+  slug: string;
+  viewCount: number;
+  likesCount: number;
+  published: boolean;
+  date: string;
 }
 
-const COLORS = ['#8B5CF6', '#EC4899', '#F97316', '#F59E0B', '#10B981', '#3B82F6', '#6366F1', '#A855F7'];
-
-const CustomizedAxisTick = (props: any) => {
-  const { x, y, payload } = props;
-  
-  return (
-    <g transform={`translate(${x},${y})`}>
-      <text 
-        x={0} 
-        y={0} 
-        dy={16} 
-        textAnchor="end" 
-        fill="#666"
-        transform="rotate(-35)"
-        fontSize="12px"
-      >
-        {payload.value}
-      </text>
-    </g>
-  );
-};
-
-const renderActiveShape = (props: any) => {
-  const RADIAN = Math.PI / 180;
-  const { cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent, value } = props;
-  const sin = Math.sin(-RADIAN * midAngle);
-  const cos = Math.cos(-RADIAN * midAngle);
-  const sx = cx + (outerRadius + 10) * cos;
-  const sy = cy + (outerRadius + 10) * sin;
-  const mx = cx + (outerRadius + 30) * cos;
-  const my = cy + (outerRadius + 30) * sin;
-  const ex = mx + (cos >= 0 ? 1 : -1) * 22;
-  const ey = my;
-  const textAnchor = cos >= 0 ? 'start' : 'end';
-
-  return (
-    <g>
-      <text x={cx} y={cy} dy={8} textAnchor="middle" fill={fill}>
-        {payload.name}
-      </text>
-      <Sector
-        cx={cx}
-        cy={cy}
-        innerRadius={innerRadius}
-        outerRadius={outerRadius}
-        startAngle={startAngle}
-        endAngle={endAngle}
-        fill={fill}
-      />
-      <Sector
-        cx={cx}
-        cy={cy}
-        startAngle={startAngle}
-        endAngle={endAngle}
-        innerRadius={outerRadius + 6}
-        outerRadius={outerRadius + 10}
-        fill={fill}
-      />
-      <path d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} stroke={fill} fill="none" />
-      <circle cx={ex} cy={ey} r={2} fill={fill} stroke="none" />
-      <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} textAnchor={textAnchor} fill="#333">{`${value} articles`}</text>
-      <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} dy={18} textAnchor={textAnchor} fill="#999">
-        {`(${(percent * 100).toFixed(2)}%)`}
-      </text>
-    </g>
-  );
-};
-
 const AdminAnalytics = () => {
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [categoryStats, setCategoryStats] = useState<CategoryStat[]>([]);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [sortBy, setSortBy] = useState<"views" | "date">("views");
+  const [articles, setArticles] = useState<ArticleAnalytics[]>([]);
   const [loading, setLoading] = useState(true);
-  
+  const [timeRange, setTimeRange] = useState<"7days" | "30days" | "all">("30days");
+  const [totalViews, setTotalViews] = useState(0);
+  const [totalLikes, setTotalLikes] = useState(0);
+  const [publishedCount, setPublishedCount] = useState(0);
+  const [draftCount, setDraftCount] = useState(0);
+  const [mostViewedArticle, setMostViewedArticle] = useState<ArticleAnalytics | null>(null);
+  const [mostLikedArticle, setMostLikedArticle] = useState<ArticleAnalytics | null>(null);
+  const [recentArticle, setRecentArticle] = useState<ArticleAnalytics | null>(null);
+
   useEffect(() => {
-    const fetchAnalyticsData = async () => {
-      try {
-        setLoading(true);
-        
-        // Fetch all articles
-        const { data, error } = await supabase
-          .from("articles")
-          .select("*")
-          .order("created_at", { ascending: false });
-          
-        if (error) throw error;
-        
-        // Transform DB articles to frontend Article type
-        const transformedArticles = data?.map((article: DbArticle) => ({
-          id: article.id,
-          title: article.title,
-          slug: article.slug,
-          excerpt: article.excerpt,
-          content: article.content,
-          author: {
-            name: article.author_name,
-            avatar: article.author_avatar || "/placeholder.svg",
-          },
-          date: article.date,
-          readTime: article.read_time,
-          category: article.category,
-          tags: article.tags,
-          coverImage: article.cover_image || "/placeholder.svg",
-          published: article.published,
-          viewCount: article.view_count || 0,
-        })) || [];
-        
-        setArticles(transformedArticles);
-        
-        // Create category statistics
-        const categories: Record<string, CategoryStat> = {};
-        transformedArticles.forEach(article => {
-          const category = article.category || "Uncategorized";
-          if (!categories[category]) {
-            categories[category] = { name: category, count: 0, views: 0 };
-          }
-          categories[category].count += 1;
-          categories[category].views += article.viewCount || 0;
-        });
-        
-        setCategoryStats(Object.values(categories));
-      } catch (error) {
-        console.error("Error fetching analytics data:", error);
-        toast.error("Failed to load analytics data");
-      } finally {
+    fetchAnalytics();
+  }, [timeRange]);
+
+  const fetchAnalytics = async () => {
+    try {
+      setLoading(true);
+
+      const { data: articlesData, error } = await supabase
+        .from("articles")
+        .select("*")
+        .order("date", { ascending: false });
+
+      if (error) throw error;
+
+      if (!articlesData || articlesData.length === 0) {
         setLoading(false);
+        return;
       }
-    };
+
+      // Process article data and get likes counts
+      const processedArticles: ArticleAnalytics[] = [];
+      let views = 0;
+      let likes = 0;
+      let published = 0;
+      let drafts = 0;
+
+      for (const article of articlesData) {
+        // Get likes count for each article
+        const { data: likesData, error: likesError } = await supabase
+          .rpc('get_like_count', { p_article_id: article.id });
+
+        if (likesError) console.error("Error fetching likes count:", likesError);
+
+        // Check if article is within selected time range
+        const articleDate = new Date(article.date);
+        let inTimeRange = true;
+
+        if (timeRange === "7days") {
+          inTimeRange = articleDate >= subDays(new Date(), 7);
+        } else if (timeRange === "30days") {
+          inTimeRange = articleDate >= subDays(new Date(), 30);
+        }
+
+        if (inTimeRange) {
+          const likesCount = likesData || 0;
+          
+          const processedArticle: ArticleAnalytics = {
+            id: article.id,
+            title: article.title,
+            slug: article.slug,
+            viewCount: article.view_count || 0,
+            likesCount: likesCount,
+            published: article.published,
+            date: article.date,
+          };
+
+          processedArticles.push(processedArticle);
+          
+          // Update counters
+          views += article.view_count || 0;
+          likes += likesCount;
+          
+          if (article.published) {
+            published++;
+          } else {
+            drafts++;
+          }
+        }
+      }
+
+      setArticles(processedArticles);
+      setTotalViews(views);
+      setTotalLikes(likes);
+      setPublishedCount(published);
+      setDraftCount(drafts);
+
+      // Find most viewed article
+      const sortedByViews = [...processedArticles].sort((a, b) => b.viewCount - a.viewCount);
+      setMostViewedArticle(sortedByViews.length > 0 ? sortedByViews[0] : null);
+
+      // Find most liked article
+      const sortedByLikes = [...processedArticles].sort((a, b) => b.likesCount - a.likesCount);
+      setMostLikedArticle(sortedByLikes.length > 0 ? sortedByLikes[0] : null);
+
+      // Most recent article
+      const sortedByDate = [...processedArticles].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+      setRecentArticle(sortedByDate.length > 0 ? sortedByDate[0] : null);
+
+    } catch (error) {
+      console.error("Error fetching analytics:", error);
+      toast.error("Failed to load analytics data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Prepare chart data
+  const prepareViewsAndLikesChart = () => {
+    return articles
+      .filter((a) => a.published)
+      .slice(0, 5)
+      .map((article) => ({
+        name: article.title.length > 20 ? article.title.substring(0, 20) + "..." : article.title,
+        views: article.viewCount,
+        likes: article.likesCount,
+      }));
+  };
+
+  const prepareCategoryDistribution = () => {
+    const categories: Record<string, number> = {};
     
-    fetchAnalyticsData();
-  }, []);
-  
-  const onPieEnter = (_: any, index: number) => {
-    setActiveIndex(index);
+    articles.forEach((article) => {
+      const category = "category" in article ? (article as any).category : "Uncategorized";
+      if (categories[category]) {
+        categories[category]++;
+      } else {
+        categories[category] = 1;
+      }
+    });
+    
+    return Object.entries(categories).map(([name, value]) => ({ name, value }));
+  };
+
+  // Animation variants for fade-in effect
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
   };
   
-  const sortedByViews = [...articles].sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0));
-  const sortedByDate = [...articles].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  
-  const displayedArticles = sortBy === "views" ? sortedByViews : sortedByDate;
-  
-  // Stats
-  const totalArticles = articles.length;
-  const publishedArticles = articles.filter(a => a.published).length;
-  const totalViews = articles.reduce((sum, article) => sum + (article.viewCount || 0), 0);
-  const avgViewsPerArticle = totalArticles > 0 ? Math.round(totalViews / totalArticles) : 0;
-  
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { duration: 0.4 }
+    }
+  };
+
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82ca9d'];
+
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-gray-800 dark:to-gray-900 rounded-xl p-6 mb-6">
-          <div className="flex items-start justify-between flex-wrap gap-4">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Analytics Dashboard</h1>
-              <p className="text-muted-foreground mt-1">Get insights about your content performance</p>
-            </div>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="flex items-center gap-2 bg-white dark:bg-gray-800 shadow-sm">
-                  <ListFilter className="h-4 w-4" />
-                  Sort by: {sortBy === "views" ? "Views" : "Date"}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setSortBy("views")}>
-                  <Eye className="h-4 w-4 mr-2" />
-                  Sort by Views
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSortBy("date")}>
-                  <Clock className="h-4 w-4 mr-2" />
-                  Sort by Date
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+      <motion.div
+        className="space-y-6"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+          <div>
+            <h1 className="text-2xl font-bold">Analytics Dashboard</h1>
+            <p className="text-muted-foreground">Insights from your blog performance</p>
           </div>
-        </div>
-        
-        {/* Stats Overview */}
+          <div className="mt-4 sm:mt-0 flex items-center gap-2">
+            <Tabs defaultValue={timeRange} onValueChange={(value) => setTimeRange(value as any)}>
+              <TabsList>
+                <TabsTrigger value="7days">7 Days</TabsTrigger>
+                <TabsTrigger value="30days">30 Days</TabsTrigger>
+                <TabsTrigger value="all">All Time</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={fetchAnalytics}
+              disabled={loading}
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            </Button>
+          </div>
+        </motion.div>
+
+        {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="bg-white dark:bg-gray-800 shadow-sm">
-            <CardContent className="p-6">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Total Articles</p>
-                  <h3 className="text-3xl font-bold mt-1">{totalArticles}</h3>
+          <motion.div variants={itemVariants}>
+            <Card className="hover:shadow-md transition-shadow">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Total Views</p>
+                    <h3 className="text-2xl font-bold mt-1">{totalViews}</h3>
+                  </div>
+                  <div className="p-3 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                    <Eye className="h-5 w-5" />
+                  </div>
                 </div>
-                <div className="bg-primary/10 p-2 rounded-full">
-                  <FileText className="h-5 w-5 text-primary" />
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div variants={itemVariants}>
+            <Card className="hover:shadow-md transition-shadow">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Total Likes</p>
+                    <h3 className="text-2xl font-bold mt-1">{totalLikes}</h3>
+                  </div>
+                  <div className="p-3 rounded-full bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400">
+                    <Heart className="h-5 w-5" />
+                  </div>
                 </div>
-              </div>
-              <div className="mt-4 flex items-center text-sm text-muted-foreground">
-                <span className="flex items-center">
-                  {publishedArticles} published
-                </span>
-                <span className="mx-2">•</span>
-                <span>
-                  {totalArticles - publishedArticles} drafts
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-white dark:bg-gray-800 shadow-sm">
-            <CardContent className="p-6">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Total Views</p>
-                  <h3 className="text-3xl font-bold mt-1">{totalViews.toLocaleString()}</h3>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div variants={itemVariants}>
+            <Card className="hover:shadow-md transition-shadow">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Published</p>
+                    <h3 className="text-2xl font-bold mt-1">{publishedCount}</h3>
+                  </div>
+                  <div className="p-3 rounded-full bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400">
+                    <CircleCheck className="h-5 w-5" />
+                  </div>
                 </div>
-                <div className="bg-green-500/10 p-2 rounded-full">
-                  <Eye className="h-5 w-5 text-green-500" />
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div variants={itemVariants}>
+            <Card className="hover:shadow-md transition-shadow">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Drafts</p>
+                    <h3 className="text-2xl font-bold mt-1">{draftCount}</h3>
+                  </div>
+                  <div className="p-3 rounded-full bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400">
+                    <CircleOff className="h-5 w-5" />
+                  </div>
                 </div>
-              </div>
-              <div className="mt-4 flex items-center text-sm text-muted-foreground">
-                <ArrowUpRight className="h-4 w-4 mr-1 text-green-500" />
-                <span>
-                  {avgViewsPerArticle} avg. views per article
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-white dark:bg-gray-800 shadow-sm">
-            <CardContent className="p-6">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Categories</p>
-                  <h3 className="text-3xl font-bold mt-1">{categoryStats.length}</h3>
-                </div>
-                <div className="bg-purple-500/10 p-2 rounded-full">
-                  <BookOpen className="h-5 w-5 text-purple-500" />
-                </div>
-              </div>
-              <div className="mt-4 flex items-center text-sm text-muted-foreground">
-                {categoryStats.length > 0 && (
-                  <>
-                    <span>Most articles: </span>
-                    <Badge variant="outline" className="ml-1 font-normal">
-                      {categoryStats.sort((a, b) => b.count - a.count)[0]?.name}
-                    </Badge>
-                  </>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-white dark:bg-gray-800 shadow-sm">
-            <CardContent className="p-6">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Top Article</p>
-                  <h3 className="text-3xl font-bold mt-1">
-                    {sortedByViews[0]?.viewCount || 0}
-                    <span className="text-sm font-medium text-muted-foreground ml-1">views</span>
-                  </h3>
-                </div>
-                <div className="bg-amber-500/10 p-2 rounded-full">
-                  <Award className="h-5 w-5 text-amber-500" />
-                </div>
-              </div>
-              <div className="mt-4 text-sm text-muted-foreground truncate">
-                {sortedByViews[0]?.title || "No articles yet"}
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
-        
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="lg:col-span-2 shadow-sm bg-white dark:bg-gray-800">
-            <CardHeader className="pb-0">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <BarChart3 className="h-5 w-5 text-primary" />
-                Top Articles by Views
+
+        {/* Top Performing Articles */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <motion.div variants={itemVariants}>
+            <Card className="hover:shadow-md transition-shadow h-full">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Eye className="h-5 w-5" /> Most Viewed Article
+                </CardTitle>
+                <CardDescription>
+                  The article with the highest number of views
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {mostViewedArticle ? (
+                  <div className="space-y-4">
+                    <h3 className="font-medium text-lg line-clamp-1">{mostViewedArticle.title}</h3>
+                    <div className="flex items-center gap-4 text-sm">
+                      <div className="flex items-center gap-1">
+                        <Eye className="h-4 w-4 text-blue-500" />
+                        <span>{mostViewedArticle.viewCount} views</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-4 w-4 text-gray-500" />
+                        <span>{format(new Date(mostViewedArticle.date), 'MMM d, yyyy')}</span>
+                      </div>
+                    </div>
+                    <Button asChild variant="outline" className="w-full mt-2">
+                      <Link to={`/admin/article/${mostViewedArticle.id}`}>View Details</Link>
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="text-center py-6 text-muted-foreground">
+                    No published articles found
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div variants={itemVariants}>
+            <Card className="hover:shadow-md transition-shadow h-full">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Heart className="h-5 w-5 text-red-500" /> Most Liked Article
+                </CardTitle>
+                <CardDescription>
+                  The article with the highest number of likes
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {mostLikedArticle ? (
+                  <div className="space-y-4">
+                    <h3 className="font-medium text-lg line-clamp-1">{mostLikedArticle.title}</h3>
+                    <div className="flex items-center gap-4 text-sm">
+                      <div className="flex items-center gap-1">
+                        <Heart className="h-4 w-4 text-red-500" />
+                        <span>{mostLikedArticle.likesCount} likes</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-4 w-4 text-gray-500" />
+                        <span>{format(new Date(mostLikedArticle.date), 'MMM d, yyyy')}</span>
+                      </div>
+                    </div>
+                    <Button asChild variant="outline" className="w-full mt-2">
+                      <Link to={`/admin/article/${mostLikedArticle.id}`}>View Details</Link>
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="text-center py-6 text-muted-foreground">
+                    No published articles found
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+
+        {/* Charts */}
+        <motion.div variants={itemVariants}>
+          <Card className="hover:shadow-md transition-shadow">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChartIcon className="h-5 w-5" /> Top Articles Performance
               </CardTitle>
               <CardDescription>
-                Performance of your most viewed articles
+                Views and likes comparison for top performing articles
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {loading ? (
-                <div className="h-[350px] flex items-center justify-center">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
-              ) : articles.length > 0 ? (
-                <div className="h-[350px]">
+              <div className="h-[300px] w-full">
+                {articles.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={sortedByViews.slice(0, 10)} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                      <XAxis 
-                        dataKey="title" 
-                        tick={<CustomizedAxisTick />}
-                        height={60}
-                      />
+                    <BarChart
+                      data={prepareViewsAndLikesChart()}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" angle={-45} textAnchor="end" />
                       <YAxis />
-                      <Tooltip 
-                        formatter={(value: any) => [`${value} views`, 'Views']}
-                        labelFormatter={(label) => `${label}`}
-                        contentStyle={{ borderRadius: '8px' }}
-                      />
-                      <Bar dataKey="viewCount" name="Views" radius={[4, 4, 0, 0]}>
-                        {sortedByViews.slice(0, 10).map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Bar>
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="views" fill="#0088FE" name="Views" />
+                      <Bar dataKey="likes" fill="#FF8042" name="Likes" />
                     </BarChart>
                   </ResponsiveContainer>
-                </div>
-              ) : (
-                <div className="h-[350px] flex items-center justify-center text-muted-foreground">
-                  No data available
-                </div>
-              )}
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-muted-foreground">No data available</p>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
-          
-          <Card className="shadow-sm bg-white dark:bg-gray-800">
-            <CardHeader className="pb-0">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <PieChartIcon className="h-5 w-5 text-primary" />
-                Articles by Category
+        </motion.div>
+
+        {/* Recent Articles Performance */}
+        <motion.div variants={itemVariants}>
+          <Card className="hover:shadow-md transition-shadow">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" /> Articles Performance
               </CardTitle>
               <CardDescription>
-                Distribution across categories
+                Performance metrics for your articles
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {loading ? (
-                <div className="h-[350px] flex items-center justify-center">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
-              ) : categoryStats.length > 0 ? (
-                <div className="h-[350px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        activeIndex={activeIndex}
-                        activeShape={renderActiveShape}
-                        data={categoryStats}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="count"
-                        onMouseEnter={onPieEnter}
-                      >
-                        {categoryStats.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              ) : (
-                <div className="h-[350px] flex items-center justify-center text-muted-foreground">
-                  No data available
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-        
-        {/* Articles Table */}
-        <Card className="shadow-sm bg-white dark:bg-gray-800">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Activity className="h-5 w-5 text-primary" />
-              Article Performance
-            </CardTitle>
-            <CardDescription>
-              Complete overview of all your articles
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="all" className="w-full">
-              <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:inline-flex bg-muted/80 p-1 rounded-lg mb-6">
-                <TabsTrigger value="all" className="rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700">
-                  All Articles
-                </TabsTrigger>
-                <TabsTrigger value="published" className="rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700">
-                  Published
-                </TabsTrigger>
-                <TabsTrigger value="drafts" className="rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700">
-                  Drafts
-                </TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="all" className="space-y-4 mt-0">
-                {loading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  </div>
-                ) : (
-                  <div className="rounded-lg border overflow-hidden">
-                    <div className="bg-muted/50 px-4 py-3 grid grid-cols-12 text-sm font-medium">
-                      <div className="col-span-7 sm:col-span-6 lg:col-span-5">Title</div>
-                      <div className="hidden sm:block sm:col-span-2">Category</div>
-                      <div className="col-span-3 sm:col-span-2">Status</div>
-                      <div className="hidden lg:block lg:col-span-2">Date</div>
-                      <div className="col-span-2 sm:col-span-2 lg:col-span-1 text-right">Views</div>
-                    </div>
-                    <div className="divide-y">
-                      {displayedArticles.map((article) => (
-                        <Link
-                          key={article.id}
-                          to={`/admin/article/${article.id}`}
-                          className="grid grid-cols-12 items-center px-4 py-3 hover:bg-muted/30 transition-colors"
-                        >
-                          <div className="col-span-7 sm:col-span-6 lg:col-span-5 flex items-center gap-3 min-w-0">
-                            <div className="w-8 h-8 rounded overflow-hidden shrink-0">
-                              <img 
-                                src={article.coverImage} 
-                                alt={article.title}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src = "/placeholder.svg";
-                                }}
-                              />
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left pb-2">Title</th>
+                      <th className="text-center pb-2">Views</th>
+                      <th className="text-center pb-2">Likes</th>
+                      <th className="text-center pb-2">Engagement</th>
+                      <th className="text-right pb-2">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {articles.length > 0 ? (
+                      articles.slice(0, 5).map((article) => (
+                        <tr key={article.id} className="border-b hover:bg-muted/30">
+                          <td className="py-3 pr-4">
+                            <Link
+                              to={`/admin/article/${article.id}`}
+                              className="font-medium hover:text-primary line-clamp-1"
+                            >
+                              {article.title}
+                            </Link>
+                          </td>
+                          <td className="text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              <Eye className="h-3.5 w-3.5 text-blue-500" />
+                              {article.viewCount}
                             </div>
-                            <span className="font-medium truncate">{article.title}</span>
-                          </div>
-                          <div className="hidden sm:block sm:col-span-2 truncate">
-                            <Badge variant="outline" className="truncate max-w-full">
-                              {article.category || "Uncategorized"}
-                            </Badge>
-                          </div>
-                          <div className="col-span-3 sm:col-span-2">
-                            <Badge variant={article.published ? "default" : "outline"} className="w-full text-center justify-center sm:w-auto sm:justify-start">
-                              {article.published ? "Published" : "Draft"}
-                            </Badge>
-                          </div>
-                          <div className="hidden lg:block lg:col-span-2 text-sm text-muted-foreground">
-                            {formatDistanceToNow(new Date(article.date), { addSuffix: true })}
-                          </div>
-                          <div className={cn(
-                            "col-span-2 sm:col-span-2 lg:col-span-1 text-right font-medium", 
-                            article.viewCount && article.viewCount > 10 ? "text-green-500" : ""
-                          )}>
-                            {article.viewCount || 0}
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </TabsContent>
-              
-              <TabsContent value="published" className="space-y-4 mt-0">
-                {loading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  </div>
-                ) : (
-                  <div className="rounded-lg border overflow-hidden">
-                    <div className="bg-muted/50 px-4 py-3 grid grid-cols-12 text-sm font-medium">
-                      <div className="col-span-7 sm:col-span-6 lg:col-span-5">Title</div>
-                      <div className="hidden sm:block sm:col-span-2">Category</div>
-                      <div className="col-span-3 sm:col-span-2">Status</div>
-                      <div className="hidden lg:block lg:col-span-2">Date</div>
-                      <div className="col-span-2 sm:col-span-2 lg:col-span-1 text-right">Views</div>
-                    </div>
-                    <div className="divide-y">
-                      {displayedArticles
-                        .filter(article => article.published)
-                        .map((article) => (
-                          <Link
-                            key={article.id}
-                            to={`/admin/article/${article.id}`}
-                            className="grid grid-cols-12 items-center px-4 py-3 hover:bg-muted/30 transition-colors"
-                          >
-                            <div className="col-span-7 sm:col-span-6 lg:col-span-5 flex items-center gap-3 min-w-0">
-                              <div className="w-8 h-8 rounded overflow-hidden shrink-0">
-                                <img 
-                                  src={article.coverImage} 
-                                  alt={article.title}
-                                  className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    (e.target as HTMLImageElement).src = "/placeholder.svg";
-                                  }}
-                                />
-                              </div>
-                              <span className="font-medium truncate">{article.title}</span>
+                          </td>
+                          <td className="text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              <Heart className="h-3.5 w-3.5 text-red-500" />
+                              {article.likesCount}
                             </div>
-                            <div className="hidden sm:block sm:col-span-2 truncate">
-                              <Badge variant="outline" className="truncate max-w-full">
-                                {article.category}
-                              </Badge>
+                          </td>
+                          <td className="text-center">
+                            <div title="Likes per view">
+                              {article.viewCount > 0
+                                ? `${((article.likesCount / article.viewCount) * 100).toFixed(1)}%`
+                                : "0%"}
                             </div>
-                            <div className="col-span-3 sm:col-span-2">
-                              <Badge variant="default" className="w-full text-center justify-center sm:w-auto sm:justify-start">
-                                Published
-                              </Badge>
-                            </div>
-                            <div className="hidden lg:block lg:col-span-2 text-sm text-muted-foreground">
-                              {formatDistanceToNow(new Date(article.date), { addSuffix: true })}
-                            </div>
-                            <div className={cn(
-                              "col-span-2 sm:col-span-2 lg:col-span-1 text-right font-medium", 
-                              article.viewCount && article.viewCount > 10 ? "text-green-500" : ""
-                            )}>
-                              {article.viewCount || 0}
-                            </div>
-                          </Link>
-                        ))}
-                    </div>
-                  </div>
-                )}
-              </TabsContent>
-              
-              <TabsContent value="drafts" className="space-y-4 mt-0">
-                {loading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  </div>
-                ) : (
-                  <div className="rounded-lg border overflow-hidden">
-                    <div className="bg-muted/50 px-4 py-3 grid grid-cols-12 text-sm font-medium">
-                      <div className="col-span-7 sm:col-span-6 lg:col-span-5">Title</div>
-                      <div className="hidden sm:block sm:col-span-2">Category</div>
-                      <div className="col-span-3 sm:col-span-2">Status</div>
-                      <div className="hidden lg:block lg:col-span-2">Date</div>
-                      <div className="col-span-2 sm:col-span-2 lg:col-span-1 text-right">Views</div>
-                    </div>
-                    <div className="divide-y">
-                      {displayedArticles
-                        .filter(article => !article.published)
-                        .map((article) => (
-                          <Link
-                            key={article.id}
-                            to={`/admin/article/${article.id}`}
-                            className="grid grid-cols-12 items-center px-4 py-3 hover:bg-muted/30 transition-colors"
-                          >
-                            <div className="col-span-7 sm:col-span-6 lg:col-span-5 flex items-center gap-3 min-w-0">
-                              <div className="w-8 h-8 rounded overflow-hidden shrink-0">
-                                <img 
-                                  src={article.coverImage} 
-                                  alt={article.title}
-                                  className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    (e.target as HTMLImageElement).src = "/placeholder.svg";
-                                  }}
-                                />
-                              </div>
-                              <span className="font-medium truncate">{article.title}</span>
-                            </div>
-                            <div className="hidden sm:block sm:col-span-2 truncate">
-                              <Badge variant="outline" className="truncate max-w-full">
-                                {article.category}
-                              </Badge>
-                            </div>
-                            <div className="col-span-3 sm:col-span-2">
-                              <Badge variant="outline" className="w-full text-center justify-center sm:w-auto sm:justify-start">
-                                Draft
-                              </Badge>
-                            </div>
-                            <div className="hidden lg:block lg:col-span-2 text-sm text-muted-foreground">
-                              {formatDistanceToNow(new Date(article.date), { addSuffix: true })}
-                            </div>
-                            <div className="col-span-2 sm:col-span-2 lg:col-span-1 text-right font-medium">
-                              {article.viewCount || 0}
-                            </div>
-                          </Link>
-                        ))}
-                    </div>
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-        
-        {/* Additional Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="shadow-sm bg-white dark:bg-gray-800">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Award className="h-5 w-5 text-primary" />
-                Top Performing Categories
-              </CardTitle>
-              <CardDescription>
-                Ranked by average views per article
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
-              ) : categoryStats.length > 0 ? (
-                <div className="space-y-3 mt-2">
-                  {[...categoryStats]
-                    .sort((a, b) => (b.views / b.count) - (a.views / a.count))
-                    .map((category, index) => (
-                      <div key={category.name} className="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors">
-                        <div className="flex items-center gap-3">
-                          <div 
-                            className="w-3 h-3 rounded-full shrink-0" 
-                            style={{ backgroundColor: COLORS[index % COLORS.length] }} 
-                          />
-                          <span className="font-medium">{category.name}</span>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <span className="text-sm text-muted-foreground">{category.count} article{category.count !== 1 ? 's' : ''}</span>
-                          <span className="font-medium">
-                            {Math.round(category.views / category.count)} avg. views
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              ) : (
-                <div className="flex items-center justify-center py-8 text-muted-foreground">
-                  No data available
+                          </td>
+                          <td className="text-right">
+                            {format(new Date(article.date), "MMM d, yyyy")}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="py-4 text-center text-muted-foreground">
+                          No articles found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              {articles.length > 5 && (
+                <div className="mt-4 text-center">
+                  <Button asChild variant="outline">
+                    <Link to="/admin/articles">View All Articles</Link>
+                  </Button>
                 </div>
               )}
             </CardContent>
           </Card>
-          
-          <Card className="shadow-sm bg-white dark:bg-gray-800">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <TrendingUp className="h-5 w-5 text-primary" />
-                Most Viewed Articles
-              </CardTitle>
-              <CardDescription>
-                Your top performing content
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
-              ) : sortedByViews.length > 0 ? (
-                <div className="space-y-3 mt-2">
-                  {sortedByViews.slice(0, 5).map((article, index) => (
-                    <Link
-                      key={article.id}
-                      to={`/admin/article/${article.id}`}
-                      className="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 text-primary font-medium text-sm shrink-0">
-                          {index + 1}
-                        </div>
-                        <span className="font-medium truncate">{article.title}</span>
-                      </div>
-                      <div className="font-medium text-green-500 shrink-0">
-                        {article.viewCount || 0} views
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex items-center justify-center py-8 text-muted-foreground">
-                  No data available
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </DashboardLayout>
   );
 };

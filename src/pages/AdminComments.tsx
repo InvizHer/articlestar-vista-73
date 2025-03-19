@@ -236,14 +236,21 @@ const AdminComments = () => {
     try {
       setIsSubmitting(true);
       
-      const { error: repliesError } = await supabase
-        .from("comment_replies")
-        .delete()
-        .eq("comment_id", commentToDelete);
+      const comment = comments.find(c => c.id === commentToDelete);
+      const hasReplies = comment?.replies && comment.replies.length > 0;
       
-      if (repliesError) {
-        console.error("Error deleting replies:", repliesError);
-        throw repliesError;
+      if (hasReplies) {
+        const replyIds = comment!.replies!.map(reply => reply.id);
+        
+        const { error: repliesError } = await supabase
+          .from("comment_replies")
+          .delete()
+          .in("id", replyIds);
+        
+        if (repliesError) {
+          console.error("Error deleting replies:", repliesError);
+          throw repliesError;
+        }
       }
       
       const { error: commentError } = await supabase
@@ -256,7 +263,7 @@ const AdminComments = () => {
         throw commentError;
       }
       
-      toast.success("Comment and all replies deleted successfully");
+      toast.success("Comment deleted successfully");
       
       setComments(prev => prev.filter(c => c.id !== commentToDelete));
       
@@ -304,7 +311,7 @@ const AdminComments = () => {
 
   return (
     <DashboardLayout>
-      <div className="container max-w-full px-4 md:px-6 py-6">
+      <div className="container max-w-full px-4 md:px-6 py-6 animate-fade-in">
         <div className="mb-6">
           <h1 className="text-2xl font-bold mb-2">Comments Management</h1>
           <p className="text-muted-foreground">View and respond to user comments across all articles</p>
@@ -547,7 +554,7 @@ const AdminComments = () => {
         )}
         
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <AlertDialogContent>
+          <AlertDialogContent className="animate-scale-in">
             <AlertDialogHeader>
               <AlertDialogTitle>Are you sure?</AlertDialogTitle>
               <AlertDialogDescription>

@@ -1,9 +1,9 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Article } from "@/types/blog";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
-import { CalendarIcon, Clock, MoreVertical, Edit, Trash2, Eye } from "lucide-react";
+import { CalendarIcon, Clock, MoreVertical, Edit, Trash2, Eye, Heart } from "lucide-react";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ArticleListItemProps {
   article: Article;
@@ -22,6 +23,24 @@ const ArticleListItem: React.FC<ArticleListItemProps> = ({
   article,
   onDelete
 }) => {
+  const [likesCount, setLikesCount] = useState<number>(0);
+
+  useEffect(() => {
+    const fetchLikesCount = async () => {
+      try {
+        const { data, error } = await supabase
+          .rpc('get_like_count', { p_article_id: article.id });
+        
+        if (error) throw error;
+        setLikesCount(data || 0);
+      } catch (error) {
+        console.error('Error fetching likes count:', error);
+      }
+    };
+
+    fetchLikesCount();
+  }, [article.id]);
+
   // Parse the date string to a Date object
   const articleDate = new Date(article.date);
   const timeAgo = formatDistanceToNow(articleDate, { addSuffix: true });
@@ -63,6 +82,10 @@ const ArticleListItem: React.FC<ArticleListItemProps> = ({
           <span className="flex items-center gap-1">
             <Eye className="h-3 w-3" />
             {article.viewCount || 0} views
+          </span>
+          <span className="flex items-center gap-1">
+            <Heart className="h-3 w-3 text-red-500" />
+            {likesCount} likes
           </span>
           <Badge variant="secondary" className="font-normal text-xs">
             {article.category}
