@@ -23,6 +23,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import EditorsPick from "@/components/blog/EditorsPick";
 import ArticleGrid from "@/components/blog/ArticleGrid";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Card, CardContent } from "@/components/ui/card";
 
 const convertDbArticleToArticle = (dbArticle: DbArticle): Article => {
   return {
@@ -114,31 +116,33 @@ const Index = () => {
       name: "Instagram",
       icon: <Instagram className="h-5 w-5" />,
       url: "https://instagram.com",
-      color: "bg-gradient-to-br from-pink-600 to-orange-400",
+      color: "from-pink-500 to-rose-500",
       textColor: "text-white"
     },
     {
       name: "GitHub",
       icon: <Github className="h-5 w-5" />,
       url: "https://github.com",
-      color: "bg-gradient-to-br from-gray-800 to-gray-600",
+      color: "from-gray-700 to-gray-900",
       textColor: "text-white"
     },
     {
       name: "LinkedIn",
       icon: <Linkedin className="h-5 w-5" />,
       url: "https://linkedin.com",
-      color: "bg-gradient-to-br from-blue-600 to-blue-400",
+      color: "from-blue-600 to-blue-800",
       textColor: "text-white"
     },
     {
       name: "YouTube",
       icon: <Youtube className="h-5 w-5" />,
       url: "https://youtube.com",
-      color: "bg-gradient-to-br from-red-600 to-red-400",
+      color: "from-red-500 to-red-700",
       textColor: "text-white"
     }
   ];
+
+  const isMobile = useIsMobile();
 
   return (
     <Layout>
@@ -345,101 +349,55 @@ const Index = () => {
         </section>
       ) : null}
 
-      <section className="bg-gradient-to-b from-primary/5 to-background py-16">
+      <section className="py-16 bg-gradient-to-b from-background via-primary/5 to-background">
         <div className="container mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
             viewport={{ once: true }}
-            className="max-w-xl mx-auto text-center mb-12"
+            className="text-center mb-12"
           >
-            <h2 className="text-3xl font-bold mb-4">Discover by Interest</h2>
-            <p className="text-muted-foreground">
-              Explore content from our diverse catalog of topics and categories
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-blue-500 bg-clip-text text-transparent mb-4">Connect With Us</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              Follow us on social media to get the latest updates and news
             </p>
           </motion.div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-            {popularCategories.map((category, index) => (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 md:gap-6 max-w-4xl mx-auto">
+            {socialMediaLinks.map((social, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 viewport={{ once: true }}
+                className="w-full"
               >
-                <Link 
-                  to={`/articles?category=${category.name}`}
-                  className="group relative flex items-center h-28 rounded-xl overflow-hidden bg-gradient-to-r from-primary/80 to-primary/40 text-white shadow-md hover:shadow-lg transition-all duration-300"
+                <a
+                  href={social.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group block h-full"
                 >
-                  <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.6),transparent)]"></div>
-                  <div className="absolute top-0 left-0 h-full w-2 bg-white/20"></div>
-                  
-                  <div className="relative z-10 p-6 w-full">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xl font-bold">{category.name}</h3>
-                      <div className="flex items-center bg-white/20 backdrop-blur-sm rounded-full px-2.5 py-1 text-sm">
-                        {category.count} {category.count === 1 ? 'article' : 'articles'}
+                  <Card className="overflow-hidden h-full transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-lg">
+                    <CardContent className="p-0">
+                      <div className={`bg-gradient-to-r ${social.color} text-white p-5 flex flex-col items-center justify-center text-center h-full min-h-[160px] transition-all duration-300`}>
+                        <div className="bg-white/20 rounded-full p-3 mb-3 backdrop-blur-sm">
+                          {social.icon}
+                        </div>
+                        <h3 className="font-medium mb-1">{social.name}</h3>
+                        <div className="flex items-center text-sm text-white/80 mt-2 group-hover:text-white transition-colors">
+                          <span>Follow us</span>
+                          <ArrowRight className="h-3 w-3 ml-1 group-hover:translate-x-1 transition-transform" />
+                        </div>
                       </div>
-                    </div>
-                    
-                    <div className="mt-2 flex items-center text-sm text-white/80 group-hover:text-white transition-colors">
-                      <span>Explore category</span>
-                      <ArrowRight className="h-3.5 w-3.5 ml-1 transition-transform duration-300 group-hover:translate-x-1" />
-                    </div>
-                  </div>
-                </Link>
+                    </CardContent>
+                  </Card>
+                </a>
               </motion.div>
             ))}
           </div>
-          
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            viewport={{ once: true }}
-            className="mt-20 max-w-5xl mx-auto bg-card border rounded-2xl p-8 shadow-lg"
-          >
-            <div className="text-center mb-10">
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-blue-500 bg-clip-text text-transparent mb-4">Connect With Us</h2>
-              <p className="text-muted-foreground max-w-lg mx-auto">
-                Join our community across these platforms to stay updated with the latest content and discussions
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {socialMediaLinks.map((social, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                  whileHover={{ y: -5, scale: 1.03 }}
-                  className="flex-1"
-                >
-                  <a
-                    href={social.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`${social.color} ${social.textColor} group rounded-xl overflow-hidden flex flex-col items-center py-8 gap-3 shadow-lg transition-all duration-300 hover:shadow-xl h-full`}
-                  >
-                    <div className="p-3 bg-white/20 rounded-full backdrop-blur-sm">
-                      {social.icon}
-                    </div>
-                    <span className="font-medium group-hover:scale-105 transition-transform">
-                      {social.name}
-                    </span>
-                    <div className="mt-1 flex items-center text-xs opacity-80">
-                      <span>Follow us</span>
-                      <ArrowRight className="h-3 w-3 ml-1 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </a>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
         </div>
       </section>
     </Layout>
