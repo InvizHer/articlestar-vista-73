@@ -279,13 +279,12 @@ const Index = () => {
                       alt={article.title}
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-60"></div>
-                    <div className="absolute top-3 left-3 flex items-center gap-2">
+                    
+                    <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent flex items-center gap-2">
                       <div className="bg-primary text-primary-foreground text-xs font-medium px-2.5 py-1 rounded-full shadow-sm">
                         {article.category}
                       </div>
-                    </div>
-                    <div className="absolute top-3 right-3">
+                      
                       <div className="bg-black/50 backdrop-blur-sm text-white text-xs font-medium px-2 py-0.5 rounded-full flex items-center gap-1">
                         <Eye className="h-3 w-3" />
                         {article.viewCount}
