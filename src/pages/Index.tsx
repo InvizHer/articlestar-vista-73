@@ -7,13 +7,14 @@ import { Article } from "@/types/blog";
 import { 
   ArrowRight, 
   Sparkles, 
-  TrendingUp, 
   Search,
   Hash,
   ExternalLink,
   Eye,
+  Instagram,
   Github,
-  Mail
+  Youtube,
+  MessageSquare
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -106,6 +107,37 @@ const Index = () => {
 
   const featuredArticle = recentArticles[0];
   const recentArticlesToShow = recentArticles.slice(1, 7);
+
+  const socialLinks = [
+    {
+      name: "Instagram",
+      icon: <Instagram className="h-6 w-6" />,
+      url: "https://instagram.com",
+      color: "from-pink-500 to-purple-500",
+      description: "Follow us for visual updates and behind the scenes"
+    },
+    {
+      name: "GitHub",
+      icon: <Github className="h-6 w-6" />,
+      url: "https://github.com",
+      color: "from-gray-700 to-gray-900",
+      description: "Contribute to our open source projects"
+    },
+    {
+      name: "Telegram",
+      icon: <MessageSquare className="h-6 w-6" />,
+      url: "https://t.me/yourchannel",
+      color: "from-blue-400 to-blue-600",
+      description: "Join our community channel for discussions"
+    },
+    {
+      name: "YouTube",
+      icon: <Youtube className="h-6 w-6" />,
+      url: "https://youtube.com",
+      color: "from-red-500 to-red-700",
+      description: "Watch our tutorials and video content"
+    }
+  ];
 
   return (
     <Layout>
@@ -403,71 +435,56 @@ const Index = () => {
 
       <section className="py-16 bg-gradient-to-b from-background to-primary/5">
         <div className="container mx-auto px-4">
-          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-primary/20 to-primary/5 p-8 md:p-12">
-            <div className="absolute -top-20 right-0 h-40 w-40 rounded-full bg-primary/20 filter blur-3xl opacity-50"></div>
-            <div className="absolute -bottom-20 left-0 h-40 w-40 rounded-full bg-primary/20 filter blur-3xl opacity-50"></div>
-            
-            <div className="max-w-3xl mx-auto relative">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            viewport={{ once: true }}
+            className="max-w-3xl mx-auto text-center mb-10"
+          >
+            <h2 className="text-3xl font-bold mb-3">Connect With Us</h2>
+            <p className="text-muted-foreground">
+              Follow us on social media to stay updated with the latest content and announcements
+            </p>
+          </motion.div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {socialLinks.map((social, index) => (
               <motion.div
+                key={index}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
                 viewport={{ once: true }}
-                className="text-center mb-8"
+                className="group"
               >
-                <h2 className="text-3xl md:text-4xl font-bold mb-4">Join Our Community</h2>
-                <p className="text-muted-foreground">
-                  Connect with fellow readers and writers, participate in discussions, and share your ideas.
-                </p>
+                <a 
+                  href={social.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`block h-full rounded-xl overflow-hidden bg-card border transition-all duration-300 hover:shadow-lg hover:scale-[1.02] group`}
+                >
+                  <div className={`h-2 w-full bg-gradient-to-r ${social.color}`}></div>
+                  <div className="p-6">
+                    <div className="flex items-center mb-4">
+                      <div className={`h-12 w-12 rounded-lg bg-gradient-to-br ${social.color} flex items-center justify-center text-white`}>
+                        {social.icon}
+                      </div>
+                      <div className="ml-4">
+                        <h3 className="font-semibold">{social.name}</h3>
+                        <p className="text-xs text-muted-foreground">Follow us</p>
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-4">{social.description}</p>
+                    <div className="flex justify-end">
+                      <div className="text-sm font-medium text-primary flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                        Visit <ArrowRight className="h-3.5 w-3.5" />
+                      </div>
+                    </div>
+                  </div>
+                </a>
               </motion.div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5 }}
-                  viewport={{ once: true }}
-                  className="bg-card rounded-xl p-6 border shadow-sm hover:shadow-md transition-all"
-                >
-                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                    <Github className="h-6 w-6 text-primary" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2">GitHub Discussions</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Join our open source community on GitHub to contribute and help improve our platform.
-                  </p>
-                  <a 
-                    href="https://github.com" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-colors font-medium"
-                  >
-                    <Github className="h-4 w-4" />
-                    <span>GitHub</span>
-                  </a>
-                </motion.div>
-                
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5, delay: 0.1 }}
-                  viewport={{ once: true }}
-                  className="bg-card rounded-xl p-6 border shadow-sm hover:shadow-md transition-all"
-                >
-                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                    <Mail className="h-6 w-6 text-primary" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2">Newsletter</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Subscribe to our newsletter and get the latest articles and updates delivered to your inbox.
-                  </p>
-                  <Button className="gap-2">
-                    <Mail className="h-4 w-4" />
-                    <span>Subscribe</span>
-                  </Button>
-                </motion.div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
