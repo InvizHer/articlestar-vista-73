@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import DashboardLayout from "@/components/admin/DashboardLayout";
@@ -46,7 +47,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { Save, AlertCircle, Check, RefreshCw, Lock, Palette } from "lucide-react";
+import { Save, AlertCircle, Check, RefreshCw, Lock, Palette, User } from "lucide-react";
 
 const themeColors = [
   { value: "default", label: "Default" },
@@ -67,6 +68,7 @@ const passwordSchema = z.object({
   currentPassword: z.string().min(1, "Current password is required"),
   newPassword: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string().min(6, "Password must be at least 6 characters"),
+  username: z.string().min(3, "Username must be at least 3 characters").optional(),
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -84,10 +86,12 @@ type SiteSettings = {
   id: string;
   default_theme: "light" | "dark" | "system";
   default_theme_color: "default" | "blue" | "green" | "purple" | "orange" | "pink";
+  created_at?: string;
+  updated_at?: string;
 };
 
 const AdminSettings: React.FC = () => {
-  const { admin } = useAdmin();
+  const { admin, login } = useAdmin();
   const { theme, themeColor, setTheme, setThemeColor } = useTheme();
   const [loading, setLoading] = useState(false);
   const [loadingTheme, setLoadingTheme] = useState(false);
@@ -99,6 +103,7 @@ const AdminSettings: React.FC = () => {
       currentPassword: "",
       newPassword: "",
       confirmPassword: "",
+      username: admin?.username || "",
     },
   });
 
@@ -113,6 +118,12 @@ const AdminSettings: React.FC = () => {
   useEffect(() => {
     fetchDefaultThemeSettings();
   }, []);
+
+  useEffect(() => {
+    if (admin) {
+      passwordForm.setValue("username", admin.username);
+    }
+  }, [admin]);
 
   useEffect(() => {
     if (defaultThemeSettings) {
@@ -171,20 +182,51 @@ const AdminSettings: React.FC = () => {
         return;
       }
       
-      // Update password
-      const { error: updateError } = await supabase
-        .from("admins")
-        .update({ password: data.newPassword })
-        .eq("id", adminData.id);
+      // Update fields object for changes
+      const updateFields: { password?: string; username?: string } = {};
       
-      if (updateError) throw updateError;
+      // Add password to update if it was changed
+      if (data.newPassword) {
+        updateFields.password = data.newPassword;
+      }
       
-      toast.success("Password updated successfully");
-      passwordForm.reset();
+      // Add username to update if it was changed and provided
+      if (data.username && data.username !== admin.username) {
+        updateFields.username = data.username;
+      }
+      
+      // Only update if there are changes
+      if (Object.keys(updateFields).length > 0) {
+        // Update admin data
+        const { error: updateError } = await supabase
+          .from("admins")
+          .update(updateFields)
+          .eq("id", adminData.id);
+        
+        if (updateError) throw updateError;
+        
+        // Update login state with new username if changed
+        if (data.username && data.username !== admin.username) {
+          login({
+            ...admin,
+            username: data.username
+          });
+        }
+        
+        toast.success("Account updated successfully");
+        passwordForm.reset({
+          currentPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+          username: data.username || admin.username
+        });
+      } else {
+        toast.info("No changes were made");
+      }
       
     } catch (error) {
-      console.error("Error updating password:", error);
-      toast.error("Failed to update password");
+      console.error("Error updating account:", error);
+      toast.error("Failed to update account");
     } finally {
       setLoading(false);
     }
@@ -251,23 +293,28 @@ const AdminSettings: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 20 }}
         transition={{ duration: 0.3 }}
-        className="container max-w-4xl py-8"
+        className="px-4 py-8 md:px-8 max-w-7xl mx-auto"
       >
-        <h1 className="text-3xl font-bold mb-8">Settings</h1>
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold">Settings</h1>
+            <p className="text-muted-foreground mt-1">Manage your account and site preferences</p>
+          </div>
+        </div>
         
-        <Tabs defaultValue="theme">
-          <TabsList className="mb-6">
-            <TabsTrigger value="theme">
+        <Tabs defaultValue="theme" className="space-y-6">
+          <TabsList className="mb-4 w-full max-w-md">
+            <TabsTrigger value="theme" className="flex-1">
               <Palette className="h-4 w-4 mr-2" />
               Theme
             </TabsTrigger>
-            <TabsTrigger value="account">
-              <Lock className="h-4 w-4 mr-2" />
+            <TabsTrigger value="account" className="flex-1">
+              <User className="h-4 w-4 mr-2" />
               Account
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="theme" className="space-y-4">
+          <TabsContent value="theme" className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Theme Settings</CardTitle>
@@ -406,12 +453,29 @@ const AdminSettings: React.FC = () => {
               <CardHeader>
                 <CardTitle>Account Settings</CardTitle>
                 <CardDescription>
-                  Update your admin account password. For security, you'll need to confirm your current password.
+                  Update your admin account information. For security, you'll need to confirm your current password.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Form {...passwordForm}>
                   <form onSubmit={passwordForm.handleSubmit(onSubmitPassword)} className="space-y-6">
+                    <FormField
+                      control={passwordForm.control}
+                      name="username"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Username</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormDescription>
+                            Your admin username for logging in.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
                     <FormField
                       control={passwordForm.control}
                       name="currentPassword"
@@ -468,7 +532,7 @@ const AdminSettings: React.FC = () => {
                       ) : (
                         <>
                           <Check className="mr-2 h-4 w-4" />
-                          Update Password
+                          Update Account
                         </>
                       )}
                     </Button>
