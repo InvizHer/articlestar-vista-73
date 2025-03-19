@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -13,12 +14,11 @@ import {
   Facebook, 
   Linkedin, 
   Eye, 
-  Heart,
-  BookmarkPlus,
   MessageSquare,
   Copy,
   ArrowLeft,
-  ArrowRight
+  ArrowRight,
+  WhatsappIcon
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -187,6 +187,104 @@ const ReadingProgressBar = () => {
   );
 };
 
+// Share Button Component
+const ShareButton = ({ article }: { article: ArticleType }) => {
+  // Handle share functionality
+  const handleShare = (platform: string) => {
+    const url = window.location.href;
+    let shareUrl = '';
+    
+    switch (platform) {
+      case 'twitter':
+        shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(article.title)}&url=${encodeURIComponent(url)}`;
+        break;
+      case 'facebook':
+        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+        break;
+      case 'linkedin':
+        shareUrl = `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(url)}&title=${encodeURIComponent(article.title)}`;
+        break;
+      case 'whatsapp':
+        shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(article.title + ' ' + url)}`;
+        break;
+      case 'copy':
+        navigator.clipboard.writeText(url);
+        toast.success("Link copied to clipboard");
+        return;
+      default:
+        navigator.share({
+          title: article.title,
+          url: url
+        }).catch(() => {
+          navigator.clipboard.writeText(url);
+          toast.success("Link copied to clipboard");
+        });
+        return;
+    }
+    
+    window.open(shareUrl, '_blank', 'width=600,height=400');
+  };
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="gap-2"
+        >
+          <Share2 className="h-4 w-4" />
+          <span>Share</span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-2" align="end">
+        <div className="flex gap-2">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="rounded-full text-[#1DA1F2] hover:bg-[#1DA1F2]/10"
+            onClick={() => handleShare('twitter')}
+          >
+            <Twitter className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="rounded-full text-[#1877F2] hover:bg-[#1877F2]/10"
+            onClick={() => handleShare('facebook')}
+          >
+            <Facebook className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="rounded-full text-[#0A66C2] hover:bg-[#0A66C2]/10"
+            onClick={() => handleShare('linkedin')}
+          >
+            <Linkedin className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="rounded-full text-[#25D366] hover:bg-[#25D366]/10"
+            onClick={() => handleShare('whatsapp')}
+          >
+            <WhatsAppIcon className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="rounded-full"
+            onClick={() => handleShare('copy')}
+          >
+            <Copy className="h-4 w-4" />
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+};
+
 // Main Article Component
 const Article = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -194,7 +292,6 @@ const Article = () => {
   const [article, setArticle] = useState<ArticleType | null>(null);
   const [relatedArticles, setRelatedArticles] = useState<Partial<ArticleType>[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isBookmarked, setIsBookmarked] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const viewCountedRef = useRef(false);
   const isMobile = useIsMobile();
@@ -331,47 +428,6 @@ const Article = () => {
     }
   };
 
-  // Handle share functionality
-  const handleShare = (platform: string) => {
-    const url = window.location.href;
-    let shareUrl = '';
-    
-    switch (platform) {
-      case 'twitter':
-        shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(article!.title)}&url=${encodeURIComponent(url)}`;
-        break;
-      case 'facebook':
-        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
-        break;
-      case 'linkedin':
-        shareUrl = `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(url)}&title=${encodeURIComponent(article!.title)}`;
-        break;
-      case 'whatsapp':
-        shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(article!.title + ' ' + url)}`;
-        break;
-      case 'copy':
-        navigator.clipboard.writeText(url);
-        toast.success("Link copied to clipboard");
-        return;
-      default:
-        navigator.clipboard.writeText(url);
-        toast.success("Link copied to clipboard");
-        return;
-    }
-    
-    window.open(shareUrl, '_blank', 'width=600,height=400');
-  };
-
-  // Toggle bookmark state
-  const toggleBookmark = () => {
-    setIsBookmarked(!isBookmarked);
-    if (!isBookmarked) {
-      toast.success("Article saved to bookmarks");
-    } else {
-      toast.success("Article removed from bookmarks");
-    }
-  };
-
   // Loading state UI
   if (loading) {
     return (
@@ -419,7 +475,7 @@ const Article = () => {
       {/* Article Header */}
       <div className="w-full bg-gradient-to-b from-muted/50 to-background pt-6 pb-4 -mt-6">
         <div className="max-w-5xl mx-auto px-4">
-          <div className="flex items-center justify-between mb-6">
+          <div className="mb-6">
             <Button 
               variant="ghost" 
               size="sm" 
@@ -429,83 +485,6 @@ const Article = () => {
               <ChevronLeft className="h-4 w-4" />
               <span className={isMobile ? "sr-only" : ""}>Back</span>
             </Button>
-            
-            <div className="flex gap-2">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="rounded-full"
-                      onClick={toggleBookmark}
-                    >
-                      <BookmarkPlus 
-                        className={cn(
-                          "h-4 w-4", 
-                          isBookmarked && "fill-primary text-primary"
-                        )} 
-                      />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {isBookmarked ? "Remove bookmark" : "Save article"}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="icon" className="rounded-full">
-                    <Share2 className="h-4 w-4" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-2" align="end">
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="rounded-full text-[#1DA1F2] hover:bg-[#1DA1F2]/10"
-                      onClick={() => handleShare('twitter')}
-                    >
-                      <Twitter className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="rounded-full text-[#1877F2] hover:bg-[#1877F2]/10"
-                      onClick={() => handleShare('facebook')}
-                    >
-                      <Facebook className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="rounded-full text-[#0A66C2] hover:bg-[#0A66C2]/10"
-                      onClick={() => handleShare('linkedin')}
-                    >
-                      <Linkedin className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="rounded-full text-[#25D366] hover:bg-[#25D366]/10"
-                      onClick={() => handleShare('whatsapp')}
-                    >
-                      <WhatsAppIcon className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="rounded-full"
-                      onClick={() => handleShare('copy')}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
           </div>
         </div>
       </div>
@@ -515,7 +494,7 @@ const Article = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="flex flex-col lg:flex-row gap-8"
+          className="flex flex-col lg:flex-row gap-8 lg:gap-12"
         >
           {/* Main content */}
           <div className="w-full lg:w-2/3">
@@ -558,11 +537,6 @@ const Article = () => {
               />
             </div>
 
-            {/* Author info (mobile) */}
-            <div className="block lg:hidden">
-              <AuthorCard author={article.author} themeColor={themeColor} />
-            </div>
-
             {/* Article content */}
             <div 
               ref={contentRef}
@@ -600,26 +574,19 @@ const Article = () => {
                 </Button>
               </div>
               
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="gap-2"
-                onClick={toggleBookmark}
-              >
-                <BookmarkPlus 
-                  className={cn(
-                    "h-4 w-4", 
-                    isBookmarked && "fill-primary text-primary"
-                  )} 
-                />
-                <span>{isBookmarked ? "Saved" : "Save"}</span>
-              </Button>
+              {/* Replace BookmarkPlus with Share button */}
+              <ShareButton article={article} />
+            </div>
+            
+            {/* Author box for mobile (moved to bottom) */}
+            <div className="block lg:hidden mb-8">
+              <AuthorCard author={article.author} themeColor={themeColor} />
             </div>
 
             {/* Comments Section */}
             <Comments articleId={article.id} />
             
-            {/* Article navigation for mobile */}
+            {/* Related Articles for Mobile */}
             {isMobile && relatedArticles.length > 0 && (
               <div className="mt-10 pt-6 border-t">
                 <h3 className="font-bold text-xl mb-4">Related Articles</h3>
@@ -663,8 +630,8 @@ const Article = () => {
             </div>
           </div>
           
-          {/* Sidebar */}
-          <div className="w-full lg:w-1/3 space-y-6">
+          {/* Sidebar with increased spacing */}
+          <div className="w-full lg:w-1/3 space-y-8 lg:pl-4">
             {/* Author Card (desktop) */}
             <div className="hidden lg:block sticky top-24">
               <AuthorCard author={article.author} themeColor={themeColor} />
