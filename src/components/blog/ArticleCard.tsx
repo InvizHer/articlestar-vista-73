@@ -22,6 +22,24 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
   const isFeatured = variant === "featured";
   const { themeColor } = useTheme();
   
+  // Map theme color to appropriate Tailwind class
+  const getBadgeClass = () => {
+    switch(themeColor) {
+      case 'blue':
+        return 'bg-blue-500 hover:bg-blue-600';
+      case 'purple':
+        return 'bg-purple-500 hover:bg-purple-600';
+      case 'green':
+        return 'bg-green-500 hover:bg-green-600';
+      case 'orange':
+        return 'bg-orange-500 hover:bg-orange-600';
+      case 'pink':
+        return 'bg-pink-500 hover:bg-pink-600';
+      default:
+        return 'bg-primary hover:bg-primary/90';
+    }
+  }
+  
   return (
     <motion.article 
       initial={{ opacity: 0, y: 20 }}
@@ -46,7 +64,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
         <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent flex items-center gap-2">
           {article.category && (
             <Badge 
-              className={`bg-${themeColor}-500 hover:bg-${themeColor}-600 border-none text-white`}
+              className={cn(getBadgeClass(), "border-none text-white")}
             >
               {article.category}
             </Badge>
