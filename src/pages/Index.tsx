@@ -7,13 +7,15 @@ import { Article } from "@/types/blog";
 import { 
   ArrowRight, 
   Sparkles, 
-  TrendingUp, 
   Search,
   Hash,
   ExternalLink,
   Eye,
+  Clock,
+  Instagram,
   Github,
-  Mail
+  Linkedin,
+  Youtube
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -21,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import EditorsPick from "@/components/blog/EditorsPick";
+import ArticleGrid from "@/components/blog/ArticleGrid";
 
 const convertDbArticleToArticle = (dbArticle: DbArticle): Article => {
   return {
@@ -106,6 +109,37 @@ const Index = () => {
 
   const featuredArticle = recentArticles[0];
   const recentArticlesToShow = recentArticles.slice(1, 7);
+
+  const socialMediaLinks = [
+    {
+      name: "Instagram",
+      icon: <Instagram className="h-full w-full" />,
+      url: "https://instagram.com",
+      color: "from-pink-500 to-purple-500",
+      hoverEffect: "hover:shadow-pink-500/20"
+    },
+    {
+      name: "GitHub",
+      icon: <Github className="h-full w-full" />,
+      url: "https://github.com",
+      color: "from-gray-800 to-gray-600",
+      hoverEffect: "hover:shadow-gray-500/20"
+    },
+    {
+      name: "LinkedIn",
+      icon: <Linkedin className="h-full w-full" />,
+      url: "https://linkedin.com",
+      color: "from-blue-600 to-blue-400",
+      hoverEffect: "hover:shadow-blue-500/20"
+    },
+    {
+      name: "YouTube",
+      icon: <Youtube className="h-full w-full" />,
+      url: "https://youtube.com",
+      color: "from-red-600 to-red-500",
+      hoverEffect: "hover:shadow-red-500/20"
+    }
+  ];
 
   return (
     <Layout>
@@ -247,14 +281,14 @@ const Index = () => {
                       alt={article.title}
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-60"></div>
-                    <div className="absolute top-3 left-3 flex items-center gap-2">
-                      <div className="bg-primary text-primary-foreground text-xs font-medium px-2.5 py-1 rounded-full shadow-sm">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-70"></div>
+                    
+                    <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                      <div className="bg-primary text-primary-foreground text-xs font-medium px-2.5 py-1 rounded-full shadow-sm backdrop-blur-sm">
                         {article.category}
                       </div>
-                    </div>
-                    <div className="absolute top-3 right-3">
-                      <div className="bg-black/50 backdrop-blur-sm text-white text-xs font-medium px-2 py-0.5 rounded-full flex items-center gap-1">
+                      
+                      <div className="bg-black/50 backdrop-blur-sm text-white text-xs font-medium px-2 py-1 rounded-full flex items-center gap-1">
                         <Eye className="h-3 w-3" />
                         {article.viewCount}
                       </div>
@@ -265,7 +299,10 @@ const Index = () => {
                     <div className="flex items-center mb-3 text-xs text-muted-foreground">
                       <span>{article.date}</span>
                       <span className="mx-2">•</span>
-                      <span>{article.readTime} read</span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {article.readTime}
+                      </span>
                     </div>
                     
                     <h3 className="text-lg font-bold mb-3 line-clamp-2 group-hover:text-primary transition-colors">
@@ -358,117 +395,56 @@ const Index = () => {
             ))}
           </div>
           
-          {trendingTags.length > 0 && (
-            <div className="mt-12">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                viewport={{ once: true }}
-                className="text-center mb-6"
-              >
-                <h3 className="text-xl font-medium mb-2">Trending Topics</h3>
-                <p className="text-sm text-muted-foreground">Popular discussions right now</p>
-              </motion.div>
-              
-              <motion.div
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                transition={{ duration: 0.7 }}
-                viewport={{ once: true }}
-                className="flex flex-wrap justify-center gap-3"
-              >
-                {trendingTags.map((tag, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.4, delay: index * 0.1 }}
-                    viewport={{ once: true }}
-                  >
-                    <Link 
-                      to={`/articles?tag=${tag}`}
-                      className="flex items-center rounded-full px-4 py-2 text-sm font-medium bg-card hover:bg-primary/10 border hover:border-primary/20 transition-colors"
-                    >
-                      <Hash className="h-3.5 w-3.5 mr-1.5 text-primary" />
-                      {tag}
-                    </Link>
-                  </motion.div>
-                ))}
-              </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            viewport={{ once: true }}
+            className="mt-16"
+          >
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold mb-3">Connect With Us</h2>
+              <p className="text-muted-foreground max-w-lg mx-auto">
+                Follow us on social media for the latest updates, news, and community discussions
+              </p>
             </div>
-          )}
-        </div>
-      </section>
-
-      <section className="py-16 bg-gradient-to-b from-background to-primary/5">
-        <div className="container mx-auto px-4">
-          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-primary/20 to-primary/5 p-8 md:p-12">
-            <div className="absolute -top-20 right-0 h-40 w-40 rounded-full bg-primary/20 filter blur-3xl opacity-50"></div>
-            <div className="absolute -bottom-20 left-0 h-40 w-40 rounded-full bg-primary/20 filter blur-3xl opacity-50"></div>
             
-            <div className="max-w-3xl mx-auto relative">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                viewport={{ once: true }}
-                className="text-center mb-8"
-              >
-                <h2 className="text-3xl md:text-4xl font-bold mb-4">Join Our Community</h2>
-                <p className="text-muted-foreground">
-                  Connect with fellow readers and writers, participate in discussions, and share your ideas.
-                </p>
-              </motion.div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 max-w-4xl mx-auto">
+              {socialMediaLinks.map((social, index) => (
                 <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5 }}
+                  key={index}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  transition={{ 
+                    duration: 0.5, 
+                    delay: index * 0.1,
+                    type: "spring",
+                    stiffness: 100
+                  }}
                   viewport={{ once: true }}
-                  className="bg-card rounded-xl p-6 border shadow-sm hover:shadow-md transition-all"
+                  whileHover={{ y: -5 }}
                 >
-                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                    <Github className="h-6 w-6 text-primary" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2">GitHub Discussions</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Join our open source community on GitHub to contribute and help improve our platform.
-                  </p>
                   <a 
-                    href="https://github.com" 
-                    target="_blank" 
+                    href={social.url}
+                    target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-colors font-medium"
+                    className={`block group`}
                   >
-                    <Github className="h-4 w-4" />
-                    <span>GitHub</span>
+                    <div className={`aspect-square rounded-2xl bg-gradient-to-br ${social.color} p-0.5 shadow-lg ${social.hoverEffect} transition-all duration-300 hover:shadow-xl`}>
+                      <div className="h-full w-full rounded-[14px] bg-background p-6 flex flex-col items-center justify-center">
+                        <div className="w-12 h-12 md:w-16 md:h-16 text-white mb-3">
+                          {social.icon}
+                        </div>
+                        <span className="font-medium text-center text-primary">
+                          {social.name}
+                        </span>
+                      </div>
+                    </div>
                   </a>
                 </motion.div>
-                
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5, delay: 0.1 }}
-                  viewport={{ once: true }}
-                  className="bg-card rounded-xl p-6 border shadow-sm hover:shadow-md transition-all"
-                >
-                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                    <Mail className="h-6 w-6 text-primary" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2">Newsletter</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Subscribe to our newsletter and get the latest articles and updates delivered to your inbox.
-                  </p>
-                  <Button className="gap-2">
-                    <Mail className="h-4 w-4" />
-                    <span>Subscribe</span>
-                  </Button>
-                </motion.div>
-              </div>
+              ))}
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
     </Layout>
