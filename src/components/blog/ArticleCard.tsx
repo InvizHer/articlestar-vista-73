@@ -42,7 +42,8 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
           />
         </div>
         
-        <div className="absolute top-3 left-3 flex items-center gap-2">
+        {/* Category and view count moved to bottom of image */}
+        <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent flex items-center gap-2">
           {article.category && (
             <Badge className={`bg-${themeColor} text-${themeColor}-foreground`}>
               {article.category}
