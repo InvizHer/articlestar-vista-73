@@ -120,16 +120,15 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-300"></div>
         
-        {/* Moved category and view count to bottom of image */}
         {article.category && (
-          <div className="absolute bottom-3 left-3">
-            <Badge className="bg-primary text-white shadow-sm backdrop-blur-sm">
+          <div className="absolute top-3 left-3">
+            <Badge className="bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm backdrop-blur-sm">
               {article.category}
             </Badge>
           </div>
         )}
         
-        <div className="absolute bottom-3 right-3 flex items-center gap-2">
+        <div className="absolute top-3 right-3 flex items-center gap-2">
           <Badge variant="outline" className="bg-black/40 text-white backdrop-blur-sm flex items-center gap-1">
             <Eye className="h-3 w-3" />
             {article.viewCount || 0}
@@ -182,6 +181,11 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
             <div className="flex items-center gap-1" title={`${article.readTime} read time`}>
               <Clock className="h-3 w-3" />
               <span>{article.readTime}</span>
+            </div>
+            
+            <div className="flex items-center gap-1" title={`${article.viewCount || 0} views`}>
+              <Eye className="h-3 w-3" />
+              <span>{article.viewCount || 0}</span>
             </div>
           </div>
         </div>
