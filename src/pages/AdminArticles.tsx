@@ -3,16 +3,6 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { 
   Card, 
   CardContent, 
   CardDescription, 
@@ -22,46 +12,23 @@ import {
 } from "@/components/ui/card";
 import { 
   FilePlus,
-  Search,
-  Trash2,
-  Eye,
-  Calendar,
-  CircleOff,
-  CircleCheck,
-  Loader2,
   LayoutDashboard,
-  ArrowDownUp,
-  ArrowUp,
-  ArrowDown,
-  BookOpen,
-  BarChart3,
-  ListFilter
+  BarChart3
 } from "lucide-react";
 import { Article } from "@/types/blog";
 import { DbArticle } from "@/types/database";
 import DashboardLayout from "@/components/admin/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
-import { Badge } from "@/components/ui/badge";
-import ArticleListItem from "@/components/admin/ArticleListItem";
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator
-} from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
-import { formatDistanceToNow } from "date-fns";
+import StatsCards from "@/components/admin/StatsCards";
+import ArticleFilters from "@/components/admin/ArticleFilters";
+import ArticlesList from "@/components/admin/ArticlesList";
+import DeleteConfirmationDialog from "@/components/admin/DeleteConfirmationDialog";
 
 const AdminArticles = () => {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filter, setFilter] = useState<"all" | "published" | "draft">("all");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "views" | "title">("newest");
   const [articleToDelete, setArticleToDelete] = useState<Article | null>(null);
   const [activeTab, setActiveTab] = useState<"all" | "published" | "draft">("all");
@@ -166,22 +133,12 @@ const AdminArticles = () => {
   const publishedArticles = articles.filter(article => article.published).length;
   const draftArticles = articles.filter(article => !article.published).length;
 
-  const handleTabChange = (value: string) => {
-    setActiveTab(value as "all" | "published" | "draft");
+  const handleTabChange = (value: "all" | "published" | "draft") => {
+    setActiveTab(value);
   };
 
-  const getSortIcon = () => {
-    switch (sortBy) {
-      case "newest":
-      case "views":
-        return <ArrowDown className="h-3.5 w-3.5" />;
-      case "oldest":
-        return <ArrowUp className="h-3.5 w-3.5" />;
-      case "title":
-        return <ArrowDownUp className="h-3.5 w-3.5" />;
-      default:
-        return <ArrowDownUp className="h-3.5 w-3.5" />;
-    }
+  const handleClearSearch = () => {
+    setSearchTerm("");
   };
 
   return (
@@ -216,61 +173,13 @@ const AdminArticles = () => {
         </div>
         
         {/* Stats summary */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card 
-            className={cn(
-              "border shadow-sm hover:shadow-md transition-shadow cursor-pointer",
-              activeTab === "all" ? "ring-2 ring-primary/20" : ""
-            )}
-            onClick={() => handleTabChange("all")}
-          >
-            <CardContent className="p-6 flex justify-between items-center">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">All Articles</p>
-                <h3 className="text-2xl font-bold">{totalArticles}</h3>
-              </div>
-              <div className="p-3 bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 rounded-full">
-                <BookOpen className="h-5 w-5" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card 
-            className={cn(
-              "border shadow-sm hover:shadow-md transition-shadow cursor-pointer",
-              activeTab === "published" ? "ring-2 ring-primary/20" : ""
-            )}
-            onClick={() => handleTabChange("published")}
-          >
-            <CardContent className="p-6 flex justify-between items-center">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Published</p>
-                <h3 className="text-2xl font-bold">{publishedArticles}</h3>
-              </div>
-              <div className="p-3 bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400 rounded-full">
-                <CircleCheck className="h-5 w-5" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card 
-            className={cn(
-              "border shadow-sm hover:shadow-md transition-shadow cursor-pointer",
-              activeTab === "draft" ? "ring-2 ring-primary/20" : ""
-            )}
-            onClick={() => handleTabChange("draft")}
-          >
-            <CardContent className="p-6 flex justify-between items-center">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Drafts</p>
-                <h3 className="text-2xl font-bold">{draftArticles}</h3>
-              </div>
-              <div className="p-3 bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400 rounded-full">
-                <CircleOff className="h-5 w-5" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <StatsCards 
+          totalArticles={totalArticles}
+          publishedArticles={publishedArticles}
+          draftArticles={draftArticles}
+          activeTab={activeTab}
+          handleTabChange={handleTabChange}
+        />
         
         {/* Articles list */}
         <Card className="border shadow-sm">
@@ -296,110 +205,25 @@ const AdminArticles = () => {
           </CardHeader>
           
           <CardContent className="pb-0">
-            <div className="mb-6 flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search articles..."
-                  className="pl-10"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              
-              <div className="flex gap-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="flex items-center gap-2">
-                      <ListFilter className="h-4 w-4" />
-                      <span className="hidden sm:inline">Filter</span>
-                      <Badge className="ml-1" variant="secondary">
-                        {activeTab === "all" ? "All" : activeTab === "published" ? "Published" : "Drafts"}
-                      </Badge>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuRadioGroup value={activeTab} onValueChange={(value: any) => handleTabChange(value)}>
-                      <DropdownMenuRadioItem value="all">All Articles</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="published">Published</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="draft">Drafts</DropdownMenuRadioItem>
-                    </DropdownMenuRadioGroup>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="flex items-center gap-2">
-                      {getSortIcon()}
-                      <span className="hidden sm:inline">Sort</span>
-                      <Badge className="ml-1" variant="secondary">
-                        {sortBy === "newest" ? "Newest" : 
-                         sortBy === "oldest" ? "Oldest" : 
-                         sortBy === "views" ? "Views" : "Title"}
-                      </Badge>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuRadioGroup value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
-                      <DropdownMenuRadioItem value="newest">
-                        <ArrowDown className="mr-2 h-3.5 w-3.5" />
-                        Newest First
-                      </DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="oldest">
-                        <ArrowUp className="mr-2 h-3.5 w-3.5" />
-                        Oldest First
-                      </DropdownMenuRadioItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuRadioItem value="views">
-                        <Eye className="mr-2 h-3.5 w-3.5" />
-                        Most Views
-                      </DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="title">
-                        <ArrowDownUp className="mr-2 h-3.5 w-3.5" />
-                        Title (A-Z)
-                      </DropdownMenuRadioItem>
-                    </DropdownMenuRadioGroup>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
+            <ArticleFilters 
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              sortBy={sortBy}
+              setSortBy={setSortBy}
+            />
             
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
-            ) : filteredArticles.length > 0 ? (
-              <div className="space-y-4">
-                {filteredArticles.map((article) => (
-                  <ArticleListItem 
-                    key={article.id}
-                    article={article} 
-                    onDelete={() => setArticleToDelete(article)} 
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <div className="max-w-md mx-auto">
-                  <p className="text-muted-foreground mb-6">
-                    {searchTerm 
-                      ? `No articles found matching "${searchTerm}"`
-                      : activeTab !== "all" 
-                        ? `No ${activeTab} articles found` 
-                        : "No articles found"}
-                  </p>
-                  {searchTerm ? (
-                    <Button variant="outline" onClick={() => setSearchTerm("")} className="mr-2">
-                      Clear Search
-                    </Button>
-                  ) : (
-                    <Button asChild>
-                      <Link to="/admin/article/new">Create Your First Article</Link>
-                    </Button>
-                  )}
-                </div>
-              </div>
-            )}
+            <ArticlesList 
+              loading={loading}
+              filteredArticles={filteredArticles}
+              activeTab={activeTab}
+              totalArticles={totalArticles}
+              publishedArticles={publishedArticles}
+              draftArticles={draftArticles}
+              searchTerm={searchTerm}
+              onDeleteArticle={setArticleToDelete}
+            />
           </CardContent>
           
           {filteredArticles.length > 0 && (
@@ -425,27 +249,11 @@ const AdminArticles = () => {
         </Card>
       </div>
       
-      <AlertDialog open={!!articleToDelete} onOpenChange={() => setArticleToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete the article "{articleToDelete?.title}". This action
-              cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDeleteArticle}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteConfirmationDialog 
+        article={articleToDelete}
+        onClose={() => setArticleToDelete(null)}
+        onConfirm={handleDeleteArticle}
+      />
     </DashboardLayout>
   );
 };
