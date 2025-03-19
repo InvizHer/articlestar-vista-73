@@ -15,6 +15,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminArticles from "./pages/AdminArticles";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminComments from "./pages/AdminComments";
+import AdminSettings from "./pages/AdminSettings";
 import ArticleEditor from "./pages/ArticleEditor";
 import { AdminProvider } from "./context/AdminContext";
 import ProtectedRoute from "./components/admin/ProtectedRoute";
@@ -66,6 +67,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <AdminAnalytics />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/settings" 
+                element={
+                  <ProtectedRoute>
+                    <AdminSettings />
                   </ProtectedRoute>
                 } 
               />

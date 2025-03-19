@@ -8,7 +8,8 @@ import {
   MessageSquare,
   BarChart3,
   LogOut,
-  ChevronLeft
+  ChevronLeft,
+  Settings
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAdmin } from "@/context/AdminContext";
@@ -148,6 +149,13 @@ const AdminSidebar: React.FC = () => {
               label="Analytics"
               isOpen={isOpen}
               isActive={isActive("/admin/analytics")}
+            />
+            <NavItem
+              to="/admin/settings"
+              icon={Settings}
+              label="Settings"
+              isOpen={isOpen}
+              isActive={isActive("/admin/settings")}
             />
           </ul>
         </nav>

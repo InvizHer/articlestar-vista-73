@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "@/components/admin/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -236,12 +237,18 @@ const AdminComments = () => {
     try {
       setIsSubmitting(true);
       
+      // Find the comment and its replies
       const comment = comments.find(c => c.id === commentToDelete);
       const hasReplies = comment?.replies && comment.replies.length > 0;
       
-      if (hasReplies) {
-        const replyIds = comment!.replies!.map(reply => reply.id);
+      // Delete all replies first (if any)
+      if (hasReplies && comment?.replies) {
+        // Get all reply IDs
+        const replyIds = comment.replies.map(reply => reply.id);
         
+        console.log("Deleting replies:", replyIds);
+        
+        // Delete all replies for this comment
         const { error: repliesError } = await supabase
           .from("comment_replies")
           .delete()
@@ -253,6 +260,9 @@ const AdminComments = () => {
         }
       }
       
+      console.log("Deleting comment:", commentToDelete);
+      
+      // Now delete the comment itself
       const { error: commentError } = await supabase
         .from("comments")
         .delete()
@@ -265,8 +275,10 @@ const AdminComments = () => {
       
       toast.success("Comment deleted successfully");
       
+      // Update local state
       setComments(prev => prev.filter(c => c.id !== commentToDelete));
       
+      // Close view modal if open
       if (viewCommentId === commentToDelete) {
         setViewCommentId(null);
       }

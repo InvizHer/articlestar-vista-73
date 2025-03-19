@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
+import { motion } from "framer-motion";
 
 interface ArticleListItemProps {
   article: Article;
@@ -46,7 +47,13 @@ const ArticleListItem: React.FC<ArticleListItemProps> = ({
   const timeAgo = formatDistanceToNow(articleDate, { addSuffix: true });
   
   return (
-    <div className="flex flex-col md:flex-row items-start md:items-center gap-4 p-4 rounded-lg border bg-card hover:bg-accent/10 transition-colors">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.3 }}
+      className="flex flex-col md:flex-row items-start md:items-center gap-4 p-4 rounded-lg border bg-card hover:bg-accent/10 transition-colors"
+    >
       <div className="hidden md:block w-16 h-16 rounded-md overflow-hidden flex-shrink-0">
         <img 
           src={article.coverImage} 
@@ -136,7 +143,7 @@ const ArticleListItem: React.FC<ArticleListItemProps> = ({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

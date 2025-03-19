@@ -1,5 +1,6 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 type Theme = "dark" | "light" | "system";
 type ThemeColor = "blue" | "purple" | "green" | "orange" | "pink" | "default";
@@ -71,6 +72,44 @@ export function ThemeProvider({
   const [themeColor, setThemeColor] = useState<ThemeColor>(
     () => (localStorage.getItem(colorKey) as ThemeColor) || defaultColor
   );
+
+  // Fetch default settings from Supabase on first load
+  useEffect(() => {
+    async function fetchDefaultSettings() {
+      try {
+        // Only fetch if user hasn't set their preferences yet
+        if (!localStorage.getItem(storageKey) || !localStorage.getItem(colorKey)) {
+          const { data, error } = await supabase
+            .from('site_settings')
+            .select('*')
+            .single();
+          
+          if (error) {
+            if (error.code !== 'PGRST116') { // Not found is okay
+              console.error("Error fetching theme settings:", error);
+            }
+            return;
+          }
+          
+          if (data) {
+            // If user hasn't set theme, use default from database
+            if (!localStorage.getItem(storageKey) && data.default_theme) {
+              setTheme(data.default_theme as Theme);
+            }
+            
+            // If user hasn't set color, use default from database
+            if (!localStorage.getItem(colorKey) && data.default_theme_color) {
+              setThemeColor(data.default_theme_color as ThemeColor);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error in fetchDefaultSettings:", error);
+      }
+    }
+    
+    fetchDefaultSettings();
+  }, []);
 
   // Apply theme (light/dark)
   useEffect(() => {
