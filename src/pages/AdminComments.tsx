@@ -56,11 +56,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Search, MessageSquare, Reply, RefreshCw, Eye, Trash2 } from "lucide-react";
-import { Comment, CommentReply } from "@/types/blog";
+import { UnifiedComment } from "@/types/blog";
 
-interface AdminComment extends Comment {
+interface AdminComment extends UnifiedComment {
   article_title?: string;
-  replies?: CommentReply[];
+  replies?: UnifiedComment[];
 }
 
 const AdminComments = () => {
@@ -85,9 +85,11 @@ const AdminComments = () => {
     setLoading(true);
     
     try {
+      // Fetch top-level comments (parent_id is null)
       const { data: commentsData, error: commentsError } = await supabase
-        .from("comments")
+        .from("unified_comments")
         .select("*")
+        .is("parent_id", null)
         .order("created_at", { ascending: false });
       
       if (commentsError) throw commentsError;
@@ -107,20 +109,22 @@ const AdminComments = () => {
           ...(articlesData || [])
         ]);
         
+        // Fetch all replies
         const { data: repliesData, error: repliesError } = await supabase
-          .from("comment_replies")
+          .from("unified_comments")
           .select("*")
-          .in("comment_id", commentsData.map(comment => comment.id))
+          .not("parent_id", "is", null)
           .order("created_at", { ascending: true });
           
         if (repliesError) throw repliesError;
         
-        const repliesByCommentId: Record<string, CommentReply[]> = {};
+        // Group replies by parent_id
+        const repliesByParentId: Record<string, UnifiedComment[]> = {};
         repliesData?.forEach(reply => {
-          if (!repliesByCommentId[reply.comment_id]) {
-            repliesByCommentId[reply.comment_id] = [];
+          if (!repliesByParentId[reply.parent_id]) {
+            repliesByParentId[reply.parent_id] = [];
           }
-          repliesByCommentId[reply.comment_id].push(reply as CommentReply);
+          repliesByParentId[reply.parent_id].push(reply as UnifiedComment);
         });
         
         const enhancedComments = commentsData.map(comment => {
@@ -128,7 +132,7 @@ const AdminComments = () => {
           return {
             ...comment,
             article_title: article?.title || "Unknown Article",
-            replies: repliesByCommentId[comment.id] || []
+            replies: repliesByParentId[comment.id] || []
           };
         });
         
@@ -200,9 +204,10 @@ const AdminComments = () => {
       setIsSubmitting(true);
       
       const { error } = await supabase
-        .from("comment_replies")
+        .from("unified_comments")
         .insert({
-          comment_id: replyingToComment.id,
+          article_id: replyingToComment.article_id,
+          parent_id: replyingToComment.id,
           name: admin.username,
           content: replyContent,
           is_admin: true,
@@ -237,26 +242,16 @@ const AdminComments = () => {
     try {
       setIsSubmitting(true);
       
-      // First, delete all replies for this comment
-      const { error: repliesError } = await supabase
-        .from("comment_replies")
-        .delete()
-        .eq("comment_id", commentToDelete);
-      
-      if (repliesError) {
-        console.error("Error deleting replies:", repliesError);
-        throw repliesError;
-      }
-      
-      // Then delete the comment itself
-      const { error: commentError } = await supabase
-        .from("comments")
+      // With the unified_comments table and ON DELETE CASCADE,
+      // deleting the parent comment will automatically delete all its replies
+      const { error } = await supabase
+        .from("unified_comments")
         .delete()
         .eq("id", commentToDelete);
         
-      if (commentError) {
-        console.error("Error deleting comment:", commentError);
-        throw commentError;
+      if (error) {
+        console.error("Error deleting comment:", error);
+        throw error;
       }
       
       toast.success("Comment deleted successfully");
@@ -283,7 +278,7 @@ const AdminComments = () => {
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = 
       comment.name.toLowerCase().includes(searchLower) ||
-      comment.email.toLowerCase().includes(searchLower) ||
+      (comment.email && comment.email.toLowerCase().includes(searchLower)) ||
       comment.content.toLowerCase().includes(searchLower) ||
       comment.article_title?.toLowerCase().includes(searchLower);
     

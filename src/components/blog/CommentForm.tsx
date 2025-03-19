@@ -40,12 +40,14 @@ const CommentForm: React.FC<CommentFormProps> = ({ articleId, onCommentAdded }) 
     
     try {
       const { error } = await supabase
-        .from("comments")
+        .from("unified_comments")
         .insert({
           article_id: articleId,
+          parent_id: null, // Top-level comment, not a reply
           name: values.name,
           email: values.email,
-          content: values.content
+          content: values.content,
+          is_admin: false
         });
 
       if (error) {

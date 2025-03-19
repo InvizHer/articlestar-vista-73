@@ -19,11 +19,12 @@ const replySchema = z.object({
 type ReplyFormValues = z.infer<typeof replySchema>;
 
 interface CommentReplyFormProps {
-  commentId: string;
+  articleId: string;
+  parentId: string;
   onReplyAdded: () => void;
 }
 
-const CommentReplyForm: React.FC<CommentReplyFormProps> = ({ commentId, onReplyAdded }) => {
+const CommentReplyForm: React.FC<CommentReplyFormProps> = ({ articleId, parentId, onReplyAdded }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<ReplyFormValues>({
@@ -40,9 +41,10 @@ const CommentReplyForm: React.FC<CommentReplyFormProps> = ({ commentId, onReplyA
     
     try {
       const { error } = await supabase
-        .from("comment_replies")
+        .from("unified_comments")
         .insert({
-          comment_id: commentId,
+          article_id: articleId,
+          parent_id: parentId,
           name: values.name,
           email: values.email || null,
           content: values.content,

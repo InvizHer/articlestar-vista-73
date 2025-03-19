@@ -213,6 +213,57 @@ export type Database = {
         }
         Relationships: []
       }
+      unified_comments: {
+        Row: {
+          admin_username: string | null
+          article_id: string
+          content: string
+          created_at: string
+          email: string | null
+          id: string
+          is_admin: boolean | null
+          name: string
+          parent_id: string | null
+        }
+        Insert: {
+          admin_username?: string | null
+          article_id: string
+          content: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_admin?: boolean | null
+          name: string
+          parent_id?: string | null
+        }
+        Update: {
+          admin_username?: string | null
+          article_id?: string
+          content?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_admin?: boolean | null
+          name?: string
+          parent_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unified_comments_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unified_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "unified_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

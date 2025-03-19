@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import CommentForm from "./CommentForm";
 import { cn } from "@/lib/utils";
-import { Comment, CommentReply } from "@/types/blog";
+import { UnifiedComment } from "@/types/blog";
 import CommentReplyForm from "./CommentReplyForm";
 
 interface CommentsProps {
@@ -25,8 +25,8 @@ interface CommentsProps {
 }
 
 const Comments: React.FC<CommentsProps> = ({ articleId }) => {
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [replies, setReplies] = useState<{[key: string]: CommentReply[]}>({});
+  const [comments, setComments] = useState<UnifiedComment[]>([]);
+  const [repliesMap, setRepliesMap] = useState<{[key: string]: UnifiedComment[]}>({});
   const [loading, setLoading] = useState(true);
   const [showAllComments, setShowAllComments] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
@@ -39,54 +39,50 @@ const Comments: React.FC<CommentsProps> = ({ articleId }) => {
     setLoading(true);
     
     try {
-      const { data, error } = await supabase
-        .from("comments")
+      // Fetch top-level comments (parent_id is null)
+      const { data: commentsData, error: commentsError } = await supabase
+        .from("unified_comments")
         .select("*")
         .eq("article_id", articleId)
+        .is("parent_id", null)
         .order("created_at", { ascending: false });
 
-      if (error) {
-        throw error;
+      if (commentsError) {
+        throw commentsError;
       }
 
-      setComments(data || []);
-      setTotalCount(data?.length || 0);
+      const topLevelComments = commentsData || [];
+      setComments(topLevelComments);
+      setTotalCount(topLevelComments.length);
       
-      // Fetch replies for each comment
-      if (data && data.length > 0) {
-        await fetchReplies(data.map(comment => comment.id));
+      // Fetch all replies for the article
+      if (topLevelComments.length > 0) {
+        const { data: repliesData, error: repliesError } = await supabase
+          .from("unified_comments")
+          .select("*")
+          .eq("article_id", articleId)
+          .not("parent_id", "is", null)
+          .order("created_at", { ascending: true });
+        
+        if (repliesError) {
+          throw repliesError;
+        }
+        
+        // Group replies by parent_id
+        const repliesByParentId: {[key: string]: UnifiedComment[]} = {};
+        repliesData?.forEach(reply => {
+          if (!repliesByParentId[reply.parent_id]) {
+            repliesByParentId[reply.parent_id] = [];
+          }
+          repliesByParentId[reply.parent_id].push(reply as UnifiedComment);
+        });
+        
+        setRepliesMap(repliesByParentId);
       }
     } catch (error) {
       console.error("Error fetching comments:", error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchReplies = async (commentIds: string[]) => {
-    try {
-      const { data, error } = await supabase
-        .from("comment_replies")
-        .select("*")
-        .in("comment_id", commentIds)
-        .order("created_at", { ascending: true });
-      
-      if (error) {
-        throw error;
-      }
-      
-      // Group replies by comment_id
-      const repliesMap: {[key: string]: CommentReply[]} = {};
-      data?.forEach(reply => {
-        if (!repliesMap[reply.comment_id]) {
-          repliesMap[reply.comment_id] = [];
-        }
-        repliesMap[reply.comment_id].push(reply as CommentReply);
-      });
-      
-      setReplies(repliesMap);
-    } catch (error) {
-      console.error("Error fetching replies:", error);
     }
   };
 
@@ -98,27 +94,11 @@ const Comments: React.FC<CommentsProps> = ({ articleId }) => {
     setReplyingTo(replyingTo === commentId ? null : commentId);
   };
 
-  const handleReplyAdded = async (commentId: string) => {
-    // Refresh replies for this comment
-    try {
-      const { data, error } = await supabase
-        .from("comment_replies")
-        .select("*")
-        .eq("comment_id", commentId)
-        .order("created_at", { ascending: true });
-      
-      if (error) throw error;
-      
-      setReplies(prev => ({
-        ...prev,
-        [commentId]: data as CommentReply[]
-      }));
-      
-      // Close the reply form
-      setReplyingTo(null);
-    } catch (error) {
-      console.error("Error fetching updated replies:", error);
-    }
+  const handleReplyAdded = async () => {
+    // Refresh all comments and replies
+    fetchComments();
+    // Close the reply form
+    setReplyingTo(null);
   };
 
   const initiateDeleteComment = (commentId: string) => {
@@ -132,33 +112,24 @@ const Comments: React.FC<CommentsProps> = ({ articleId }) => {
     setIsDeleting(true);
     
     try {
-      // First, delete all replies for this comment
-      const { error: repliesError } = await supabase
-        .from("comment_replies")
-        .delete()
-        .eq("comment_id", commentToDelete);
-      
-      if (repliesError) {
-        throw repliesError;
-      }
-      
-      // Then delete the comment itself
-      const { error: commentError } = await supabase
-        .from("comments")
+      // With the unified_comments table and ON DELETE CASCADE,
+      // deleting the parent comment will automatically delete all its replies
+      const { error } = await supabase
+        .from("unified_comments")
         .delete()
         .eq("id", commentToDelete);
       
-      if (commentError) {
-        throw commentError;
+      if (error) {
+        throw error;
       }
       
       // Update local state
       setComments(comments.filter(comment => comment.id !== commentToDelete));
       
       // Remove from replies map
-      const newReplies = { ...replies };
-      delete newReplies[commentToDelete];
-      setReplies(newReplies);
+      const newRepliesMap = { ...repliesMap };
+      delete newRepliesMap[commentToDelete];
+      setRepliesMap(newRepliesMap);
       
       // Update total count
       setTotalCount(prev => prev - 1);
@@ -243,9 +214,9 @@ const Comments: React.FC<CommentsProps> = ({ articleId }) => {
                     </div>
                     
                     {/* Replies section */}
-                    {replies[comment.id] && replies[comment.id].length > 0 && (
+                    {repliesMap[comment.id] && repliesMap[comment.id].length > 0 && (
                       <div className="mt-4 pl-4 border-l-2 border-muted space-y-4">
-                        {replies[comment.id].map(reply => (
+                        {repliesMap[comment.id].map(reply => (
                           <div key={reply.id} className="flex items-start gap-3">
                             <div className={cn(
                               "w-8 h-8 rounded-full flex items-center justify-center text-base font-medium flex-shrink-0",
@@ -278,8 +249,9 @@ const Comments: React.FC<CommentsProps> = ({ articleId }) => {
                     {replyingTo === comment.id && (
                       <div className="mt-4 pl-4 border-l-2 border-muted">
                         <CommentReplyForm 
-                          commentId={comment.id} 
-                          onReplyAdded={() => handleReplyAdded(comment.id)}
+                          articleId={articleId}
+                          parentId={comment.id} 
+                          onReplyAdded={handleReplyAdded}
                         />
                       </div>
                     )}

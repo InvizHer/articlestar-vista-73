@@ -1,4 +1,3 @@
-
 export interface Article {
   id: string;
   title: string;
@@ -16,6 +15,18 @@ export interface Article {
   coverImage: string;
   published?: boolean;
   viewCount?: number;
+}
+
+export interface UnifiedComment {
+  id: string;
+  article_id: string;
+  parent_id: string | null;
+  name: string;
+  email?: string;
+  content: string;
+  is_admin: boolean;
+  admin_username?: string;
+  created_at: string;
 }
 
 export interface Comment {
