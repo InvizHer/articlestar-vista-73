@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import AdminLayout from "@/components/admin/AdminLayout";
+import DashboardLayout from "@/components/admin/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdmin } from "@/context/AdminContext";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,28 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Search, MessageSquare, Reply } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import { Search, MessageSquare, Reply, RefreshCw, Eye, Trash2, Filter } from "lucide-react";
 import { Comment, CommentReply } from "@/types/blog";
 
 interface AdminComment extends Comment {
@@ -42,6 +63,11 @@ const AdminComments = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [adminPassword, setAdminPassword] = useState("");
   const [isPasswordVerified, setIsPasswordVerified] = useState(false);
+  const [selectedTab, setSelectedTab] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
+  const [viewCommentId, setViewCommentId] = useState<string | null>(null);
+  const [selectedArticle, setSelectedArticle] = useState<string>("all");
+  const [articleOptions, setArticleOptions] = useState<{id: string, title: string}[]>([]);
 
   const fetchComments = async () => {
     setLoading(true);
@@ -65,6 +91,12 @@ const AdminComments = () => {
           .in("id", articleIds);
           
         if (articlesError) throw articlesError;
+        
+        // Set article options for filter
+        setArticleOptions([
+          { id: "all", title: "All Articles" },
+          ...(articlesData || [])
+        ]);
         
         // Fetch replies for all comments
         const { data: repliesData, error: repliesError } = await supabase
@@ -115,6 +147,10 @@ const AdminComments = () => {
     setReplyContent("");
     setIsPasswordVerified(false);
     setAdminPassword("");
+  };
+
+  const viewComment = (commentId: string) => {
+    setViewCommentId(commentId);
   };
 
   const verifyPassword = async () => {
@@ -185,109 +221,152 @@ const AdminComments = () => {
     }
   };
 
-  const filteredComments = comments.filter(comment => {
+  const deleteComment = async (commentId: string) => {
+    if (!window.confirm("Are you sure you want to delete this comment?")) {
+      return;
+    }
+
+    try {
+      // First delete all replies to this comment
+      const { error: replyError } = await supabase
+        .from("comment_replies")
+        .delete()
+        .eq("comment_id", commentId);
+      
+      if (replyError) throw replyError;
+      
+      // Then delete the comment itself
+      const { error } = await supabase
+        .from("comments")
+        .delete()
+        .eq("id", commentId);
+        
+      if (error) throw error;
+      
+      toast.success("Comment deleted successfully");
+      
+      // Update local state
+      setComments(prev => prev.filter(c => c.id !== commentId));
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      toast.error("Failed to delete comment");
+    }
+  };
+
+  // Filter and sort the comments
+  let filteredComments = comments.filter(comment => {
+    // Search filter
     const searchLower = searchTerm.toLowerCase();
-    return (
+    const matchesSearch = 
       comment.name.toLowerCase().includes(searchLower) ||
       comment.email.toLowerCase().includes(searchLower) ||
       comment.content.toLowerCase().includes(searchLower) ||
-      comment.article_title?.toLowerCase().includes(searchLower)
-    );
+      comment.article_title?.toLowerCase().includes(searchLower);
+    
+    // Tab filter
+    const matchesTab = 
+      selectedTab === "all" || 
+      (selectedTab === "replied" && comment.replies && comment.replies.length > 0) ||
+      (selectedTab === "unreplied" && (!comment.replies || comment.replies.length === 0));
+    
+    // Article filter
+    const matchesArticle = 
+      selectedArticle === "all" || 
+      comment.article_id === selectedArticle;
+    
+    return matchesSearch && matchesTab && matchesArticle;
   });
 
+  // Sort the comments
+  if (sortBy === "newest") {
+    filteredComments.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  } else if (sortBy === "oldest") {
+    filteredComments.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  } else if (sortBy === "most-replies") {
+    filteredComments.sort((a, b) => (b.replies?.length || 0) - (a.replies?.length || 0));
+  }
+
   return (
-    <AdminLayout>
-      <div className="container py-6">
-        <h1 className="text-2xl font-bold mb-6">Comments Management</h1>
-        
-        <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-          <div className="relative w-full md:w-auto flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Search comments..."
-              className="pl-9"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="font-normal">
-              Total: {comments.length}
-            </Badge>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={fetchComments}
-              disabled={loading}
-            >
-              Refresh
-            </Button>
-          </div>
+    <DashboardLayout>
+      <div className="container max-w-full px-4 md:px-6 py-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold mb-2">Comments Management</h1>
+          <p className="text-muted-foreground">View and respond to user comments across all articles</p>
         </div>
         
-        {loading ? (
-          <div className="flex justify-center py-8">
-            <div className="animate-pulse text-center">
-              <p className="text-muted-foreground">Loading comments...</p>
+        <Tabs defaultValue="all" className="mb-6" onValueChange={setSelectedTab}>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+            <TabsList className="mb-2 md:mb-0">
+              <TabsTrigger value="all">All Comments</TabsTrigger>
+              <TabsTrigger value="unreplied">Unreplied</TabsTrigger>
+              <TabsTrigger value="replied">Replied</TabsTrigger>
+            </TabsList>
+            
+            <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+              <div className="relative flex-1 sm:w-auto">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Search comments..."
+                  className="pl-9 w-full"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="newest">Newest First</SelectItem>
+                  <SelectItem value="oldest">Oldest First</SelectItem>
+                  <SelectItem value="most-replies">Most Replies</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select value={selectedArticle} onValueChange={setSelectedArticle}>
+                <SelectTrigger className="w-full sm:w-[200px]">
+                  <SelectValue placeholder="Filter by article" />
+                </SelectTrigger>
+                <SelectContent>
+                  {articleOptions.map(article => (
+                    <SelectItem key={article.id} value={article.id}>
+                      {article.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Button 
+                variant="outline" 
+                size="icon"
+                onClick={fetchComments}
+                disabled={loading}
+                title="Refresh comments"
+              >
+                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              </Button>
             </div>
           </div>
-        ) : filteredComments.length === 0 ? (
-          <div className="text-center py-8 border rounded-lg">
-            <MessageSquare className="mx-auto h-10 w-10 text-muted-foreground opacity-50 mb-2" />
-            <p className="text-muted-foreground">No comments found</p>
+          
+          <div className="flex items-center justify-between mb-4">
+            <Badge variant="outline" className="font-normal">
+              {filteredComments.length} {filteredComments.length === 1 ? 'comment' : 'comments'} found
+            </Badge>
           </div>
-        ) : (
-          <div className="overflow-auto rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Comment</TableHead>
-                  <TableHead>Article</TableHead>
-                  <TableHead>User</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Replies</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredComments.map((comment) => (
-                  <TableRow key={comment.id}>
-                    <TableCell className="font-medium max-w-xs truncate">
-                      {comment.content}
-                    </TableCell>
-                    <TableCell className="max-w-[200px] truncate">
-                      {comment.article_title}
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{comment.name}</div>
-                        <div className="text-xs text-muted-foreground">{comment.email}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">
-                        {comment.replies?.length || 0}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        onClick={() => handleReplyClick(comment)}
-                      >
-                        <Reply className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+          
+          <TabsContent value="all" className="mt-0">
+            {renderCommentsList(filteredComments)}
+          </TabsContent>
+          
+          <TabsContent value="unreplied" className="mt-0">
+            {renderCommentsList(filteredComments)}
+          </TabsContent>
+          
+          <TabsContent value="replied" className="mt-0">
+            {renderCommentsList(filteredComments)}
+          </TabsContent>
+        </Tabs>
         
         {/* Admin Reply Dialog */}
         {replyingToComment && (
@@ -310,6 +389,9 @@ const AdminComments = () => {
                   </span>
                 </div>
                 <p className="text-sm">{replyingToComment.content}</p>
+                <div className="text-xs text-muted-foreground mt-2">
+                  On article: {replyingToComment.article_title}
+                </div>
               </div>
               
               {!isPasswordVerified ? (
@@ -351,9 +433,186 @@ const AdminComments = () => {
             </DialogContent>
           </Dialog>
         )}
+        
+        {/* View Comment Dialog */}
+        {viewCommentId && (
+          <Dialog 
+            open={!!viewCommentId} 
+            onOpenChange={(open) => !open && setViewCommentId(null)}
+          >
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Comment Details</DialogTitle>
+              </DialogHeader>
+              
+              {(() => {
+                const comment = comments.find(c => c.id === viewCommentId);
+                if (!comment) return <p>Comment not found</p>;
+                
+                return (
+                  <div className="space-y-4">
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <CardTitle className="text-base">{comment.name}</CardTitle>
+                            <CardDescription>{comment.email}</CardDescription>
+                          </div>
+                          <Badge variant="outline">
+                            {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="whitespace-pre-wrap">{comment.content}</p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          On article: {comment.article_title}
+                        </p>
+                      </CardContent>
+                    </Card>
+                    
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium">Replies ({comment.replies?.length || 0})</h4>
+                      
+                      {comment.replies && comment.replies.length > 0 ? (
+                        <div className="space-y-2 pl-4 border-l-2 border-muted">
+                          {comment.replies.map(reply => (
+                            <Card key={reply.id} className="bg-muted/30">
+                              <CardHeader className="py-2 px-3">
+                                <div className="flex justify-between items-center">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium text-sm">
+                                      {reply.name}
+                                      {reply.is_admin && (
+                                        <Badge variant="default" className="ml-2 text-[10px] h-4">
+                                          Admin
+                                        </Badge>
+                                      )}
+                                    </span>
+                                  </div>
+                                  <span className="text-xs text-muted-foreground">
+                                    {formatDistanceToNow(new Date(reply.created_at), { addSuffix: true })}
+                                  </span>
+                                </div>
+                              </CardHeader>
+                              <CardContent className="py-2 px-3">
+                                <p className="text-sm whitespace-pre-wrap">{reply.content}</p>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No replies yet</p>
+                      )}
+                    </div>
+                    
+                    <div className="flex justify-end gap-2 pt-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setViewCommentId(null)}
+                      >
+                        Close
+                      </Button>
+                      <Button 
+                        variant="default" 
+                        size="sm"
+                        onClick={() => {
+                          setViewCommentId(null);
+                          handleReplyClick(comment);
+                        }}
+                      >
+                        Reply
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })()}
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
-    </AdminLayout>
+    </DashboardLayout>
   );
+  
+  function renderCommentsList(comments: AdminComment[]) {
+    if (loading) {
+      return (
+        <div className="flex justify-center py-8">
+          <div className="animate-pulse text-center">
+            <p className="text-muted-foreground">Loading comments...</p>
+          </div>
+        </div>
+      );
+    }
+    
+    if (comments.length === 0) {
+      return (
+        <div className="text-center py-8 border rounded-lg">
+          <MessageSquare className="mx-auto h-10 w-10 text-muted-foreground opacity-50 mb-2" />
+          <p className="text-muted-foreground">No comments found</p>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {comments.map((comment) => (
+          <Card key={comment.id} className="overflow-hidden hover:shadow-md transition-shadow">
+            <CardHeader className="pb-2">
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle className="text-base">{comment.name}</CardTitle>
+                  <CardDescription>{comment.email}</CardDescription>
+                </div>
+                <Badge variant="outline">
+                  {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="pb-0">
+              <p className="line-clamp-3 text-sm">{comment.content}</p>
+              <p className="text-xs text-muted-foreground mt-2 truncate">
+                Article: {comment.article_title}
+              </p>
+            </CardContent>
+            <CardFooter className="flex justify-between pt-4 pb-4">
+              <Badge variant={comment.replies?.length ? "secondary" : "outline"}>
+                {comment.replies?.length || 0} Replies
+              </Badge>
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => viewComment(comment.id)}
+                  title="View comment"
+                >
+                  <Eye className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleReplyClick(comment)}
+                  title="Reply to comment"
+                >
+                  <Reply className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => deleteComment(comment.id)}
+                  className="text-destructive hover:text-destructive"
+                  title="Delete comment"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
+    );
+  }
 };
 
 export default AdminComments;

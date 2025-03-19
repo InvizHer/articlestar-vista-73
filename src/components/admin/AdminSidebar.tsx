@@ -9,7 +9,8 @@ import {
   ChevronRight,
   Menu,
   X,
-  MessageSquare
+  MessageSquare,
+  BarChart3
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -117,7 +118,7 @@ const AdminSidebar: React.FC = () => {
       )}
 
       <aside className={cn(
-        "border-r bg-white dark:bg-slate-800 dark:border-slate-700 h-screen",
+        "border-r bg-white dark:bg-slate-800 dark:border-slate-700 h-full",
         "fixed md:static inset-y-0 left-0 z-40 transition-all duration-300",
         isCollapsed ? "-translate-x-full md:translate-x-0 md:w-16" : "translate-x-0 w-64",
         "flex-shrink-0"
@@ -167,6 +168,12 @@ const AdminSidebar: React.FC = () => {
                   label="Comments" 
                   active={isActive("/admin/comments")}
                 />
+                <NavItem 
+                  to="/admin/analytics" 
+                  icon={BarChart3} 
+                  label="Analytics" 
+                  active={isActive("/admin/analytics")}
+                />
               </NavGroup>
             )}
             
@@ -189,6 +196,12 @@ const AdminSidebar: React.FC = () => {
                   icon={MessageSquare} 
                   label="" 
                   active={isActive("/admin/comments")}
+                />
+                <NavItem 
+                  to="/admin/analytics" 
+                  icon={BarChart3} 
+                  label="" 
+                  active={isActive("/admin/analytics")}
                 />
                 <NavItem 
                   to="/admin/settings" 

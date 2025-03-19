@@ -9,7 +9,7 @@ import {
   FilePlus, 
   ChevronRight,
   BarChart3,
-  Newspaper,
+  MessageSquare,
   LogOut
 } from "lucide-react";
 import { useAdmin } from "@/context/AdminContext";
@@ -107,7 +107,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ isOpen, toggle }) =
         className={cn(
           "border-r bg-white dark:bg-gray-800 dark:border-gray-700",
           "flex flex-col z-40",
-          isMobile ? "fixed inset-y-0 left-0" : "relative border-r h-screen",
+          isMobile ? "fixed inset-y-0 left-0" : "relative border-r h-full",
           sidebarWidth,
           "transition-all duration-200 ease-in-out"
         )}
@@ -162,6 +162,14 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ isOpen, toggle }) =
               to="/admin/article/new" 
               icon={FilePlus} 
               label="Create Article" 
+              isOpen={isOpen}
+              isMobile={isMobile}
+            />
+            
+            <NavItem 
+              to="/admin/comments" 
+              icon={MessageSquare} 
+              label="Comments" 
               isOpen={isOpen}
               isMobile={isMobile}
             />
