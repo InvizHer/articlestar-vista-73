@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import DashboardLayout from "@/components/admin/DashboardLayout";
@@ -92,10 +91,7 @@ const AdminSettings: React.FC = () => {
   const { theme, themeColor, setTheme, setThemeColor } = useTheme();
   const [loading, setLoading] = useState(false);
   const [loadingTheme, setLoadingTheme] = useState(false);
-  const [defaultThemeSettings, setDefaultThemeSettings] = useState<{
-    theme: "light" | "dark" | "system";
-    themeColor: "default" | "blue" | "green" | "purple" | "orange" | "pink";
-  } | null>(null);
+  const [defaultThemeSettings, setDefaultThemeSettings] = useState<SiteSettings | null>(null);
 
   const passwordForm = useForm<PasswordFormValues>({
     resolver: zodResolver(passwordSchema),
@@ -109,8 +105,8 @@ const AdminSettings: React.FC = () => {
   const themeForm = useForm<ThemeFormValues>({
     resolver: zodResolver(themeSchema),
     defaultValues: {
-      theme: defaultThemeSettings?.theme || theme,
-      themeColor: defaultThemeSettings?.themeColor || themeColor,
+      theme: defaultThemeSettings?.default_theme || theme,
+      themeColor: defaultThemeSettings?.default_theme_color || themeColor,
     },
   });
 
@@ -121,8 +117,8 @@ const AdminSettings: React.FC = () => {
   useEffect(() => {
     if (defaultThemeSettings) {
       themeForm.reset({
-        theme: defaultThemeSettings.theme,
-        themeColor: defaultThemeSettings.themeColor,
+        theme: defaultThemeSettings.default_theme,
+        themeColor: defaultThemeSettings.default_theme_color,
       });
     }
   }, [defaultThemeSettings]);
@@ -138,21 +134,20 @@ const AdminSettings: React.FC = () => {
         console.error("Error fetching settings:", error);
         // Use current theme as fallback
         setDefaultThemeSettings({
-          theme: theme as "light" | "dark" | "system",
-          themeColor: themeColor as "default" | "blue" | "green" | "purple" | "orange" | "pink",
+          id: "1", // Provide a default ID
+          default_theme: theme as "light" | "dark" | "system",
+          default_theme_color: themeColor as "default" | "blue" | "green" | "purple" | "orange" | "pink",
         });
       } else if (data) {
-        setDefaultThemeSettings({
-          theme: data.default_theme as "light" | "dark" | "system",
-          themeColor: data.default_theme_color as "default" | "blue" | "green" | "purple" | "orange" | "pink",
-        });
+        setDefaultThemeSettings(data as SiteSettings);
       }
     } catch (error) {
       console.error("Error fetching settings:", error);
       // Use current theme as fallback
       setDefaultThemeSettings({
-        theme: theme as "light" | "dark" | "system",
-        themeColor: themeColor as "default" | "blue" | "green" | "purple" | "orange" | "pink",
+        id: "1", // Provide a default ID
+        default_theme: theme as "light" | "dark" | "system",
+        default_theme_color: themeColor as "default" | "blue" | "green" | "purple" | "orange" | "pink",
       });
     }
   };
@@ -199,22 +194,42 @@ const AdminSettings: React.FC = () => {
     try {
       setLoadingTheme(true);
       
-      // Update site settings
-      const { error } = await supabase
-        .from('site_settings')
-        .update({
-          default_theme: data.theme, 
-          default_theme_color: data.themeColor 
-        })
-        .eq('id', defaultThemeSettings?.id || '');
-      
-      if (error) throw error;
-      
-      setDefaultThemeSettings({
-        theme: data.theme,
-        themeColor: data.themeColor,
-        ...defaultThemeSettings
-      } as any);
+      if (!defaultThemeSettings) {
+        // Create settings if they don't exist
+        const { data: insertedData, error: insertError } = await supabase
+          .from('site_settings')
+          .insert([
+            { 
+              default_theme: data.theme, 
+              default_theme_color: data.themeColor 
+            }
+          ])
+          .select()
+          .single();
+          
+        if (insertError) throw insertError;
+        
+        if (insertedData) {
+          setDefaultThemeSettings(insertedData as SiteSettings);
+        }
+      } else {
+        // Update existing settings
+        const { error } = await supabase
+          .from('site_settings')
+          .update({ 
+            default_theme: data.theme, 
+            default_theme_color: data.themeColor 
+          })
+          .eq('id', defaultThemeSettings.id);
+        
+        if (error) throw error;
+        
+        setDefaultThemeSettings({
+          ...defaultThemeSettings,
+          default_theme: data.theme,
+          default_theme_color: data.themeColor
+        });
+      }
       
       // Apply theme immediately too
       setTheme(data.theme);

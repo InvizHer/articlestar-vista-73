@@ -20,6 +20,14 @@ interface ThemeProviderState {
   setThemeColor: (color: ThemeColor) => void;
 }
 
+type SiteSettings = {
+  id: string;
+  default_theme: Theme;
+  default_theme_color: ThemeColor;
+  created_at: string;
+  updated_at: string;
+};
+
 const initialState: ThemeProviderState = {
   theme: "system",
   themeColor: "purple",
@@ -92,14 +100,16 @@ export function ThemeProvider({
           }
           
           if (data) {
+            const settings = data as SiteSettings;
+            
             // If user hasn't set theme, use default from database
-            if (!localStorage.getItem(storageKey) && data.default_theme) {
-              setTheme(data.default_theme as Theme);
+            if (!localStorage.getItem(storageKey) && settings.default_theme) {
+              setTheme(settings.default_theme);
             }
             
             // If user hasn't set color, use default from database
-            if (!localStorage.getItem(colorKey) && data.default_theme_color) {
-              setThemeColor(data.default_theme_color as ThemeColor);
+            if (!localStorage.getItem(colorKey) && settings.default_theme_color) {
+              setThemeColor(settings.default_theme_color);
             }
           }
         }
