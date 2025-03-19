@@ -87,16 +87,93 @@ export type Database = {
         }
         Relationships: []
       }
+      comments: {
+        Row: {
+          article_id: string
+          content: string
+          created_at: string
+          email: string
+          id: string
+          name: string
+        }
+        Insert: {
+          article_id: string
+          content: string
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+        }
+        Update: {
+          article_id?: string
+          content?: string
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      likes: {
+        Row: {
+          article_id: string
+          created_at: string
+          id: string
+          user_email: string
+        }
+        Insert: {
+          article_id: string
+          created_at?: string
+          id?: string
+          user_email: string
+        }
+        Update: {
+          article_id?: string
+          created_at?: string
+          id?: string
+          user_email?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "likes_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      get_like_count: {
+        Args: {
+          p_article_id: string
+        }
+        Returns: number
+      }
       increment_view_count: {
         Args: {
           article_id: string
         }
         Returns: undefined
+      }
+      toggle_like: {
+        Args: {
+          p_article_id: string
+          p_user_email: string
+        }
+        Returns: boolean
       }
     }
     Enums: {

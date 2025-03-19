@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -44,6 +43,8 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTheme } from "@/hooks/use-theme";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import Comments from "@/components/blog/Comments";
+import LikeButton from "@/components/blog/LikeButton";
 
 // WhatsApp Icon component
 const WhatsAppIcon = ({ className }: { className?: string }) => (
@@ -156,91 +157,6 @@ const RelatedArticleCard = ({ article }: { article: Partial<ArticleType> }) => (
   </motion.div>
 );
 
-// Comment Component
-const CommentBox = () => {
-  return (
-    <div className="mt-6 p-4 border rounded-xl bg-card">
-      <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-        <MessageSquare className="h-5 w-5" />
-        Discussion
-      </h3>
-      
-      <div className="space-y-6">
-        <div className="flex gap-4">
-          <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
-            <img 
-              src="/placeholder.svg" 
-              alt="User avatar" 
-              className="h-full w-full object-cover"
-            />
-          </div>
-          <div className="flex-1 space-y-1">
-            <div className="flex items-center justify-between">
-              <p className="font-medium">Alex Johnson</p>
-              <p className="text-xs text-muted-foreground">2 days ago</p>
-            </div>
-            <p className="text-sm">Great article! I particularly enjoyed the insights on the impact of technology on modern society.</p>
-            <div className="flex items-center gap-4 pt-1">
-              <button className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
-                <Heart className="h-3 w-3" /> 12
-              </button>
-              <button className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
-                <MessageSquare className="h-3 w-3" /> Reply
-              </button>
-            </div>
-          </div>
-        </div>
-        
-        <div className="flex gap-4 pl-12">
-          <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0">
-            <img 
-              src="/placeholder.svg" 
-              alt="User avatar" 
-              className="h-full w-full object-cover"
-            />
-          </div>
-          <div className="flex-1 space-y-1">
-            <div className="flex items-center justify-between">
-              <p className="font-medium">Taylor Swift</p>
-              <p className="text-xs text-muted-foreground">1 day ago</p>
-            </div>
-            <p className="text-sm">I agree! The analysis was very thorough.</p>
-            <div className="flex items-center gap-4 pt-1">
-              <button className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
-                <Heart className="h-3 w-3" /> 5
-              </button>
-              <button className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
-                <MessageSquare className="h-3 w-3" /> Reply
-              </button>
-            </div>
-          </div>
-        </div>
-        
-        <div className="pt-4">
-          <div className="flex gap-4">
-            <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
-              <img 
-                src="/placeholder.svg" 
-                alt="Your avatar" 
-                className="h-full w-full object-cover"
-              />
-            </div>
-            <div className="flex-1">
-              <textarea 
-                className="w-full p-3 rounded-lg border text-sm min-h-[100px] bg-background focus:outline-none focus:ring-1 focus:ring-primary"
-                placeholder="Add to the discussion..."
-              ></textarea>
-              <div className="flex justify-end mt-2">
-                <Button className="rounded-full" size="sm">Post Comment</Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 // Reading Progress Bar
 const ReadingProgressBar = () => {
   const [progress, setProgress] = useState(0);
@@ -279,8 +195,6 @@ const Article = () => {
   const [relatedArticles, setRelatedArticles] = useState<Partial<ArticleType>[]>([]);
   const [loading, setLoading] = useState(true);
   const [isBookmarked, setIsBookmarked] = useState(false);
-  const [isLiked, setIsLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
   const viewCountedRef = useRef(false);
   const isMobile = useIsMobile();
@@ -355,7 +269,6 @@ const Article = () => {
       if (data) {
         const articleData = convertDbArticleToArticle(data);
         setArticle(articleData);
-        setLikeCount(Math.floor(Math.random() * 150) + 5); // Mock like count
         
         incrementViewCount(data.id);
         
@@ -457,16 +370,6 @@ const Article = () => {
     } else {
       toast.success("Article removed from bookmarks");
     }
-  };
-
-  // Toggle like state
-  const toggleLike = () => {
-    if (!isLiked) {
-      setLikeCount(likeCount + 1);
-    } else {
-      setLikeCount(likeCount - 1);
-    }
-    setIsLiked(!isLiked);
   };
 
   // Loading state UI
@@ -684,20 +587,7 @@ const Article = () => {
             {/* Interactive action bar */}
             <div className="flex items-center justify-between py-3 border-y mb-8">
               <div className="flex items-center gap-4">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="gap-2"
-                  onClick={toggleLike}
-                >
-                  <Heart 
-                    className={cn(
-                      "h-4 w-4", 
-                      isLiked && "fill-red-500 text-red-500"
-                    )}
-                  />
-                  <span>{likeCount}</span>
-                </Button>
+                <LikeButton articleId={article.id} size="sm" />
                 
                 <Button 
                   variant="ghost" 
@@ -727,9 +617,7 @@ const Article = () => {
             </div>
 
             {/* Comments Section */}
-            <div id="comments">
-              <CommentBox />
-            </div>
+            <Comments articleId={article.id} />
             
             {/* Article navigation for mobile */}
             {isMobile && relatedArticles.length > 0 && (
