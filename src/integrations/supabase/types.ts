@@ -87,6 +87,47 @@ export type Database = {
         }
         Relationships: []
       }
+      comment_replies: {
+        Row: {
+          admin_username: string | null
+          comment_id: string
+          content: string
+          created_at: string
+          email: string | null
+          id: string
+          is_admin: boolean | null
+          name: string
+        }
+        Insert: {
+          admin_username?: string | null
+          comment_id: string
+          content: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_admin?: boolean | null
+          name: string
+        }
+        Update: {
+          admin_username?: string | null
+          comment_id?: string
+          content?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_admin?: boolean | null
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_replies_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comments: {
         Row: {
           article_id: string
@@ -127,19 +168,16 @@ export type Database = {
           article_id: string
           created_at: string
           id: string
-          user_email: string
         }
         Insert: {
           article_id: string
           created_at?: string
           id?: string
-          user_email: string
         }
         Update: {
           article_id?: string
           created_at?: string
           id?: string
-          user_email?: string
         }
         Relationships: [
           {
@@ -168,13 +206,26 @@ export type Database = {
         }
         Returns: undefined
       }
-      toggle_like: {
+      remove_like: {
         Args: {
           p_article_id: string
-          p_user_email: string
         }
-        Returns: boolean
+        Returns: number
       }
+      toggle_like:
+        | {
+            Args: {
+              p_article_id: string
+            }
+            Returns: number
+          }
+        | {
+            Args: {
+              p_article_id: string
+              p_user_email: string
+            }
+            Returns: boolean
+          }
     }
     Enums: {
       [_ in never]: never

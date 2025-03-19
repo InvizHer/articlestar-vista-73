@@ -8,7 +8,8 @@ import {
   Settings,
   ChevronRight,
   Menu,
-  X
+  X,
+  MessageSquare
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -160,6 +161,12 @@ const AdminSidebar: React.FC = () => {
                   label="All Articles" 
                   active={isActive("/admin/articles")}
                 />
+                <NavItem 
+                  to="/admin/comments" 
+                  icon={MessageSquare} 
+                  label="Comments" 
+                  active={isActive("/admin/comments")}
+                />
               </NavGroup>
             )}
             
@@ -176,6 +183,12 @@ const AdminSidebar: React.FC = () => {
                   icon={FileText} 
                   label="" 
                   active={isActive("/admin/articles")}
+                />
+                <NavItem 
+                  to="/admin/comments" 
+                  icon={MessageSquare} 
+                  label="" 
+                  active={isActive("/admin/comments")}
                 />
                 <NavItem 
                   to="/admin/settings" 

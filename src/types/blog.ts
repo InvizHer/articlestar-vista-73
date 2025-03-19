@@ -27,9 +27,19 @@ export interface Comment {
   created_at: string;
 }
 
+export interface CommentReply {
+  id: string;
+  comment_id: string;
+  name: string;
+  email?: string;
+  content: string;
+  is_admin: boolean;
+  admin_username?: string;
+  created_at: string;
+}
+
 export interface Like {
   id: string;
   article_id: string;
-  user_email: string;
   created_at: string;
 }

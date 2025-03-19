@@ -14,6 +14,7 @@ import Admin from "./pages/Admin";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminArticles from "./pages/AdminArticles";
 import AdminAnalytics from "./pages/AdminAnalytics";
+import AdminComments from "./pages/AdminComments";
 import ArticleEditor from "./pages/ArticleEditor";
 import { AdminProvider } from "./context/AdminContext";
 import ProtectedRoute from "./components/admin/ProtectedRoute";
@@ -49,6 +50,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <AdminArticles />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/comments" 
+                element={
+                  <ProtectedRoute>
+                    <AdminComments />
                   </ProtectedRoute>
                 } 
               />

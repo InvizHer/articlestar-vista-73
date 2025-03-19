@@ -21,19 +21,11 @@ const LikeButton: React.FC<LikeButtonProps> = ({
 }) => {
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
-  const [userEmail, setUserEmail] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // Get stored email if exists
-    const storedEmail = localStorage.getItem('user_email');
-    if (storedEmail) {
-      setUserEmail(storedEmail);
-      checkIfLiked(storedEmail);
-    }
-    
     fetchLikeCount();
-  }, [articleId, userEmail]);
+  }, [articleId]);
 
   const fetchLikeCount = async () => {
     try {
@@ -47,53 +39,29 @@ const LikeButton: React.FC<LikeButtonProps> = ({
     }
   };
 
-  const checkIfLiked = async (email: string) => {
-    if (!email) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('likes')
-        .select('id')
-        .eq('article_id', articleId)
-        .eq('user_email', email)
-        .maybeSingle();
-      
-      if (error) throw error;
-      setIsLiked(!!data);
-    } catch (error) {
-      console.error('Error checking if article is liked:', error);
-    }
-  };
-
   const handleLike = async () => {
     if (isLoading) return;
-    
-    if (!userEmail) {
-      // Ask for email if not stored
-      const email = prompt('Please enter your email to like this article:');
-      if (!email || !email.includes('@')) {
-        toast.error('Please enter a valid email address');
-        return;
-      }
-      localStorage.setItem('user_email', email);
-      setUserEmail(email);
-    }
     
     setIsLoading(true);
     
     try {
-      const { data, error } = await supabase
-        .rpc('toggle_like', { 
-          p_article_id: articleId, 
-          p_user_email: userEmail 
-        });
-      
-      if (error) throw error;
-      
-      setIsLiked(data);
-      fetchLikeCount(); // Refresh count
-      
-      toast.success(data ? 'Article liked!' : 'Like removed');
+      if (!isLiked) {
+        const { data, error } = await supabase
+          .rpc('toggle_like', { p_article_id: articleId });
+        
+        if (error) throw error;
+        setLikeCount(data || 0);
+        setIsLiked(true);
+        toast.success('Article liked!');
+      } else {
+        const { data, error } = await supabase
+          .rpc('remove_like', { p_article_id: articleId });
+        
+        if (error) throw error;
+        setLikeCount(data || 0);
+        setIsLiked(false);
+        toast.success('Like removed');
+      }
     } catch (error) {
       console.error('Error toggling like:', error);
       toast.error('Failed to update like status');
