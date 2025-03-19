@@ -165,16 +165,45 @@ serve(async (req) => {
     END;
     $$;
 
+    -- Add default admin user if not exists
+    INSERT INTO public.admins (username, password)
+    SELECT 'admin', 'admin123'
+    WHERE NOT EXISTS (SELECT 1 FROM public.admins WHERE username = 'admin');
+
     -- Create initial settings if they don't exist
     INSERT INTO public.site_settings (default_theme, default_theme_color)
     SELECT 'system', 'purple'
     WHERE NOT EXISTS (SELECT 1 FROM public.site_settings LIMIT 1);
+
+    -- Add sample article if no articles exist
+    INSERT INTO public.articles (
+      title, 
+      slug, 
+      excerpt, 
+      content, 
+      author_name, 
+      read_time, 
+      category, 
+      tags, 
+      published
+    )
+    SELECT 
+      'Welcome to Your Blog', 
+      'welcome-to-your-blog', 
+      'Get started with your new blog platform. This is a sample article to help you get started.', 
+      '# Welcome to Your Blog\n\nThis is a sample article created automatically when you set up your blog. You can edit or delete it from the admin panel.\n\n## Getting Started\n\n1. Log in to the admin panel with username: admin and password: admin123\n2. Navigate to Articles to manage your content\n3. Customize the site settings\n\n## Features\n\nYour blog comes with many features:\n\n- Markdown support for writing articles\n- Comment system for reader engagement\n- Analytics to track performance\n- Theme customization\n\nEnjoy your new blog!',
+      'System', 
+      '3 min read', 
+      'Getting Started', 
+      ARRAY['welcome', 'guide'], 
+      TRUE
+    WHERE NOT EXISTS (SELECT 1 FROM public.articles LIMIT 1);
     `;
 
-    const { error } = await supabaseAdmin.rpc('exec_sql', { sql });
+    const { error: execError } = await supabaseAdmin.rpc('exec_sql', { sql });
     
-    if (error) {
-      throw new Error(`Failed to initialize database: ${error.message}`);
+    if (execError) {
+      throw new Error(`Failed to initialize database: ${execError.message}`);
     }
 
     return new Response(
