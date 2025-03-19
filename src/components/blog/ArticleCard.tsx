@@ -71,7 +71,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1">
               <CalendarIcon className="h-3 w-3" />
-              <span>{article.date.split(' ')[0]}</span>
+              <span>{article.date}</span>
             </div>
 
             <div className="flex items-center gap-1">
