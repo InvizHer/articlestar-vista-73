@@ -8,7 +8,6 @@ import {
   ArrowRight, 
   Sparkles, 
   Search,
-  Hash,
   ExternalLink,
   Eye,
   Clock,
@@ -113,31 +112,31 @@ const Index = () => {
   const socialMediaLinks = [
     {
       name: "Instagram",
-      icon: <Instagram className="h-full w-full" />,
+      icon: <Instagram className="h-5 w-5" />,
       url: "https://instagram.com",
-      color: "from-pink-500 to-purple-500",
-      hoverEffect: "hover:shadow-pink-500/20"
+      color: "bg-gradient-to-br from-pink-600 to-orange-400",
+      textColor: "text-white"
     },
     {
       name: "GitHub",
-      icon: <Github className="h-full w-full" />,
+      icon: <Github className="h-5 w-5" />,
       url: "https://github.com",
-      color: "from-gray-800 to-gray-600",
-      hoverEffect: "hover:shadow-gray-500/20"
+      color: "bg-gradient-to-br from-gray-800 to-gray-600",
+      textColor: "text-white"
     },
     {
       name: "LinkedIn",
-      icon: <Linkedin className="h-full w-full" />,
+      icon: <Linkedin className="h-5 w-5" />,
       url: "https://linkedin.com",
-      color: "from-blue-600 to-blue-400",
-      hoverEffect: "hover:shadow-blue-500/20"
+      color: "bg-gradient-to-br from-blue-600 to-blue-400",
+      textColor: "text-white"
     },
     {
       name: "YouTube",
-      icon: <Youtube className="h-full w-full" />,
+      icon: <Youtube className="h-5 w-5" />,
       url: "https://youtube.com",
-      color: "from-red-600 to-red-500",
-      hoverEffect: "hover:shadow-red-500/20"
+      color: "bg-gradient-to-br from-red-600 to-red-400",
+      textColor: "text-white"
     }
   ];
 
@@ -398,47 +397,43 @@ const Index = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
+            transition={{ duration: 0.5 }}
             viewport={{ once: true }}
-            className="mt-16"
+            className="mt-20 max-w-5xl mx-auto bg-card border rounded-2xl p-8 shadow-lg"
           >
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold mb-3">Connect With Us</h2>
+            <div className="text-center mb-10">
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-blue-500 bg-clip-text text-transparent mb-4">Connect With Us</h2>
               <p className="text-muted-foreground max-w-lg mx-auto">
-                Follow us on social media for the latest updates, news, and community discussions
+                Join our community across these platforms to stay updated with the latest content and discussions
               </p>
             </div>
             
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 max-w-4xl mx-auto">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {socialMediaLinks.map((social, index) => (
                 <motion.div
                   key={index}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  transition={{ 
-                    duration: 0.5, 
-                    delay: index * 0.1,
-                    type: "spring",
-                    stiffness: 100
-                  }}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
                   viewport={{ once: true }}
-                  whileHover={{ y: -5 }}
+                  whileHover={{ y: -5, scale: 1.03 }}
+                  className="flex-1"
                 >
-                  <a 
+                  <a
                     href={social.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`block group`}
+                    className={`${social.color} ${social.textColor} group rounded-xl overflow-hidden flex flex-col items-center py-8 gap-3 shadow-lg transition-all duration-300 hover:shadow-xl h-full`}
                   >
-                    <div className={`aspect-square rounded-2xl bg-gradient-to-br ${social.color} p-0.5 shadow-lg ${social.hoverEffect} transition-all duration-300 hover:shadow-xl`}>
-                      <div className="h-full w-full rounded-[14px] bg-background p-6 flex flex-col items-center justify-center">
-                        <div className="w-12 h-12 md:w-16 md:h-16 text-white mb-3">
-                          {social.icon}
-                        </div>
-                        <span className="font-medium text-center text-primary">
-                          {social.name}
-                        </span>
-                      </div>
+                    <div className="p-3 bg-white/20 rounded-full backdrop-blur-sm">
+                      {social.icon}
+                    </div>
+                    <span className="font-medium group-hover:scale-105 transition-transform">
+                      {social.name}
+                    </span>
+                    <div className="mt-1 flex items-center text-xs opacity-80">
+                      <span>Follow us</span>
+                      <ArrowRight className="h-3 w-3 ml-1 group-hover:translate-x-1 transition-transform" />
                     </div>
                   </a>
                 </motion.div>
