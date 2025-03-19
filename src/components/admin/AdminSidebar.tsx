@@ -1,241 +1,128 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { 
   LayoutDashboard,
   FileText,
   FilePlus,
   Settings,
-  ChevronRight,
-  Menu,
-  X,
   MessageSquare,
-  BarChart3
+  LogOut
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { 
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { useAdmin } from "@/context/AdminContext";
+import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
-
-interface NavItemProps {
-  to: string;
-  icon: React.ElementType;
-  label: string;
-  active?: boolean;
-  exact?: boolean;
-}
-
-const NavItem: React.FC<NavItemProps> = ({ 
-  to, 
-  icon: Icon, 
-  label, 
-  active = false,
-  exact = false
-}) => {
-  return (
-    <Link 
-      to={to} 
-      className={cn(
-        "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-        active 
-          ? "bg-primary/10 text-primary" 
-          : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-      )}
-    >
-      <Icon className="h-5 w-5" />
-      <span>{label}</span>
-    </Link>
-  );
-};
-
-const NavGroup: React.FC<{ 
-  title: string; 
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}> = ({ title, children, defaultOpen = false }) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-
-  return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="w-full">
-      <CollapsibleTrigger asChild>
-        <Button 
-          variant="ghost" 
-          className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400"
-        >
-          {title}
-          <ChevronRight 
-            className={cn(
-              "h-4 w-4 transition-transform", 
-              isOpen && "rotate-90"
-            )} 
-          />
-        </Button>
-      </CollapsibleTrigger>
-      <CollapsibleContent className="space-y-1 px-1 py-1">
-        {children}
-      </CollapsibleContent>
-    </Collapsible>
-  );
-};
 
 const AdminSidebar: React.FC = () => {
   const location = useLocation();
+  const { logout } = useAdmin();
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const [isCollapsed, setIsCollapsed] = useState(isMobile);
+  const [isOpen, setIsOpen] = useState(!isMobile);
 
-  // Collapse sidebar on mobile by default
-  React.useEffect(() => {
-    setIsCollapsed(isMobile);
+  useEffect(() => {
+    setIsOpen(!isMobile);
   }, [isMobile]);
 
-  const isActive = (path: string, exact: boolean = false) => {
-    if (exact) {
-      return location.pathname === path;
-    }
-    return location.pathname.startsWith(path);
+  const toggleSidebar = () => {
+    setIsOpen(!isOpen);
   };
 
-  const toggleSidebar = () => {
-    setIsCollapsed(!isCollapsed);
+  const handleLogout = () => {
+    logout();
+    navigate("/admin");
   };
+
+  const isActive = (path: string) => {
+    return location.pathname === path;
+  };
+
+  const NavItem = ({ path, icon: Icon, label }: { path: string; icon: React.ElementType; label: string }) => (
+    <Link
+      to={path}
+      className={cn(
+        "flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-colors",
+        isActive(path)
+          ? "bg-primary/10 text-primary"
+          : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+      )}
+    >
+      <Icon className="h-5 w-5" />
+      {isOpen && <span>{label}</span>}
+    </Link>
+  );
+
+  // If mobile and sidebar is not open, don't render
+  if (isMobile && !isOpen) {
+    return (
+      <button
+        onClick={toggleSidebar}
+        className="fixed z-50 top-4 left-4 p-2 bg-white dark:bg-gray-800 rounded-md shadow-md"
+      >
+        <LayoutDashboard className="h-5 w-5" />
+      </button>
+    );
+  }
 
   return (
     <>
-      {/* Mobile toggle button - always visible on mobile */}
-      {isMobile && (
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="fixed top-4 left-4 z-50 md:hidden"
+      {/* Mobile overlay */}
+      {isMobile && isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40" 
           onClick={toggleSidebar}
-        >
-          {isCollapsed ? <Menu className="h-5 w-5" /> : <X className="h-5 w-5" />}
-        </Button>
+        />
       )}
 
       <aside className={cn(
-        "border-r bg-white dark:bg-slate-800 dark:border-slate-700 h-full",
-        "fixed md:static inset-y-0 left-0 z-40 transition-all duration-300",
-        isCollapsed ? "-translate-x-full md:translate-x-0 md:w-16" : "translate-x-0 w-64",
-        "flex-shrink-0"
+        "bg-white dark:bg-gray-800 border-r dark:border-gray-700 flex flex-col h-screen z-50 transition-all duration-300",
+        isMobile ? "fixed left-0 top-0" : "relative",
+        isOpen ? "w-64" : "w-16"
       )}>
-        <div className="h-16 flex items-center justify-center border-b dark:border-slate-700">
+        {/* Logo */}
+        <div className="h-16 flex items-center justify-center border-b dark:border-gray-700 px-4">
           <Link to="/admin/dashboard" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
               <span className="text-white font-bold">B</span>
             </div>
-            {!isCollapsed && (
-              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-600">
-                BlogHub
-              </span>
+            {isOpen && (
+              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-600">BlogHub</span>
             )}
           </Link>
         </div>
-        
-        <div className="overflow-y-auto h-[calc(100vh-4rem)] py-4 px-3">
-          <div className="space-y-6">
-            <div className="space-y-1">
-              <NavItem 
-                to="/admin/dashboard" 
-                icon={LayoutDashboard} 
-                label={isCollapsed ? "" : "Dashboard"} 
-                active={isActive("/admin/dashboard", true)}
-                exact
-              />
-            </div>
-            
-            {!isCollapsed && (
-              <NavGroup title="Content" defaultOpen>
-                <NavItem 
-                  to="/admin/article/new" 
-                  icon={FilePlus} 
-                  label="New Article" 
-                  active={isActive("/admin/article/new")}
-                />
-                <NavItem 
-                  to="/admin/articles" 
-                  icon={FileText} 
-                  label="All Articles" 
-                  active={isActive("/admin/articles")}
-                />
-                <NavItem 
-                  to="/admin/comments" 
-                  icon={MessageSquare} 
-                  label="Comments" 
-                  active={isActive("/admin/comments")}
-                />
-                <NavItem 
-                  to="/admin/analytics" 
-                  icon={BarChart3} 
-                  label="Analytics" 
-                  active={isActive("/admin/analytics")}
-                />
-              </NavGroup>
-            )}
-            
-            {isCollapsed && (
-              <div className="space-y-1">
-                <NavItem 
-                  to="/admin/article/new" 
-                  icon={FilePlus} 
-                  label="" 
-                  active={isActive("/admin/article/new")}
-                />
-                <NavItem 
-                  to="/admin/articles" 
-                  icon={FileText} 
-                  label="" 
-                  active={isActive("/admin/articles")}
-                />
-                <NavItem 
-                  to="/admin/comments" 
-                  icon={MessageSquare} 
-                  label="" 
-                  active={isActive("/admin/comments")}
-                />
-                <NavItem 
-                  to="/admin/analytics" 
-                  icon={BarChart3} 
-                  label="" 
-                  active={isActive("/admin/analytics")}
-                />
-                <NavItem 
-                  to="/admin/settings" 
-                  icon={Settings} 
-                  label="" 
-                  active={isActive("/admin/settings")}
-                />
-              </div>
-            )}
-            
-            {!isCollapsed && (
-              <div className="mt-auto pt-6">
-                <NavItem 
-                  to="/admin/settings" 
-                  icon={Settings} 
-                  label="Settings" 
-                  active={isActive("/admin/settings")}
-                />
-              </div>
-            )}
-          </div>
+
+        {/* Nav items */}
+        <div className="flex-1 py-4 overflow-y-auto">
+          <nav className="space-y-1 px-2">
+            <NavItem path="/admin/dashboard" icon={LayoutDashboard} label="Dashboard" />
+            <NavItem path="/admin/articles" icon={FileText} label="Articles" />
+            <NavItem path="/admin/article/new" icon={FilePlus} label="New Article" />
+            <NavItem path="/admin/comments" icon={MessageSquare} label="Comments" />
+          </nav>
         </div>
 
+        {/* Footer */}
+        <div className="border-t dark:border-gray-700 p-4">
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+          >
+            <LogOut className="h-5 w-5" />
+            {isOpen && <span>Logout</span>}
+          </button>
+        </div>
+
+        {/* Toggle button (desktop only) */}
         {!isMobile && (
-          <div className="absolute bottom-4 left-0 right-0 flex justify-center">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={toggleSidebar}
-              className="rounded-full"
-            >
-              {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronRight className="h-4 w-4 rotate-180" />}
-            </Button>
-          </div>
+          <button
+            onClick={toggleSidebar}
+            className="absolute -right-3 top-20 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-full p-1.5 shadow-sm"
+          >
+            <div className={cn("h-4 w-4 text-gray-500 transition-transform", isOpen ? "rotate-180" : "rotate-0")}>
+              {isOpen ? "←" : "→"}
+            </div>
+          </button>
         )}
       </aside>
     </>
