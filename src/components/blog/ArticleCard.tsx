@@ -120,7 +120,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-300"></div>
         
-        {/* Moved category and view count to bottom of image */}
+        {/* Category and view count at the bottom of image */}
         {article.category && (
           <div className="absolute bottom-3 left-3">
             <Badge className="bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm backdrop-blur-sm">

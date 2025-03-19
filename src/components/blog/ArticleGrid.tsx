@@ -2,6 +2,7 @@
 import React from "react";
 import { Article } from "@/types/blog";
 import ArticleCard from "./ArticleCard";
+import { motion } from "framer-motion";
 
 interface ArticleGridProps {
   articles: Article[];
@@ -16,11 +17,20 @@ const ArticleGrid: React.FC<ArticleGridProps> = ({ articles, columns = 3 }) => {
   };
 
   return (
-    <div className={`grid ${gridCols[columns]} gap-6`}>
-      {articles.map((article) => (
-        <ArticleCard key={article.id} article={article} />
+    <motion.div 
+      className={`grid ${gridCols[columns]} gap-6`}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ staggerChildren: 0.1 }}
+    >
+      {articles.map((article, index) => (
+        <ArticleCard 
+          key={article.id} 
+          article={article} 
+          index={index}
+        />
       ))}
-    </div>
+    </motion.div>
   );
 };
 
