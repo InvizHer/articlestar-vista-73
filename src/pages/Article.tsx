@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -17,8 +16,7 @@ import {
   MessageSquare,
   Copy,
   ArrowLeft,
-  ArrowRight,
-  WhatsappIcon
+  ArrowRight
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -738,3 +736,4 @@ const AuthorCard = ({
 };
 
 export default Article;
+
