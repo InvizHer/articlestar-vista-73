@@ -1,599 +1,474 @@
-
-import React, { useRef, useEffect } from "react";
-import Layout from "@/components/layout/Layout";
-import Hero from "@/components/common/Hero";
-import ArticleGrid from "@/components/blog/ArticleGrid";
-import { articles } from "@/data/articles";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { motion, useScroll, useTransform, useInView } from "framer-motion";
+import Layout from "@/components/layout/Layout";
+import { supabase } from "@/integrations/supabase/client";
+import { DbArticle } from "@/types/database";
+import { Article } from "@/types/blog";
 import { 
   ArrowRight, 
-  BookOpen, 
-  Users, 
-  Award, 
+  Sparkles, 
+  TrendingUp, 
+  Search,
+  Hash,
+  ExternalLink,
+  Eye,
   Github,
-  Mail,
-  Sparkles,
-  Heart,
-  Star,
-  Globe,
-  Clock
+  Mail
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import CategoryBadge from "@/components/blog/CategoryBadge";
-import ScrollToTop from "@/components/common/ScrollToTop";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import EditorsPick from "@/components/blog/EditorsPick";
 
-// Get top categories
-const categories = [...new Set(articles.map(article => article.category))]
-  .filter(Boolean)
-  .slice(0, 6)
-  .map(category => ({
-    name: category as string,
-    count: articles.filter(a => a.category === category).length
-  }));
-
-// Get all tags
-const tags = Array.from(
-  new Set(
-    articles.flatMap(article => article.tags || [])
-  )
-).slice(0, 12);
-
-// Featured and latest articles
-const featuredArticle = articles.find(article => article.featured) || articles[0];
-const latestArticles = articles.filter(article => article.id !== featuredArticle.id).slice(0, 6);
-const popularArticles = [...articles]
-  .sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
-  .slice(0, 3);
-const editorPicks = articles.filter(article => article.editorPick).slice(0, 3);
-
-const Index: React.FC = () => {
-  const { scrollYProgress } = useScroll();
-  const statsRef = useRef<HTMLDivElement>(null);
-  const statsInView = useInView(statsRef, { once: true, amount: 0.3 });
-  const bannerRef = useRef<HTMLDivElement>(null);
-  const newsletterRef = useRef<HTMLDivElement>(null);
-  const newsletterInView = useInView(newsletterRef, { once: true, amount: 0.5 });
-  
-  const statCounters = [
-    { icon: BookOpen, label: "Articles", value: articles.length, suffix: "+", color: "text-primary" },
-    { icon: Users, label: "Readers", value: 12500, suffix: "+", color: "text-purple-500" },
-    { icon: Award, label: "Awards", value: 17, suffix: "", color: "text-pink-500" }
-  ];
-  
-  // Parallax effect for banner
-  useEffect(() => {
-    const handleScroll = () => {
-      if (!bannerRef.current) return;
-      const scrollPosition = window.scrollY;
-      const bannerElement = bannerRef.current;
-      const bannerOffset = bannerElement.offsetTop;
-      const distance = scrollPosition - bannerOffset;
-      
-      if (distance > -window.innerHeight && distance < window.innerHeight) {
-        const parallaxElements = bannerElement.querySelectorAll('.parallax');
-        parallaxElements.forEach((el, index) => {
-          const speed = index % 2 === 0 ? 0.1 : -0.1;
-          const yPos = distance * speed;
-          (el as HTMLElement).style.transform = `translateY(${yPos}px)`;
-        });
-      }
-    };
-    
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-  
-  // Create progress animations for stats
-  const CounterAnimation = ({ value, delay = 0 }: { value: number, delay?: number }) => {
-    const [count, setCount] = React.useState(0);
-    
-    React.useEffect(() => {
-      if (!statsInView) return;
-      
-      let start: number;
-      const totalDuration = 2000; // 2 seconds
-      
-      setTimeout(() => {
-        const step = (timestamp: number) => {
-          if (!start) start = timestamp;
-          const progress = Math.min((timestamp - start) / totalDuration, 1);
-          setCount(Math.floor(progress * value));
-          
-          if (progress < 1) {
-            window.requestAnimationFrame(step);
-          }
-        };
-        
-        window.requestAnimationFrame(step);
-      }, delay);
-    }, [statsInView, value, delay]);
-    
-    return <span>{count}</span>;
+const convertDbArticleToArticle = (dbArticle: DbArticle): Article => {
+  return {
+    id: dbArticle.id,
+    title: dbArticle.title,
+    slug: dbArticle.slug,
+    excerpt: dbArticle.excerpt,
+    content: dbArticle.content,
+    author: {
+      name: dbArticle.author_name,
+      avatar: dbArticle.author_avatar || "/placeholder.svg"
+    },
+    date: new Date(dbArticle.date).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    }),
+    readTime: dbArticle.read_time,
+    category: dbArticle.category,
+    tags: dbArticle.tags,
+    coverImage: dbArticle.cover_image || "/placeholder.svg",
+    viewCount: dbArticle.view_count || 0
   };
-  
+};
+
+const Index = () => {
+  const [recentArticles, setRecentArticles] = useState<Article[]>([]);
+  const [popularCategories, setPopularCategories] = useState<{name: string, count: number}[]>([]);
+  const [trendingTags, setTrendingTags] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchInput, setSearchInput] = useState("");
+
+  useEffect(() => {
+    fetchRecentArticles();
+  }, []);
+
+  const fetchRecentArticles = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("articles")
+        .select("*")
+        .eq("published", true)
+        .order("date", { ascending: false })
+        .limit(7);
+
+      if (error) throw error;
+
+      const articles = (data || []).map(convertDbArticleToArticle);
+      setRecentArticles(articles);
+      
+      const categoryCount: {[key: string]: number} = {};
+      articles.forEach(article => {
+        if (article.category) {
+          categoryCount[article.category] = (categoryCount[article.category] || 0) + 1;
+        }
+      });
+      
+      const sortedCategories = Object.entries(categoryCount)
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+      
+      setPopularCategories(sortedCategories);
+      
+      const allTags = articles.flatMap(article => article.tags || []);
+      const uniqueTags = [...new Set(allTags)].slice(0, 6);
+      setTrendingTags(uniqueTags);
+      
+    } catch (error) {
+      console.error("Error fetching articles:", error);
+      toast.error("Failed to load articles");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchInput.trim()) {
+      window.location.href = `/articles?search=${encodeURIComponent(searchInput)}`;
+    }
+  };
+
+  const featuredArticle = recentArticles[0];
+  const recentArticlesToShow = recentArticles.slice(1, 7);
+
   return (
-    <Layout fullWidth>
-      <ScrollToTop />
-      
-      {/* Hero Section */}
-      <Hero 
-        title="Discover Stories That Matter"
-        subtitle="Immerse yourself in a collection of thought-provoking articles, expert insights, and captivating narratives crafted to inspire and inform."
-        ctaText="Start Reading"
-        ctaLink="/articles"
-      />
-      
-      {/* Stats Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-background to-primary/5">
-        <div 
-          ref={statsRef}
-          className="max-w-7xl mx-auto"
-        >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {statCounters.map((stat, index) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 20 }}
-                animate={statsInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ 
-                  duration: 0.6, 
-                  delay: index * 0.2,
-                  type: "spring",
-                  stiffness: 50 
-                }}
-                className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-lg border border-slate-200 dark:border-slate-800 hover:shadow-xl transition-shadow relative overflow-hidden group"
-              >
-                <div className="absolute -right-10 -top-10 w-40 h-40 bg-gradient-to-br from-primary/10 to-purple-500/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-                <div className="flex items-center justify-center flex-col text-center relative z-10">
-                  <stat.icon className={cn("h-10 w-10 mb-4", stat.color)} />
-                  <div className="text-5xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">
-                    <CounterAnimation value={stat.value} delay={index * 200} />
-                    {stat.suffix}
-                  </div>
-                  <p className="text-muted-foreground font-medium">{stat.label}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+    <Layout>
+      <section className="relative overflow-hidden bg-gradient-to-b from-primary/5 to-background">
+        <div className="absolute inset-0 -z-10 overflow-hidden">
+          <div className="absolute -top-[30%] -right-[20%] h-[500px] w-[500px] rounded-full bg-primary/5"></div>
+          <div className="absolute -bottom-[10%] -left-[10%] h-[300px] w-[300px] rounded-full bg-blue-500/5"></div>
+          <div className="absolute top-[20%] left-[15%] h-[200px] w-[200px] rounded-full bg-purple-500/5"></div>
         </div>
-      </section>
-      
-      {/* Featured Article */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto space-y-16">
-          <motion.div
+        
+        <div className="container mx-auto px-4 py-16 md:py-24">
+          <motion.div 
             initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-6"
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="max-w-3xl mx-auto text-center"
           >
-            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 px-4 py-1 text-sm mb-4">
-              Featured Story
-            </Badge>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">
-              Editor's Selection
-            </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-              Our curated pick that deserves your attention
+            <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary mb-6">
+              <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Modern Digital Journal
+            </span>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
+              Discover Stories that 
+              <span className="bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent"> Inspire</span>
+            </h1>
+            <p className="text-xl text-muted-foreground mb-8 mx-auto max-w-2xl">
+              Explore thought-provoking articles on design, technology, and culture that shape our digital landscape.
             </p>
-            <div className="mt-6 w-24 h-1 bg-gradient-to-r from-primary to-purple-600 rounded-full mx-auto"></div>
-          </motion.div>
-          
-          {featuredArticle && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 0.7 }}
-              className="relative rounded-2xl overflow-hidden shadow-2xl"
-            >
-              <div className="grid md:grid-cols-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
-                <div className="relative aspect-video md:aspect-auto overflow-hidden">
-                  <img 
-                    src={featuredArticle.coverImage}
-                    alt={featuredArticle.title}
-                    className="h-full w-full object-cover"
+            
+            <div className="max-w-lg mx-auto relative">
+              <form onSubmit={handleSearch} className="flex items-center">
+                <div className="relative flex-grow">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Search articles..."
+                    className="pl-10 py-6 pr-4 rounded-l-full border-r-0 bg-background/80 backdrop-blur-sm focus-visible:ring-primary/50"
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary/60 via-black/50 to-transparent"></div>
-                  
-                  <div className="absolute top-4 left-4 flex flex-col gap-2">
-                    <Badge className="bg-primary/90 hover:bg-primary text-white border-0 shadow-md">
-                      {featuredArticle.category}
-                    </Badge>
-                    
-                    <Badge variant="outline" className="bg-black/40 text-white backdrop-blur-sm flex items-center gap-1 border-white/20">
-                      <Heart className="h-3 w-3" />
-                      Editor's Choice
-                    </Badge>
-                  </div>
-                  
-                  <div className="absolute inset-0 flex flex-col justify-center md:p-10 p-6">
-                    <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 max-w-md drop-shadow-md">
-                      {featuredArticle.title}
-                    </h2>
-                    
-                    <p className="text-white/90 mb-6 max-w-md line-clamp-3 drop-shadow-md">
-                      {featuredArticle.excerpt}
-                    </p>
-                    
-                    <Button 
-                      asChild 
-                      className="w-fit md:flex hidden rounded-full shadow-lg bg-white text-primary hover:bg-white/90 hover:scale-105 transition-all duration-300"
-                    >
-                      <Link to={`/article/${featuredArticle.slug}`} className="gap-2">
-                        Read Article
-                        <ArrowRight className="h-4 w-4" />
-                      </Link>
-                    </Button>
-                  </div>
                 </div>
-                
-                <div className="p-6 md:p-10 flex flex-col">
-                  <div className="flex items-center mb-6">
-                    <div className="w-12 h-12 rounded-full border-2 border-primary/20 overflow-hidden mr-4">
-                      <img 
-                        src={featuredArticle.author.avatar} 
-                        alt={featuredArticle.author.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-lg">{featuredArticle.author.name}</h3>
-                      <p className="text-sm text-muted-foreground">{featuredArticle.date}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="md:hidden mb-6">
-                    <h2 className="text-2xl font-bold mb-2">{featuredArticle.title}</h2>
-                    <p className="text-muted-foreground line-clamp-3">{featuredArticle.excerpt}</p>
-                  </div>
-                  
-                  <div className="space-y-4 mb-6 border-l-4 border-primary/30 pl-4 md:block hidden">
-                    <h3 className="text-xl font-semibold">Why it matters</h3>
-                    <p className="text-muted-foreground">
-                      This featured article explores key insights that can transform your understanding 
-                      and perspective. It's been selected by our editorial team for its depth,
-                      relevance, and impact.
-                    </p>
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    {featuredArticle.tags?.map((tag, index) => (
-                      <Badge key={index} variant="outline" className="bg-primary/5 hover:bg-primary/10 border-primary/20">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                  
-                  <div className="mt-auto">
-                    <Button asChild className="rounded-full gap-2 shadow-md w-full md:w-auto">
-                      <Link to={`/article/${featuredArticle.slug}`}>
-                        Read Complete Article
-                        <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="absolute -top-20 -right-20 w-60 h-60 bg-primary/20 rounded-full blur-[100px] opacity-60"></div>
-              <div className="absolute -bottom-20 -left-20 w-60 h-60 bg-purple-500/20 rounded-full blur-[100px] opacity-60"></div>
-            </motion.div>
-          )}
+                <Button type="submit" className="rounded-r-full h-12 px-5">
+                  Explore
+                </Button>
+              </form>
+            </div>
+          </motion.div>
+        </div>
+        
+        <div className="absolute bottom-0 left-0 right-0">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 120" className="w-full">
+            <path 
+              fill="currentColor" 
+              fillOpacity="0.05"
+              d="M0,96L60,85.3C120,75,240,53,360,48C480,43,600,53,720,69.3C840,85,960,107,1080,101.3C1200,96,1320,64,1380,48L1440,32L1440,320L1380,320C1320,320,1200,320,1080,320C960,320,840,320,720,320C600,320,480,320,360,320C240,320,120,320,60,320L0,320Z"
+            ></path>
+          </svg>
         </div>
       </section>
-      
-      {/* Categories Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-primary/5 to-background">
-        <div className="max-w-7xl mx-auto">
+
+      {loading ? (
+        <section className="container mx-auto px-4 py-12">
+          <div className="animate-pulse">
+            <div className="h-8 w-48 bg-muted rounded mb-8"></div>
+            <div className="h-64 md:h-80 w-full bg-muted rounded-xl mb-8"></div>
+          </div>
+        </section>
+      ) : featuredArticle ? (
+        <section className="container mx-auto px-4 py-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12"
+            className="mb-10 flex items-center"
           >
-            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 px-4 py-1 text-sm mb-4">
-              Browse By Topic
-            </Badge>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">
-              Popular Categories
-            </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-              Explore our diverse range of topics
-            </p>
-            <div className="mt-6 w-24 h-1 bg-gradient-to-r from-primary to-purple-600 rounded-full mx-auto"></div>
+            <div className="h-12 w-1.5 bg-primary rounded-full mr-4"></div>
+            <div>
+              <h2 className="text-3xl font-bold">Editor's Pick</h2>
+              <p className="text-muted-foreground mt-1">Our featured story this week</p>
+            </div>
           </motion.div>
           
-          <motion.div 
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6"
-          >
-            {categories.map((category, i) => (
-              <motion.div 
-                key={category.name}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: i * 0.1 + 0.3 }}
-                whileHover={{ y: -5, transition: { duration: 0.2 } }}
-              >
-                <Link
-                  to={`/articles?category=${category.name}`}
-                  className="flex flex-col items-center justify-center p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-800 h-full group relative overflow-hidden"
-                >
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary to-purple-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">
-                    <Sparkles className="h-6 w-6 text-primary" />
-                  </div>
-                  <h3 className="text-lg font-bold mb-1 group-hover:text-primary transition-colors">{category.name}</h3>
-                  <p className="text-sm text-muted-foreground">{category.count} articles</p>
-                </Link>
-              </motion.div>
-            ))}
-          </motion.div>
-          
-          <motion.div 
+          <EditorsPick article={featuredArticle} />
+        </section>
+      ) : null}
+
+      {loading ? (
+        <section className="container mx-auto px-4 py-12">
+          <div className="animate-pulse">
+            <div className="h-8 w-48 bg-muted rounded mb-8"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-80 bg-muted rounded-xl"></div>
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : recentArticlesToShow.length > 0 ? (
+        <section className="container mx-auto px-4 py-12 bg-gradient-to-b from-background to-primary/5">
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.6 }}
-            className="flex justify-center mt-10"
+            className="mb-10 flex flex-col md:flex-row md:items-center justify-between"
           >
-            <Button asChild variant="outline" className="rounded-full">
+            <div className="flex items-center mb-4 md:mb-0">
+              <div className="h-12 w-1.5 bg-blue-500 rounded-full mr-4"></div>
+              <div>
+                <h2 className="text-3xl font-bold">Recent Stories</h2>
+                <p className="text-muted-foreground mt-1">Fresh content from our authors</p>
+              </div>
+            </div>
+            
+            <Button asChild variant="outline" className="group">
               <Link to="/articles" className="gap-2">
-                View All Categories
-                <ArrowRight className="h-4 w-4" />
+                View All Articles
+                <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
               </Link>
             </Button>
           </motion.div>
-        </div>
-      </section>
-      
-      {/* Latest Articles */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <ArticleGrid 
-            articles={latestArticles} 
-            columns={3} 
-            heading="Latest Articles"
-            subheading="Stay up to date with our most recent publications"
-          />
           
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="flex justify-center mt-12"
-          >
-            <Button asChild className="rounded-full">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {recentArticlesToShow.map((article, index) => (
+              <motion.div
+                key={article.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                viewport={{ once: true }}
+              >
+                <Link 
+                  to={`/article/${article.slug}`}
+                  className="group flex flex-col h-full rounded-xl overflow-hidden bg-card border shadow-sm hover:shadow-md transition-all duration-300"
+                >
+                  <div className="relative aspect-[16/9] overflow-hidden bg-muted">
+                    <img 
+                      src={article.coverImage} 
+                      alt={article.title}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-60"></div>
+                    <div className="absolute top-3 left-3 flex items-center gap-2">
+                      <div className="bg-primary text-primary-foreground text-xs font-medium px-2.5 py-1 rounded-full shadow-sm">
+                        {article.category}
+                      </div>
+                    </div>
+                    <div className="absolute top-3 right-3">
+                      <div className="bg-black/50 backdrop-blur-sm text-white text-xs font-medium px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <Eye className="h-3 w-3" />
+                        {article.viewCount}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="p-5 flex flex-col flex-grow bg-gradient-to-br from-card to-primary/5">
+                    <div className="flex items-center mb-3 text-xs text-muted-foreground">
+                      <span>{article.date}</span>
+                      <span className="mx-2">•</span>
+                      <span>{article.readTime} read</span>
+                    </div>
+                    
+                    <h3 className="text-lg font-bold mb-3 line-clamp-2 group-hover:text-primary transition-colors">
+                      {article.title}
+                    </h3>
+                    
+                    <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
+                      {article.excerpt}
+                    </p>
+                    
+                    <div className="mt-auto pt-4 border-t flex items-center justify-between">
+                      <div className="flex items-center">
+                        <div className="w-6 h-6 rounded-full overflow-hidden mr-2 border border-primary/20">
+                          <img 
+                            src={article.author.avatar} 
+                            alt={article.author.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <span className="text-xs">{article.author.name}</span>
+                      </div>
+                      
+                      <div className="flex items-center text-primary group-hover:translate-x-1 transition-transform">
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+          
+          <div className="mt-10 text-center">
+            <Button asChild size="lg" className="rounded-full">
               <Link to="/articles" className="gap-2">
                 View All Articles
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
-          </motion.div>
-        </div>
-      </section>
-      
-      {/* Popular Tags */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-background to-primary/5">
-        <div className="max-w-7xl mx-auto">
+          </div>
+        </section>
+      ) : null}
+
+      <section className="bg-gradient-to-b from-primary/5 to-background py-16">
+        <div className="container mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12"
+            className="max-w-xl mx-auto text-center mb-12"
           >
-            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 px-4 py-1 text-sm mb-4">
-              Discover By Tag
-            </Badge>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">
-              Popular Tags
-            </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-              Find content by specific topics
+            <h2 className="text-3xl font-bold mb-4">Discover by Interest</h2>
+            <p className="text-muted-foreground">
+              Explore content from our diverse catalog of topics and categories
             </p>
-            <div className="mt-6 w-24 h-1 bg-gradient-to-r from-primary to-purple-600 rounded-full mx-auto"></div>
           </motion.div>
           
-          <motion.div 
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="flex flex-wrap justify-center gap-3"
-          >
-            {tags.map((tag, i) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+            {popularCategories.map((category, index) => (
               <motion.div
-                key={tag}
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
                 viewport={{ once: true }}
-                transition={{ 
-                  duration: 0.5, 
-                  delay: i * 0.07,
-                  type: "spring",
-                  stiffness: 100 
-                }}
-                whileHover={{ y: -3, scale: 1.05, transition: { duration: 0.2 } }}
               >
-                <Link to={`/articles?tag=${tag}`}>
-                  <Badge 
-                    variant="outline" 
-                    className="px-4 py-2 text-base bg-white dark:bg-slate-900 shadow-md border-primary/10 hover:border-primary/30 hover:bg-primary/5"
-                  >
-                    #{tag}
-                  </Badge>
+                <Link 
+                  to={`/articles?category=${category.name}`}
+                  className="group relative flex items-center h-28 rounded-xl overflow-hidden bg-gradient-to-r from-primary/80 to-primary/40 text-white shadow-md hover:shadow-lg transition-all duration-300"
+                >
+                  <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.6),transparent)]"></div>
+                  <div className="absolute top-0 left-0 h-full w-2 bg-white/20"></div>
+                  
+                  <div className="relative z-10 p-6 w-full">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xl font-bold">{category.name}</h3>
+                      <div className="flex items-center bg-white/20 backdrop-blur-sm rounded-full px-2.5 py-1 text-sm">
+                        {category.count} {category.count === 1 ? 'article' : 'articles'}
+                      </div>
+                    </div>
+                    
+                    <div className="mt-2 flex items-center text-sm text-white/80 group-hover:text-white transition-colors">
+                      <span>Explore category</span>
+                      <ArrowRight className="h-3.5 w-3.5 ml-1 transition-transform duration-300 group-hover:translate-x-1" />
+                    </div>
+                  </div>
                 </Link>
               </motion.div>
             ))}
-          </motion.div>
-        </div>
-      </section>
-      
-      {/* Editor's Picks */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <ArticleGrid 
-            articles={editorPicks} 
-            columns={3} 
-            variant="editor-pick"
-            heading="Editor's Picks"
-            subheading="Handpicked content you shouldn't miss"
-          />
-        </div>
-      </section>
-      
-      {/* Newsletter */}
-      <section 
-        ref={newsletterRef}
-        className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-primary/5 via-background to-purple-500/5 relative overflow-hidden"
-      >
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-[100px] opacity-70"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500/10 rounded-full blur-[100px] opacity-70"></div>
-        
-        <div className="max-w-4xl mx-auto relative">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={newsletterInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.7 }}
-            className="bg-white dark:bg-slate-900 rounded-2xl p-8 md:p-10 shadow-xl border border-slate-200 dark:border-slate-800 relative overflow-hidden"
-          >
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-purple-500 to-pink-500"></div>
-            
-            <div className="text-center mb-8">
-              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 px-4 py-1 text-sm mb-4">
-                Stay Updated
-              </Badge>
-              <h2 className="text-3xl md:text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">
-                Subscribe to Our Newsletter
-              </h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto">
-                Get the latest articles, updates and resources delivered straight to your inbox.
-              </p>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row gap-3 max-w-xl mx-auto">
-              <Input
-                type="email"
-                placeholder="Enter your email address"
-                className="flex-grow rounded-full px-6 py-6 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
-              />
-              <Button className="rounded-full px-6 py-6 gap-2 bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 border-0 shadow-lg hover:shadow-xl transition-all">
-                Subscribe
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </div>
-            
-            <div className="mt-6 text-center text-sm text-muted-foreground">
-              We respect your privacy. Unsubscribe at any time.
-            </div>
-          </motion.div>
-        </div>
-      </section>
-      
-      {/* Community Banner */}
-      <section 
-        ref={bannerRef}
-        className="py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden"
-      >
-        <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-8">
-          <Link to="https://github.com" target="_blank" rel="noopener noreferrer">
-            <motion.div 
-              whileHover={{ y: -5, transition: { duration: 0.2 } }}
-              className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl p-8 shadow-xl relative overflow-hidden group"
-            >
-              <div className="absolute inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1618401471353-b98afee0b2eb')] bg-cover bg-center mix-blend-overlay"></div>
-              <div className="parallax absolute top-10 left-10 opacity-10">
-                <Github className="h-40 w-40 text-white" />
-              </div>
-              
-              <div className="relative z-10">
-                <div className="mb-6 flex justify-between items-start">
-                  <div className="p-3 bg-white/10 backdrop-blur-md rounded-xl">
-                    <Github className="h-8 w-8 text-white" />
-                  </div>
-                  <Badge className="bg-white/20 text-white border-0">
-                    Community
-                  </Badge>
-                </div>
-                
-                <h3 className="text-2xl font-bold mb-3">Join Our GitHub Community</h3>
-                <p className="text-white/80 mb-6">Contribute to our open source projects, report issues, or star our repository.</p>
-                
-                <div className="flex items-center text-sm gap-3 text-white/60">
-                  <div className="flex items-center gap-1">
-                    <Star className="h-4 w-4" />
-                    <span>1.2k Stars</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-1">
-                    <Users className="h-4 w-4" />
-                    <span>230+ Contributors</span>
-                  </div>
-                </div>
-                
-                <div className="mt-6 flex items-center gap-2 text-white font-medium">
-                  Visit GitHub
-                  <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                </div>
-              </div>
-            </motion.div>
-          </Link>
+          </div>
           
-          <Link to="/contact">
-            <motion.div 
-              whileHover={{ y: -5, transition: { duration: 0.2 } }}
-              className="bg-gradient-to-br from-primary to-purple-600 text-white rounded-2xl p-8 shadow-xl relative overflow-hidden group"
-            >
-              <div className="absolute inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1516387938699-a93567ec168e')] bg-cover bg-center mix-blend-overlay"></div>
-              <div className="parallax absolute top-10 right-10 opacity-10">
-                <Mail className="h-40 w-40 text-white" />
-              </div>
+          {trendingTags.length > 0 && (
+            <div className="mt-12">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                viewport={{ once: true }}
+                className="text-center mb-6"
+              >
+                <h3 className="text-xl font-medium mb-2">Trending Topics</h3>
+                <p className="text-sm text-muted-foreground">Popular discussions right now</p>
+              </motion.div>
               
-              <div className="relative z-10">
-                <div className="mb-6 flex justify-between items-start">
-                  <div className="p-3 bg-white/10 backdrop-blur-md rounded-xl">
-                    <Mail className="h-8 w-8 text-white" />
+              <motion.div
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                transition={{ duration: 0.7 }}
+                viewport={{ once: true }}
+                className="flex flex-wrap justify-center gap-3"
+              >
+                {trendingTags.map((tag, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.4, delay: index * 0.1 }}
+                    viewport={{ once: true }}
+                  >
+                    <Link 
+                      to={`/articles?tag=${tag}`}
+                      className="flex items-center rounded-full px-4 py-2 text-sm font-medium bg-card hover:bg-primary/10 border hover:border-primary/20 transition-colors"
+                    >
+                      <Hash className="h-3.5 w-3.5 mr-1.5 text-primary" />
+                      {tag}
+                    </Link>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="py-16 bg-gradient-to-b from-background to-primary/5">
+        <div className="container mx-auto px-4">
+          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-primary/20 to-primary/5 p-8 md:p-12">
+            <div className="absolute -top-20 right-0 h-40 w-40 rounded-full bg-primary/20 filter blur-3xl opacity-50"></div>
+            <div className="absolute -bottom-20 left-0 h-40 w-40 rounded-full bg-primary/20 filter blur-3xl opacity-50"></div>
+            
+            <div className="max-w-3xl mx-auto relative">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                viewport={{ once: true }}
+                className="text-center mb-8"
+              >
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">Join Our Community</h2>
+                <p className="text-muted-foreground">
+                  Connect with fellow readers and writers, participate in discussions, and share your ideas.
+                </p>
+              </motion.div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5 }}
+                  viewport={{ once: true }}
+                  className="bg-card rounded-xl p-6 border shadow-sm hover:shadow-md transition-all"
+                >
+                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                    <Github className="h-6 w-6 text-primary" />
                   </div>
-                  <Badge className="bg-white/20 text-white border-0">
-                    Get in touch
-                  </Badge>
-                </div>
+                  <h3 className="text-xl font-semibold mb-2">GitHub Discussions</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Join our open source community on GitHub to contribute and help improve our platform.
+                  </p>
+                  <a 
+                    href="https://github.com" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-colors font-medium"
+                  >
+                    <Github className="h-4 w-4" />
+                    <span>GitHub</span>
+                  </a>
+                </motion.div>
                 
-                <h3 className="text-2xl font-bold mb-3">Contact Our Team</h3>
-                <p className="text-white/80 mb-6">Have questions or feedback? We'd love to hear from you!</p>
-                
-                <div className="flex items-center text-sm gap-3 text-white/60">
-                  <div className="flex items-center gap-1">
-                    <Globe className="h-4 w-4" />
-                    <span>Worldwide Support</span>
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5, delay: 0.1 }}
+                  viewport={{ once: true }}
+                  className="bg-card rounded-xl p-6 border shadow-sm hover:shadow-md transition-all"
+                >
+                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                    <Mail className="h-6 w-6 text-primary" />
                   </div>
-                  
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    <span>24/7 Response</span>
-                  </div>
-                </div>
-                
-                <div className="mt-6 flex items-center gap-2 text-white font-medium">
-                  Contact Us
-                  <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                </div>
+                  <h3 className="text-xl font-semibold mb-2">Newsletter</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Subscribe to our newsletter and get the latest articles and updates delivered to your inbox.
+                  </p>
+                  <Button className="gap-2">
+                    <Mail className="h-4 w-4" />
+                    <span>Subscribe</span>
+                  </Button>
+                </motion.div>
               </div>
-            </motion.div>
-          </Link>
+            </div>
+          </div>
         </div>
       </section>
     </Layout>
