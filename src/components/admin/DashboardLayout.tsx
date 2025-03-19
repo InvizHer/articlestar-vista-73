@@ -29,7 +29,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   
   return (
     <div className="min-h-screen h-full w-full flex bg-gray-50 dark:bg-gray-900">
-      <AdminSidebar isOpen={sidebarOpen} toggle={toggleSidebar} />
+      <AdminSidebar />
       
       <div className="flex flex-col flex-1 min-h-screen w-full">
         <DashboardHeader toggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen} />
