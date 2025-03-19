@@ -116,29 +116,29 @@ const Index = () => {
       name: "Instagram",
       icon: <Instagram className="h-5 w-5" />,
       url: "https://instagram.com",
-      color: "from-pink-500 to-rose-500",
-      textColor: "text-white"
+      gradient: "from-pink-500 to-orange-400",
+      hoverEffect: "group-hover:scale-110"
     },
     {
       name: "GitHub",
       icon: <Github className="h-5 w-5" />,
       url: "https://github.com",
-      color: "from-gray-700 to-gray-900",
-      textColor: "text-white"
+      gradient: "from-slate-900 to-slate-700",
+      hoverEffect: "group-hover:rotate-12"
     },
     {
       name: "LinkedIn",
       icon: <Linkedin className="h-5 w-5" />,
       url: "https://linkedin.com",
-      color: "from-blue-600 to-blue-800",
-      textColor: "text-white"
+      gradient: "from-blue-600 to-blue-400",
+      hoverEffect: "group-hover:scale-110"
     },
     {
       name: "YouTube",
       icon: <Youtube className="h-5 w-5" />,
       url: "https://youtube.com",
-      color: "from-red-500 to-red-700",
-      textColor: "text-white"
+      gradient: "from-red-600 to-red-500",
+      hoverEffect: "group-hover:scale-110"
     }
   ];
 
@@ -349,7 +349,7 @@ const Index = () => {
         </section>
       ) : null}
 
-      <section className="py-16 bg-gradient-to-b from-background via-primary/5 to-background">
+      <section className="py-16 bg-gradient-to-b from-background to-primary/5">
         <div className="container mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -360,11 +360,11 @@ const Index = () => {
           >
             <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-blue-500 bg-clip-text text-transparent mb-4">Connect With Us</h2>
             <p className="text-muted-foreground max-w-xl mx-auto">
-              Follow us on social media to get the latest updates and news
+              Follow us on social media to stay updated with the latest content
             </p>
           </motion.div>
           
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 md:gap-6 max-w-4xl mx-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 max-w-4xl mx-auto">
             {socialMediaLinks.map((social, index) => (
               <motion.div
                 key={index}
@@ -372,28 +372,23 @@ const Index = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 viewport={{ once: true }}
-                className="w-full"
               >
                 <a
                   href={social.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group block h-full"
+                  className="group"
                 >
-                  <Card className="overflow-hidden h-full transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-lg">
-                    <CardContent className="p-0">
-                      <div className={`bg-gradient-to-r ${social.color} text-white p-5 flex flex-col items-center justify-center text-center h-full min-h-[160px] transition-all duration-300`}>
-                        <div className="bg-white/20 rounded-full p-3 mb-3 backdrop-blur-sm">
-                          {social.icon}
-                        </div>
-                        <h3 className="font-medium mb-1">{social.name}</h3>
-                        <div className="flex items-center text-sm text-white/80 mt-2 group-hover:text-white transition-colors">
-                          <span>Follow us</span>
-                          <ArrowRight className="h-3 w-3 ml-1 group-hover:translate-x-1 transition-transform" />
-                        </div>
+                  <div className="relative h-24 sm:h-32 rounded-xl overflow-hidden shadow-md transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-lg">
+                    <div className={`absolute inset-0 bg-gradient-to-br ${social.gradient}`}></div>
+                    
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
+                      <div className={`bg-white/20 rounded-full p-3 mb-2 transition-transform duration-300 ${social.hoverEffect}`}>
+                        {social.icon}
                       </div>
-                    </CardContent>
-                  </Card>
+                      <span className="font-medium text-sm sm:text-base">{social.name}</span>
+                    </div>
+                  </div>
                 </a>
               </motion.div>
             ))}

@@ -123,7 +123,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
         {/* Moved category and view count to bottom of image */}
         {article.category && (
           <div className="absolute bottom-3 left-3">
-            <Badge className="bg-gradient-to-r from-primary to-purple-500 text-white shadow-sm backdrop-blur-sm">
+            <Badge className="bg-primary text-white shadow-sm backdrop-blur-sm">
               {article.category}
             </Badge>
           </div>
@@ -182,11 +182,6 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
             <div className="flex items-center gap-1" title={`${article.readTime} read time`}>
               <Clock className="h-3 w-3" />
               <span>{article.readTime}</span>
-            </div>
-            
-            <div className="flex items-center gap-1" title={`${article.viewCount || 0} views`}>
-              <Eye className="h-3 w-3" />
-              <span>{article.viewCount || 0}</span>
             </div>
           </div>
         </div>
