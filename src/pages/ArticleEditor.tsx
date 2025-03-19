@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -718,10 +719,10 @@ const ArticleEditor = () => {
                                         </PopoverContent>
                                       </Popover>
                                     </div>
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
+                                  </div>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
                             )}
                           />
                           
@@ -946,4 +947,3 @@ const ArticleEditor = () => {
 };
 
 export default ArticleEditor;
-

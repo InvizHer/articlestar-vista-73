@@ -35,6 +35,7 @@ export type Database = {
           author_avatar: string | null
           author_name: string
           category: string
+          comments_enabled: boolean
           content: string
           cover_image: string | null
           created_at: string
@@ -53,6 +54,7 @@ export type Database = {
           author_avatar?: string | null
           author_name: string
           category: string
+          comments_enabled?: boolean
           content: string
           cover_image?: string | null
           created_at?: string
@@ -71,6 +73,7 @@ export type Database = {
           author_avatar?: string | null
           author_name?: string
           category?: string
+          comments_enabled?: boolean
           content?: string
           cover_image?: string | null
           created_at?: string
