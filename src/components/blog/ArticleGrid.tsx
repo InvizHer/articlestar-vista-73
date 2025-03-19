@@ -12,13 +12,13 @@ interface ArticleGridProps {
 const ArticleGrid: React.FC<ArticleGridProps> = ({ articles, columns = 3 }) => {
   const gridCols = {
     1: "grid-cols-1",
-    2: "grid-cols-1 md:grid-cols-2",
-    3: "grid-cols-1 md:grid-cols-2 lg:grid-cols-3",
+    2: "grid-cols-1 md:grid-cols-2 gap-8",
+    3: "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8",
   };
 
   return (
     <motion.div 
-      className={`grid ${gridCols[columns]} gap-6`}
+      className={`grid ${gridCols[columns]}`}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ staggerChildren: 0.1 }}
