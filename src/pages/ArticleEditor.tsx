@@ -27,7 +27,9 @@ import {
   BookOpen,
   LayoutPanelTop,
   SquarePen,
-  MessageSquare
+  MessageSquare,
+  HelpCircle,
+  InfoIcon
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { slugify } from "@/lib/utils";
@@ -65,6 +67,13 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const modules = {
   toolbar: [
@@ -113,7 +122,7 @@ const articleSchema = z.object({
   cover_image: z.string().optional(),
   author_name: z.string().min(2, "Author name is required"),
   author_avatar: z.string().optional(),
-  published: z.boolean().default(false),
+  published: z.boolean().default(true),
   comments_enabled: z.boolean().default(true),
 });
 
@@ -135,6 +144,7 @@ const ArticleEditor = () => {
   const [newCategory, setNewCategory] = useState("");
   const [newTag, setNewTag] = useState("");
   const [newAuthor, setNewAuthor] = useState("");
+  const isMobile = useIsMobile();
 
   const form = useForm<ArticleFormValues>({
     resolver: zodResolver(articleSchema),
@@ -149,7 +159,7 @@ const ArticleEditor = () => {
       cover_image: "/placeholder.svg",
       author_name: "Admin",
       author_avatar: "/placeholder.svg",
-      published: false,
+      published: true,
       comments_enabled: true,
     },
   });
@@ -399,76 +409,120 @@ const ArticleEditor = () => {
                 </div>
               </div>
               
-              <div className="flex flex-wrap items-center gap-3">
-                {form.formState.isDirty && (
-                  <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700/50">
-                    Unsaved changes
-                  </Badge>
-                )}
-                
-                <div className="flex items-center gap-2">
-                  <FormField
-                    control={form.control}
-                    name="published"
-                    render={({ field }) => (
-                      <div className="flex items-center gap-2 bg-white dark:bg-gray-800 px-3 py-1.5 rounded-lg border shadow-sm">
-                        <Switch 
-                          checked={field.value} 
-                          onCheckedChange={field.onChange}
-                          id="published"
-                          className="data-[state=checked]:bg-green-500"
-                        />
-                        <Badge 
-                          variant={field.value ? "default" : "outline"}
-                          className={cn(
-                            "font-normal text-xs",
-                            field.value ? "bg-green-500 hover:bg-green-600" : ""
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-3">
+                  <div className="bg-white dark:bg-gray-800 rounded-lg border p-3 shadow-sm">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <FormField
+                            control={form.control}
+                            name="published"
+                            render={({ field }) => (
+                              <div className="flex items-center gap-2">
+                                <div className="flex flex-col">
+                                  <div className="flex items-center gap-2">
+                                    <Switch 
+                                      checked={field.value} 
+                                      onCheckedChange={field.onChange}
+                                      id="published"
+                                      className="data-[state=checked]:bg-green-500"
+                                    />
+                                    <Label htmlFor="published" className="font-medium text-sm">
+                                      {field.value ? "Published" : "Draft"}
+                                    </Label>
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <InfoIcon className="h-4 w-4 text-muted-foreground" />
+                                        </TooltipTrigger>
+                                        <TooltipContent side="right" className="max-w-[280px]">
+                                          <p>
+                                            {field.value 
+                                              ? "Article is visible to readers. Switch off to save as a draft." 
+                                              : "Article is saved as a draft and not visible to readers. Switch on to publish."}
+                                          </p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground ml-12">
+                                    {field.value 
+                                      ? "Visible to readers" 
+                                      : "Hidden from readers"}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          />
+                        </div>
+                        
+                        <FormField
+                          control={form.control}
+                          name="comments_enabled"
+                          render={({ field }) => (
+                            <div className="flex items-center gap-2">
+                              <div className="flex flex-col">
+                                <div className="flex items-center gap-2">
+                                  <Switch 
+                                    checked={field.value} 
+                                    onCheckedChange={field.onChange}
+                                    id="comments_enabled"
+                                    className="data-[state=checked]:bg-blue-500"
+                                  />
+                                  <Label htmlFor="comments_enabled" className="font-medium text-sm">
+                                    Comments
+                                  </Label>
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <InfoIcon className="h-4 w-4 text-muted-foreground" />
+                                      </TooltipTrigger>
+                                      <TooltipContent side="right" className="max-w-[280px]">
+                                        <p>
+                                          {field.value 
+                                            ? "Readers can leave comments on this article." 
+                                            : "Comments are disabled for this article."}
+                                        </p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </div>
+                                <p className="text-xs text-muted-foreground ml-12">
+                                  {field.value 
+                                    ? "Allows reader feedback" 
+                                    : "No reader feedback"}
+                                </p>
+                              </div>
+                            </div>
                           )}
-                        >
-                          {field.value ? "Published" : "Draft"}
-                        </Badge>
+                        />
                       </div>
-                    )}
-                  />
+                    </div>
+                  </div>
                   
-                  <FormField
-                    control={form.control}
-                    name="comments_enabled"
-                    render={({ field }) => (
-                      <div className="flex items-center gap-2 bg-white dark:bg-gray-800 px-3 py-1.5 rounded-lg border shadow-sm">
-                        <Switch 
-                          checked={field.value} 
-                          onCheckedChange={field.onChange}
-                          id="comments_enabled"
-                          className="data-[state=checked]:bg-blue-500"
-                        />
-                        <Badge 
-                          variant={field.value ? "default" : "outline"}
-                          className={cn(
-                            "font-normal text-xs",
-                            field.value ? "bg-blue-500 hover:bg-blue-600" : ""
-                          )}
-                        >
-                          {field.value ? "Comments On" : "Comments Off"}
-                        </Badge>
-                      </div>
-                    )}
-                  />
+                  {form.formState.isDirty && (
+                    <div className="flex items-center gap-2 bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 px-3 py-2 rounded border border-amber-200 dark:border-amber-700/50">
+                      <HelpCircle className="h-4 w-4" />
+                      <span className="text-sm">You have unsaved changes</span>
+                    </div>
+                  )}
                 </div>
                 
-                <div className="flex gap-2">
+                <div className="flex flex-wrap items-center justify-end gap-3">
                   <Button 
                     variant="outline"
-                    size="sm"
+                    size="default"
                     onClick={handlePreview}
+                    className="flex-grow md:flex-grow-0"
                   >
                     <EyeIcon className="mr-2 h-4 w-4" />
                     Preview
                   </Button>
                   
                   <Button 
-                    size="sm"
-                    className="bg-primary hover:bg-primary/90"
+                    size="default"
+                    className="bg-primary hover:bg-primary/90 flex-grow md:flex-grow-0"
                     disabled={saving}
                     onClick={form.handleSubmit(onSubmit)}
                   >
@@ -858,7 +912,10 @@ const ArticleEditor = () => {
                           </FormLabel>
                           <Card className="border shadow-none">
                             <CardContent className="p-1 sm:p-3">
-                              <div className="min-h-[250px] sm:min-h-[350px] md:min-h-[450px]">
+                              <div className={cn(
+                                "min-h-[250px]",
+                                isMobile ? "h-[350px]" : "h-[450px]"
+                              )}>
                                 <ReactQuill
                                   theme="snow"
                                   modules={modules}
@@ -867,7 +924,10 @@ const ArticleEditor = () => {
                                   onChange={(value) => {
                                     setEditorValue(value);
                                   }}
-                                  className="h-[250px] sm:h-[350px] md:h-[450px]"
+                                  className={cn(
+                                    isMobile ? "h-[350px]" : "h-[450px]",
+                                    "w-full overflow-auto"
+                                  )}
                                 />
                               </div>
                             </CardContent>
@@ -945,5 +1005,18 @@ const ArticleEditor = () => {
     </DashboardLayout>
   );
 };
+
+// Need to define Label component as it isn't imported
+const Label = React.forwardRef<
+  HTMLLabelElement, 
+  React.LabelHTMLAttributes<HTMLLabelElement>
+>(({ className, ...props }, ref) => (
+  <label
+    ref={ref}
+    className={cn("text-sm font-medium", className)}
+    {...props}
+  />
+));
+Label.displayName = "Label";
 
 export default ArticleEditor;
