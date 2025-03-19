@@ -42,10 +42,12 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
           />
         </div>
         
-        {/* Category and view count moved to bottom of image */}
+        {/* Category and view count at bottom of image */}
         <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent flex items-center gap-2">
           {article.category && (
-            <Badge className={`bg-${themeColor} text-${themeColor}-foreground`}>
+            <Badge 
+              className={`bg-${themeColor}-500 hover:bg-${themeColor}-600 border-none text-white`}
+            >
               {article.category}
             </Badge>
           )}
