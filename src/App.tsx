@@ -27,11 +27,13 @@ const queryClient = new QueryClient();
 
 const App = () => {
   const [isDbSetup, setIsDbSetup] = useState(false);
+  const [isDbLoading, setIsDbLoading] = useState(true);
   const [setupError, setSetupError] = useState<string | null>(null);
 
   useEffect(() => {
     const initDatabase = async () => {
       try {
+        setIsDbLoading(true);
         const result = await setupDatabase();
         setIsDbSetup(result);
         if (!result) {
@@ -41,6 +43,8 @@ const App = () => {
         console.error("Database setup failed:", error);
         setSetupError("Database setup failed. Check console for details.");
         setIsDbSetup(false);
+      } finally {
+        setIsDbLoading(false);
       }
     };
 
@@ -54,6 +58,11 @@ const App = () => {
           <TooltipProvider>
             <Toaster />
             <Sonner />
+            {isDbLoading && (
+              <div className="bg-blue-500 text-white p-2 text-center">
+                Setting up database, please wait...
+              </div>
+            )}
             {setupError && (
               <div className="bg-red-500 text-white p-2 text-center">
                 {setupError}
