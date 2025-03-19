@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "@/components/admin/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,20 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -80,13 +68,12 @@ const AdminComments = () => {
   const [viewCommentId, setViewCommentId] = useState<string | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<string>("all");
   const [articleOptions, setArticleOptions] = useState<{id: string, title: string}[]>([]);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [commentToDelete, setCommentToDelete] = useState<string | null>(null);
 
   const fetchComments = async () => {
     setLoading(true);
     
     try {
+      // Fetch all comments
       const { data: commentsData, error: commentsError } = await supabase
         .from("comments")
         .select("*")
@@ -94,6 +81,7 @@ const AdminComments = () => {
       
       if (commentsError) throw commentsError;
       
+      // Get article information for each comment
       if (commentsData && commentsData.length > 0) {
         const articleIds = [...new Set(commentsData.map(comment => comment.article_id))];
         
@@ -104,11 +92,13 @@ const AdminComments = () => {
           
         if (articlesError) throw articlesError;
         
+        // Set article options for filter
         setArticleOptions([
           { id: "all", title: "All Articles" },
           ...(articlesData || [])
         ]);
         
+        // Fetch replies for all comments
         const { data: repliesData, error: repliesError } = await supabase
           .from("comment_replies")
           .select("*")
@@ -117,6 +107,7 @@ const AdminComments = () => {
           
         if (repliesError) throw repliesError;
         
+        // Map replies to comments
         const repliesByCommentId: Record<string, CommentReply[]> = {};
         repliesData?.forEach(reply => {
           if (!repliesByCommentId[reply.comment_id]) {
@@ -125,6 +116,7 @@ const AdminComments = () => {
           repliesByCommentId[reply.comment_id].push(reply as CommentReply);
         });
         
+        // Create enhanced comments with article titles and replies
         const enhancedComments = commentsData.map(comment => {
           const article = articlesData?.find(article => article.id === comment.article_id);
           return {
@@ -219,6 +211,7 @@ const AdminComments = () => {
       setIsPasswordVerified(false);
       setAdminPassword("");
       
+      // Refresh comments to show the new reply
       fetchComments();
     } catch (error) {
       console.error("Error posting admin reply:", error);
@@ -228,50 +221,41 @@ const AdminComments = () => {
     }
   };
 
-  const initiateDeleteComment = (commentId: string) => {
-    setCommentToDelete(commentId);
-    setDeleteConfirmOpen(true);
-  };
-
-  const deleteComment = async () => {
-    if (!commentToDelete) return;
+  const deleteComment = async (commentId: string) => {
+    if (!window.confirm("Are you sure you want to delete this comment?")) {
+      return;
+    }
 
     try {
-      setIsSubmitting(true);
-      
+      // First delete all replies to this comment
       const { error: replyError } = await supabase
         .from("comment_replies")
         .delete()
-        .eq("comment_id", commentToDelete);
+        .eq("comment_id", commentId);
       
       if (replyError) throw replyError;
       
+      // Then delete the comment itself
       const { error } = await supabase
         .from("comments")
         .delete()
-        .eq("id", commentToDelete);
+        .eq("id", commentId);
         
       if (error) throw error;
       
-      toast.success("Comment and all replies deleted successfully");
+      toast.success("Comment deleted successfully");
       
-      setComments(prev => prev.filter(c => c.id !== commentToDelete));
-      
-      if (viewCommentId === commentToDelete) {
-        setViewCommentId(null);
-      }
-      
-      setCommentToDelete(null);
-      setDeleteConfirmOpen(false);
+      // Update local state
+      setComments(prev => prev.filter(c => c.id !== commentId));
     } catch (error) {
       console.error("Error deleting comment:", error);
       toast.error("Failed to delete comment");
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
+  // Filter and sort the comments
   let filteredComments = comments.filter(comment => {
+    // Search filter
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = 
       comment.name.toLowerCase().includes(searchLower) ||
@@ -279,11 +263,13 @@ const AdminComments = () => {
       comment.content.toLowerCase().includes(searchLower) ||
       comment.article_title?.toLowerCase().includes(searchLower);
     
+    // Tab filter
     const matchesTab = 
       selectedTab === "all" || 
       (selectedTab === "replied" && comment.replies && comment.replies.length > 0) ||
       (selectedTab === "unreplied" && (!comment.replies || comment.replies.length === 0));
     
+    // Article filter
     const matchesArticle = 
       selectedArticle === "all" || 
       comment.article_id === selectedArticle;
@@ -291,6 +277,7 @@ const AdminComments = () => {
     return matchesSearch && matchesTab && matchesArticle;
   });
 
+  // Sort the comments
   if (sortBy === "newest") {
     filteredComments.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   } else if (sortBy === "oldest") {
@@ -381,6 +368,7 @@ const AdminComments = () => {
           </TabsContent>
         </Tabs>
         
+        {/* Admin Reply Dialog */}
         {replyingToComment && (
           <Dialog open={!!replyingToComment} onOpenChange={(open) => !open && setReplyingToComment(null)}>
             <DialogContent className="sm:max-w-md">
@@ -446,6 +434,7 @@ const AdminComments = () => {
           </Dialog>
         )}
         
+        {/* View Comment Dialog */}
         {viewCommentId && (
           <Dialog 
             open={!!viewCommentId} 
@@ -542,28 +531,6 @@ const AdminComments = () => {
             </DialogContent>
           </Dialog>
         )}
-        
-        <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to delete this comment? This will permanently remove the comment and all its replies.
-                This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setCommentToDelete(null)}>Cancel</AlertDialogCancel>
-              <AlertDialogAction 
-                onClick={deleteComment}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Deleting..." : "Delete"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </div>
     </DashboardLayout>
   );
@@ -633,7 +600,7 @@ const AdminComments = () => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => initiateDeleteComment(comment.id)}
+                  onClick={() => deleteComment(comment.id)}
                   className="text-destructive hover:text-destructive"
                   title="Delete comment"
                 >
