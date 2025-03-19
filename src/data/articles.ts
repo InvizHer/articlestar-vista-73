@@ -68,7 +68,9 @@ TypeScript makes React development more predictable and maintainable, especially
     readTime: "5 min read",
     category: "Development",
     tags: ["React", "TypeScript", "Web Development"],
-    coverImage: "/placeholder.svg"
+    coverImage: "/placeholder.svg",
+    featured: true,
+    viewCount: 1250
   },
   {
     id: "2",
@@ -141,7 +143,9 @@ CSS Grid Layout has transformed web layout design. With broad browser support an
     readTime: "7 min read",
     category: "CSS",
     tags: ["CSS", "Web Design", "Layout"],
-    coverImage: "/placeholder.svg"
+    coverImage: "/placeholder.svg",
+    editorPick: true,
+    viewCount: 980
   },
   {
     id: "3",
@@ -213,7 +217,9 @@ While Tailwind's utility-first approach might seem verbose at first, the product
     readTime: "6 min read",
     category: "CSS",
     tags: ["Tailwind", "CSS", "Frontend"],
-    coverImage: "/placeholder.svg"
+    coverImage: "/placeholder.svg",
+    editorPick: true,
+    viewCount: 875
   }
 ];
 
