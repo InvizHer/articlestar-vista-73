@@ -21,9 +21,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -238,24 +236,24 @@ const AdminComments = () => {
     try {
       setIsSubmitting(true);
       
-      const { error: replyError } = await supabase
+      const { error: repliesError } = await supabase
         .from("comment_replies")
         .delete()
         .eq("comment_id", commentToDelete);
       
-      if (replyError) {
-        console.error("Error deleting replies:", replyError);
-        throw replyError;
+      if (repliesError) {
+        console.error("Error deleting replies:", repliesError);
+        throw repliesError;
       }
       
-      const { error } = await supabase
+      const { error: commentError } = await supabase
         .from("comments")
         .delete()
         .eq("id", commentToDelete);
         
-      if (error) {
-        console.error("Error deleting comment:", error);
-        throw error;
+      if (commentError) {
+        console.error("Error deleting comment:", commentError);
+        throw commentError;
       }
       
       toast.success("Comment and all replies deleted successfully");
@@ -266,9 +264,9 @@ const AdminComments = () => {
         setViewCommentId(null);
       }
       
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting comment:", error);
-      toast.error("Failed to delete comment");
+      toast.error(`Failed to delete comment: ${error.message || "Unknown error"}`);
     } finally {
       setIsSubmitting(false);
       setDeleteDialogOpen(false);

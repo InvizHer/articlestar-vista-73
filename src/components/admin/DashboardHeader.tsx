@@ -1,7 +1,7 @@
 
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Menu, X, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAdmin } from "@/context/AdminContext";
 import { 
@@ -13,17 +13,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "@/hooks/use-theme";
-import { AnimatePresence, motion } from "framer-motion";
 
-interface DashboardHeaderProps {
-  toggleSidebar: () => void;
-  sidebarOpen: boolean;
-}
-
-const DashboardHeader: React.FC<DashboardHeaderProps> = ({ 
-  toggleSidebar,
-  sidebarOpen
-}) => {
+const DashboardHeader: React.FC = () => {
   const { admin, logout } = useAdmin();
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
@@ -41,30 +32,8 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
     <header className="sticky top-0 z-30 bg-white border-b dark:bg-gray-800 dark:border-gray-700 h-16 shadow-sm">
       <div className="flex h-full items-center justify-between px-4 md:px-6">
         <div className="flex items-center">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="mr-2" 
-            onClick={toggleSidebar}
-            aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
-          >
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.div
-                key={sidebarOpen ? "close" : "open"}
-                initial={{ rotate: -90, opacity: 0 }}
-                animate={{ rotate: 0, opacity: 1 }}
-                exit={{ rotate: 90, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </motion.div>
-            </AnimatePresence>
-          </Button>
-          
-          <div className="flex items-center gap-2">
-            <div className="hidden md:block text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-600">
-              BlogHub
-            </div>
+          <div className="hidden md:block text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-600">
+            Admin Panel
           </div>
         </div>
         
