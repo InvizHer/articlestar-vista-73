@@ -1,9 +1,20 @@
 
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { MessageSquare, Heart, ChevronDown, ChevronUp, Reply } from "lucide-react";
+import { MessageSquare, Heart, ChevronDown, ChevronUp, Reply, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import CommentForm from "./CommentForm";
 import { cn } from "@/lib/utils";
 import { Comment, CommentReply } from "@/types/blog";
@@ -20,6 +31,9 @@ const Comments: React.FC<CommentsProps> = ({ articleId }) => {
   const [showAllComments, setShowAllComments] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchComments = async () => {
     setLoading(true);
@@ -107,6 +121,59 @@ const Comments: React.FC<CommentsProps> = ({ articleId }) => {
     }
   };
 
+  const initiateDeleteComment = (commentId: string) => {
+    setCommentToDelete(commentId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteComment = async () => {
+    if (!commentToDelete) return;
+    
+    setIsDeleting(true);
+    
+    try {
+      // First, delete all replies for this comment
+      const { error: repliesError } = await supabase
+        .from("comment_replies")
+        .delete()
+        .eq("comment_id", commentToDelete);
+      
+      if (repliesError) {
+        throw repliesError;
+      }
+      
+      // Then delete the comment itself
+      const { error: commentError } = await supabase
+        .from("comments")
+        .delete()
+        .eq("id", commentToDelete);
+      
+      if (commentError) {
+        throw commentError;
+      }
+      
+      // Update local state
+      setComments(comments.filter(comment => comment.id !== commentToDelete));
+      
+      // Remove from replies map
+      const newReplies = { ...replies };
+      delete newReplies[commentToDelete];
+      setReplies(newReplies);
+      
+      // Update total count
+      setTotalCount(prev => prev - 1);
+      
+      toast.success("Comment and all replies deleted successfully");
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      toast.error("Failed to delete comment. Please try again.");
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+      setCommentToDelete(null);
+    }
+  };
+
   const displayedComments = showAllComments ? comments : comments.slice(0, 3);
   const hasMoreComments = comments.length > 3;
 
@@ -163,6 +230,15 @@ const Comments: React.FC<CommentsProps> = ({ articleId }) => {
                       >
                         <Reply className="h-3.5 w-3.5 mr-1" />
                         <span>Reply</span>
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-8 px-2 text-xs text-destructive hover:text-destructive/80 hover:bg-destructive/10"
+                        onClick={() => initiateDeleteComment(comment.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5 mr-1" />
+                        <span>Delete</span>
                       </Button>
                     </div>
                     
@@ -232,6 +308,27 @@ const Comments: React.FC<CommentsProps> = ({ articleId }) => {
           </>
         )}
       </div>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Comment</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this comment? This will also remove all replies. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteComment} 
+              disabled={isDeleting}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
