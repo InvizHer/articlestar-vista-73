@@ -1,16 +1,33 @@
+
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import { supabase } from "@/integrations/supabase/client";
 import { DbArticle } from "@/types/database";
 import { Article as ArticleType } from "@/types/blog";
-import { CalendarIcon, Clock, ChevronLeft, Share2, Twitter, Facebook, Linkedin, Eye, User, MessageCircle, Heart, UserCircle, MessageSquare } from "lucide-react";
+import { 
+  CalendarIcon, 
+  Clock, 
+  ChevronLeft, 
+  Share2, 
+  Twitter, 
+  Facebook, 
+  Linkedin, 
+  Eye, 
+  Heart,
+  BookmarkPlus,
+  MessageSquare,
+  Copy,
+  ArrowLeft,
+  ArrowRight
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { TableOfContents } from "@/components/blog/TableOfContents";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 import {
   Popover,
   PopoverContent,
@@ -19,14 +36,16 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTheme } from "@/hooks/use-theme";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-// Define the WhatsAppIcon component
+// WhatsApp Icon component
 const WhatsAppIcon = ({ className }: { className?: string }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -41,31 +60,7 @@ const WhatsAppIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const convertDbArticleToArticle = (dbArticle: DbArticle): ArticleType => {
-  return {
-    id: dbArticle.id,
-    title: dbArticle.title,
-    slug: dbArticle.slug,
-    excerpt: dbArticle.excerpt,
-    content: dbArticle.content,
-    author: {
-      name: dbArticle.author_name,
-      avatar: dbArticle.author_avatar || "/placeholder.svg"
-    },
-    date: new Date(dbArticle.date).toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    }),
-    readTime: dbArticle.read_time,
-    category: dbArticle.category,
-    tags: dbArticle.tags,
-    coverImage: dbArticle.cover_image || "/placeholder.svg",
-    published: dbArticle.published,
-    viewCount: dbArticle.view_count || 0
-  };
-};
-
+// Author Profile Dialog Component
 const AuthorProfile = ({ author }: { author: ArticleType['author'] }) => {
   const [isOpen, setIsOpen] = useState(false);
   
@@ -73,17 +68,11 @@ const AuthorProfile = ({ author }: { author: ArticleType['author'] }) => {
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="w-full rounded-full">
-          <UserCircle className="h-4 w-4 mr-2" />
-          View Profile
+          View Author Profile
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md p-0 overflow-hidden rounded-xl border border-purple-200 dark:border-purple-900/50 bg-gradient-to-br from-background to-purple-50/50 dark:from-background dark:to-purple-950/10 backdrop-blur-sm">
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="h-32 bg-gradient-to-r from-primary to-purple-500 relative"
-        >
+      <DialogContent className="sm:max-w-md p-0 overflow-hidden rounded-xl">
+        <div className="h-28 bg-gradient-to-r from-primary/80 to-primary/50 relative">
           <div className="absolute -bottom-12 left-6 w-24 h-24 rounded-full border-4 border-background overflow-hidden shadow-md">
             <img 
               src={author.avatar} 
@@ -91,28 +80,23 @@ const AuthorProfile = ({ author }: { author: ArticleType['author'] }) => {
               className="w-full h-full object-cover"
             />
           </div>
-        </motion.div>
+        </div>
         
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2, duration: 0.3 }}
-          className="pt-16 px-6 pb-6"
-        >
+        <div className="pt-16 px-6 pb-6">
           <h2 className="text-2xl font-bold mb-1">{author.name}</h2>
           <p className="text-muted-foreground">Content Creator & Writer</p>
           
           <div className="flex items-center gap-4 mt-4 mb-6">
             <div className="text-center">
-              <p className="text-xl font-bold">42</p>
+              <p className="text-lg font-bold">42</p>
               <p className="text-xs text-muted-foreground">Articles</p>
             </div>
             <div className="text-center">
-              <p className="text-xl font-bold">15.2k</p>
+              <p className="text-lg font-bold">15.2k</p>
               <p className="text-xs text-muted-foreground">Readers</p>
             </div>
             <div className="text-center">
-              <p className="text-xl font-bold">4.8</p>
+              <p className="text-lg font-bold">4.8</p>
               <p className="text-xs text-muted-foreground">Rating</p>
             </div>
           </div>
@@ -125,34 +109,210 @@ const AuthorProfile = ({ author }: { author: ArticleType['author'] }) => {
           
           <h3 className="font-medium mb-2">Connect</h3>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" className="rounded-full h-9 w-9 text-[#1DA1F2]">
+            <Button variant="outline" size="icon" className="rounded-full h-9 w-9">
               <Twitter className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="icon" className="rounded-full h-9 w-9 text-[#1877F2]">
+            <Button variant="outline" size="icon" className="rounded-full h-9 w-9">
               <Facebook className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="icon" className="rounded-full h-9 w-9 text-[#0A66C2]">
+            <Button variant="outline" size="icon" className="rounded-full h-9 w-9">
               <Linkedin className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="icon" className="rounded-full h-9 w-9 text-[#25D366]">
+            <Button variant="outline" size="icon" className="rounded-full h-9 w-9">
               <WhatsAppIcon className="h-4 w-4" />
             </Button>
           </div>
-        </motion.div>
+        </div>
       </DialogContent>
     </Dialog>
   );
 };
 
+// Related Article Card Component
+const RelatedArticleCard = ({ article }: { article: Partial<ArticleType> }) => (
+  <motion.div 
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.3 }}
+    className="group"
+  >
+    <Link to={`/article/${article.slug}`} className="flex gap-3 items-center rounded-lg overflow-hidden">
+      <div className="h-16 w-16 rounded-md overflow-hidden flex-shrink-0 bg-muted">
+        <img
+          src={article.coverImage}
+          alt={article.title}
+          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+        />
+      </div>
+      <div className="flex-1">
+        <h4 className="text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors">
+          {article.title}
+        </h4>
+        <p className="text-xs text-muted-foreground mt-1">
+          {article.date}
+        </p>
+      </div>
+    </Link>
+  </motion.div>
+);
+
+// Comment Component
+const CommentBox = () => {
+  return (
+    <div className="mt-6 p-4 border rounded-xl bg-card">
+      <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+        <MessageSquare className="h-5 w-5" />
+        Discussion
+      </h3>
+      
+      <div className="space-y-6">
+        <div className="flex gap-4">
+          <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+            <img 
+              src="/placeholder.svg" 
+              alt="User avatar" 
+              className="h-full w-full object-cover"
+            />
+          </div>
+          <div className="flex-1 space-y-1">
+            <div className="flex items-center justify-between">
+              <p className="font-medium">Alex Johnson</p>
+              <p className="text-xs text-muted-foreground">2 days ago</p>
+            </div>
+            <p className="text-sm">Great article! I particularly enjoyed the insights on the impact of technology on modern society.</p>
+            <div className="flex items-center gap-4 pt-1">
+              <button className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
+                <Heart className="h-3 w-3" /> 12
+              </button>
+              <button className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
+                <MessageSquare className="h-3 w-3" /> Reply
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex gap-4 pl-12">
+          <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0">
+            <img 
+              src="/placeholder.svg" 
+              alt="User avatar" 
+              className="h-full w-full object-cover"
+            />
+          </div>
+          <div className="flex-1 space-y-1">
+            <div className="flex items-center justify-between">
+              <p className="font-medium">Taylor Swift</p>
+              <p className="text-xs text-muted-foreground">1 day ago</p>
+            </div>
+            <p className="text-sm">I agree! The analysis was very thorough.</p>
+            <div className="flex items-center gap-4 pt-1">
+              <button className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
+                <Heart className="h-3 w-3" /> 5
+              </button>
+              <button className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
+                <MessageSquare className="h-3 w-3" /> Reply
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div className="pt-4">
+          <div className="flex gap-4">
+            <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+              <img 
+                src="/placeholder.svg" 
+                alt="Your avatar" 
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <div className="flex-1">
+              <textarea 
+                className="w-full p-3 rounded-lg border text-sm min-h-[100px] bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                placeholder="Add to the discussion..."
+              ></textarea>
+              <div className="flex justify-end mt-2">
+                <Button className="rounded-full" size="sm">Post Comment</Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Reading Progress Bar
+const ReadingProgressBar = () => {
+  const [progress, setProgress] = useState(0);
+  
+  useEffect(() => {
+    const updateReadingProgress = () => {
+      const currentProgress = window.scrollY;
+      const scrollHeight = document.body.scrollHeight - window.innerHeight;
+      if (scrollHeight) {
+        setProgress(Number((currentProgress / scrollHeight).toFixed(2)) * 100);
+      }
+    };
+    
+    window.addEventListener('scroll', updateReadingProgress);
+    
+    return () => {
+      window.removeEventListener('scroll', updateReadingProgress);
+    };
+  }, []);
+  
+  return (
+    <div className="fixed top-0 left-0 w-full h-1 z-50">
+      <div 
+        className="h-full bg-primary transition-all duration-150" 
+        style={{ width: `${progress}%` }}
+      ></div>
+    </div>
+  );
+};
+
+// Main Article Component
 const Article = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [article, setArticle] = useState<ArticleType | null>(null);
+  const [relatedArticles, setRelatedArticles] = useState<Partial<ArticleType>[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
   const viewCountedRef = useRef(false);
   const isMobile = useIsMobile();
+  const { themeColor } = useTheme();
 
+  // Function to convert database article to article type
+  const convertDbArticleToArticle = (dbArticle: DbArticle): ArticleType => {
+    return {
+      id: dbArticle.id,
+      title: dbArticle.title,
+      slug: dbArticle.slug,
+      excerpt: dbArticle.excerpt,
+      content: dbArticle.content,
+      author: {
+        name: dbArticle.author_name,
+        avatar: dbArticle.author_avatar || "/placeholder.svg"
+      },
+      date: new Date(dbArticle.date).toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      }),
+      readTime: dbArticle.read_time,
+      category: dbArticle.category,
+      tags: dbArticle.tags,
+      coverImage: dbArticle.cover_image || "/placeholder.svg",
+      published: dbArticle.published,
+      viewCount: dbArticle.view_count || 0
+    };
+  };
+
+  // Effect to fetch article data
   useEffect(() => {
     if (slug) {
       fetchArticle(slug);
@@ -161,6 +321,7 @@ const Article = () => {
     window.scrollTo(0, 0);
   }, [slug]);
 
+  // Increment view count
   const incrementViewCount = async (articleId: string) => {
     if (viewCountedRef.current) return;
     
@@ -177,6 +338,7 @@ const Article = () => {
     }
   };
 
+  // Fetch article data
   const fetchArticle = async (slug: string) => {
     try {
       const { data, error } = await supabase
@@ -193,8 +355,12 @@ const Article = () => {
       if (data) {
         const articleData = convertDbArticleToArticle(data);
         setArticle(articleData);
+        setLikeCount(Math.floor(Math.random() * 150) + 5); // Mock like count
         
         incrementViewCount(data.id);
+        
+        // Fetch related articles (mock data for now)
+        fetchRelatedArticles(data.category);
         
         setTimeout(() => {
           if (contentRef.current) {
@@ -218,6 +384,41 @@ const Article = () => {
     }
   };
 
+  // Fetch related articles
+  const fetchRelatedArticles = async (category: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("articles")
+        .select("id, title, slug, cover_image, date")
+        .eq("category", category)
+        .eq("published", true)
+        .neq("slug", slug)
+        .limit(4);
+
+      if (error) {
+        throw error;
+      }
+
+      if (data) {
+        const formattedArticles = data.map(article => ({
+          id: article.id,
+          title: article.title,
+          slug: article.slug,
+          coverImage: article.cover_image || "/placeholder.svg",
+          date: new Date(article.date).toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric' 
+          })
+        }));
+        setRelatedArticles(formattedArticles);
+      }
+    } catch (error) {
+      console.error("Error fetching related articles:", error);
+    }
+  };
+
+  // Handle share functionality
   const handleShare = (platform: string) => {
     const url = window.location.href;
     let shareUrl = '';
@@ -235,6 +436,10 @@ const Article = () => {
       case 'whatsapp':
         shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(article!.title + ' ' + url)}`;
         break;
+      case 'copy':
+        navigator.clipboard.writeText(url);
+        toast.success("Link copied to clipboard");
+        return;
       default:
         navigator.clipboard.writeText(url);
         toast.success("Link copied to clipboard");
@@ -244,13 +449,35 @@ const Article = () => {
     window.open(shareUrl, '_blank', 'width=600,height=400');
   };
 
+  // Toggle bookmark state
+  const toggleBookmark = () => {
+    setIsBookmarked(!isBookmarked);
+    if (!isBookmarked) {
+      toast.success("Article saved to bookmarks");
+    } else {
+      toast.success("Article removed from bookmarks");
+    }
+  };
+
+  // Toggle like state
+  const toggleLike = () => {
+    if (!isLiked) {
+      setLikeCount(likeCount + 1);
+    } else {
+      setLikeCount(likeCount - 1);
+    }
+    setIsLiked(!isLiked);
+  };
+
+  // Loading state UI
   if (loading) {
     return (
       <Layout>
-        <div className="flex flex-col items-center justify-center min-h-[50vh] py-12">
+        <ReadingProgressBar />
+        <div className="flex flex-col items-center justify-center min-h-[60vh] py-8">
           <div className="animate-pulse space-y-8 w-full max-w-3xl">
             <div className="h-8 bg-muted rounded w-2/3 mx-auto"></div>
-            <div className="h-96 bg-muted rounded w-full"></div>
+            <div className="h-[300px] bg-muted rounded-xl w-full"></div>
             <div className="space-y-4">
               <div className="h-4 bg-muted rounded w-full"></div>
               <div className="h-4 bg-muted rounded w-full"></div>
@@ -264,170 +491,76 @@ const Article = () => {
 
   if (!article) return null;
 
+  // Get theme color for badges
+  const getBadgeClass = () => {
+    switch(themeColor) {
+      case 'blue':
+        return 'bg-blue-500';
+      case 'purple':
+        return 'bg-purple-500';
+      case 'green':
+        return 'bg-green-500';
+      case 'orange':
+        return 'bg-orange-500';
+      case 'pink':
+        return 'bg-pink-500';
+      default:
+        return 'bg-primary';
+    }
+  };
+
   return (
     <Layout>
-      <div className="w-full">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="text-muted-foreground hover:text-primary mb-6"
-            onClick={() => navigate(-1)}
-          >
-            <ChevronLeft className="mr-1 h-4 w-4" />
-            Back
-          </Button>
-          
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="flex flex-col lg:flex-row gap-8"
-          >
-            <div className="w-full lg:w-3/4">
-              <div className="mb-8">
-                <div className="flex items-center gap-2 mb-4">
-                  <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
-                    {article.category}
-                  </Badge>
-                  <Badge variant="secondary" className="flex items-center gap-1">
-                    <Eye className="h-3 w-3" />
-                    {article.viewCount} views
-                  </Badge>
-                </div>
-
-                <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight mb-6 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                  {article.title}
-                </h1>
-
-                <div className="relative p-6 rounded-xl bg-gradient-to-r from-purple-50/50 to-background border border-purple-100/50 dark:from-purple-950/10 dark:to-background dark:border-purple-900/20 mb-8">
-                  <div className="absolute -top-4 -left-4 w-24 h-24 rounded-full bg-gradient-to-br from-primary/20 to-purple-500/20 blur-3xl opacity-50 z-0"></div>
-                  
-                  <div className="flex flex-col gap-4 relative z-10">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-full overflow-hidden bg-muted ring-2 ring-primary/20">
-                          <img 
-                            src={article.author.avatar} 
-                            alt={article.author.name} 
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div>
-                          <div className="font-medium">{article.author.name}</div>
-                          <div className="flex items-center text-xs text-muted-foreground">
-                            <User className="h-3 w-3 mr-1" />
-                            Author
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button variant="outline" size="sm" className="rounded-full gap-1">
-                              <Share2 className="h-4 w-4" />
-                              <span className={isMobile ? "sr-only" : ""}>Share</span>
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-2" align="end">
-                            <div className="flex gap-2">
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="rounded-full text-[#1DA1F2] hover:bg-[#1DA1F2]/10"
-                                onClick={() => handleShare('twitter')}
-                              >
-                                <Twitter className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="rounded-full text-[#1877F2] hover:bg-[#1877F2]/10"
-                                onClick={() => handleShare('facebook')}
-                              >
-                                <Facebook className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="rounded-full text-[#0A66C2] hover:bg-[#0A66C2]/10"
-                                onClick={() => handleShare('linkedin')}
-                              >
-                                <Linkedin className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="rounded-full text-[#25D366] hover:bg-[#25D366]/10"
-                                onClick={() => handleShare('whatsapp')}
-                              >
-                                <WhatsAppIcon className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="rounded-full"
-                                onClick={() => handleShare('')}
-                              >
-                                <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <path d="M5 2V1H10V2H5ZM4.75 0C4.33579 0 4 0.335786 4 0.75V1H3.5C2.67157 1 2 1.67157 2 2.5V12.5C2 13.3284 2.67157 14 3.5 14H11.5C12.3284 14 13 13.3284 13 12.5V2.5C13 1.67157 12.3284 1 11.5 1H11V0.75C11 0.335786 10.6642 0 10.25 0H4.75ZM11 2V2.25C11 2.66421 10.6642 3 10.25 3H4.75C4.33579 3 4 2.66421 4 2.25V2H3.5C3.22386 2 3 2.22386 3 2.5V12.5C3 12.7761 3.22386 13 3.5 13H11.5C11.7761 13 12 12.7761 12 12.5V2.5C12 2.22386 11.7761 2 11.5 2H11Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
-                                </svg>
-                              </Button>
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground rounded-full bg-muted/50 px-4 py-1.5 w-fit">
-                      <div className="flex items-center gap-2">
-                        <CalendarIcon className="h-4 w-4 text-primary/70" />
-                        <span>{article.date}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-primary/70" />
-                        <span>{article.readTime}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="aspect-[21/9] w-full overflow-hidden rounded-xl shadow-md mb-10 bg-gradient-to-r from-primary/10 to-purple-500/10 p-1">
-                <div className="w-full h-full rounded-lg overflow-hidden">
-                  <img
-                    src={article.coverImage}
-                    alt={article.title}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-              </div>
-
-              <div 
-                ref={contentRef}
-                className="prose prose-slate dark:prose-invert max-w-none prose-img:rounded-lg prose-headings:font-bold prose-a:text-primary hover:prose-a:text-primary/80 prose-headings:scroll-m-20 prose-p:leading-7 prose-blockquote:border-l-primary/50 prose-pre:bg-muted"
-                dangerouslySetInnerHTML={{ __html: article.content }}
-              />
-
-              {article.tags && article.tags.length > 0 && (
-                <div className="mt-8 pt-6 border-t">
-                  <h4 className="text-sm font-medium mb-3">Tags</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {article.tags.map((tag, idx) => (
-                      <Badge key={idx} variant="secondary" className="bg-gradient-to-r from-primary/10 to-purple-500/10 text-primary border-primary/20">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="mt-8 pt-6 border-t">
-                <div className="flex flex-wrap items-center justify-between gap-4">
+      <ReadingProgressBar />
+      
+      {/* Article Header */}
+      <div className="w-full bg-gradient-to-b from-muted/50 to-background pt-6 pb-4 -mt-6">
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="flex items-center justify-between mb-6">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="gap-1 text-muted-foreground hover:text-foreground"
+              onClick={() => navigate(-1)}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span className={isMobile ? "sr-only" : ""}>Back</span>
+            </Button>
+            
+            <div className="flex gap-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="rounded-full"
+                      onClick={toggleBookmark}
+                    >
+                      <BookmarkPlus 
+                        className={cn(
+                          "h-4 w-4", 
+                          isBookmarked && "fill-primary text-primary"
+                        )} 
+                      />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {isBookmarked ? "Remove bookmark" : "Save article"}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="icon" className="rounded-full">
+                    <Share2 className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-2" align="end">
                   <div className="flex gap-2">
                     <Button 
-                      variant="outline" 
+                      variant="ghost" 
                       size="icon" 
                       className="rounded-full text-[#1DA1F2] hover:bg-[#1DA1F2]/10"
                       onClick={() => handleShare('twitter')}
@@ -435,7 +568,7 @@ const Article = () => {
                       <Twitter className="h-4 w-4" />
                     </Button>
                     <Button 
-                      variant="outline" 
+                      variant="ghost" 
                       size="icon" 
                       className="rounded-full text-[#1877F2] hover:bg-[#1877F2]/10"
                       onClick={() => handleShare('facebook')}
@@ -443,7 +576,7 @@ const Article = () => {
                       <Facebook className="h-4 w-4" />
                     </Button>
                     <Button 
-                      variant="outline" 
+                      variant="ghost" 
                       size="icon" 
                       className="rounded-full text-[#0A66C2] hover:bg-[#0A66C2]/10"
                       onClick={() => handleShare('linkedin')}
@@ -451,66 +584,301 @@ const Article = () => {
                       <Linkedin className="h-4 w-4" />
                     </Button>
                     <Button 
-                      variant="outline" 
+                      variant="ghost" 
                       size="icon" 
                       className="rounded-full text-[#25D366] hover:bg-[#25D366]/10"
                       onClick={() => handleShare('whatsapp')}
                     >
                       <WhatsAppIcon className="h-4 w-4" />
                     </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="rounded-full"
+                      onClick={() => handleShare('copy')}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="max-w-5xl mx-auto px-4 py-2">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="flex flex-col lg:flex-row gap-8"
+        >
+          {/* Main content */}
+          <div className="w-full lg:w-2/3">
+            <div className="mb-6">
+              <Badge 
+                className={cn(
+                  getBadgeClass(), 
+                  "text-white border-none mb-4"
+                )}
+              >
+                {article.category}
+              </Badge>
+
+              <h1 className="text-3xl md:text-4xl font-bold mb-4 leading-tight">
+                {article.title}
+              </h1>
+
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground mb-6">
+                <div className="flex items-center gap-1">
+                  <CalendarIcon className="h-4 w-4" />
+                  <span>{article.date}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Clock className="h-4 w-4" />
+                  <span>{article.readTime}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Eye className="h-4 w-4" />
+                  <span>{article.viewCount} views</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Cover image */}
+            <div className="rounded-xl overflow-hidden mb-8 shadow-md">
+              <img
+                src={article.coverImage}
+                alt={article.title}
+                className="w-full h-auto object-cover aspect-video"
+              />
+            </div>
+
+            {/* Author info (mobile) */}
+            <div className="block lg:hidden">
+              <AuthorCard author={article.author} themeColor={themeColor} />
+            </div>
+
+            {/* Article content */}
+            <div 
+              ref={contentRef}
+              className="prose prose-slate dark:prose-invert max-w-none mb-8 prose-img:rounded-lg prose-headings:font-bold prose-a:text-primary hover:prose-a:text-primary/80 prose-p:leading-7"
+              dangerouslySetInnerHTML={{ __html: article.content }}
+            />
+
+            {/* Tags */}
+            {article.tags && article.tags.length > 0 && (
+              <div className="mb-8">
+                <h4 className="text-sm font-medium mb-3">Tags</h4>
+                <div className="flex flex-wrap gap-2">
+                  {article.tags.map((tag, idx) => (
+                    <Badge key={idx} variant="secondary" className="rounded-md">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Interactive action bar */}
+            <div className="flex items-center justify-between py-3 border-y mb-8">
+              <div className="flex items-center gap-4">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="gap-2"
+                  onClick={toggleLike}
+                >
+                  <Heart 
+                    className={cn(
+                      "h-4 w-4", 
+                      isLiked && "fill-red-500 text-red-500"
+                    )}
+                  />
+                  <span>{likeCount}</span>
+                </Button>
+                
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="gap-2"
+                  onClick={() => document.getElementById('comments')?.scrollIntoView({ behavior: 'smooth' })}
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  <span>Comments</span>
+                </Button>
+              </div>
+              
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="gap-2"
+                onClick={toggleBookmark}
+              >
+                <BookmarkPlus 
+                  className={cn(
+                    "h-4 w-4", 
+                    isBookmarked && "fill-primary text-primary"
+                  )} 
+                />
+                <span>{isBookmarked ? "Saved" : "Save"}</span>
+              </Button>
+            </div>
+
+            {/* Comments Section */}
+            <div id="comments">
+              <CommentBox />
+            </div>
+            
+            {/* Article navigation for mobile */}
+            {isMobile && relatedArticles.length > 0 && (
+              <div className="mt-10 pt-6 border-t">
+                <h3 className="font-bold text-xl mb-4">Related Articles</h3>
+                <div className="grid grid-cols-1 gap-4">
+                  {relatedArticles.slice(0, 3).map((article, idx) => (
+                    <RelatedArticleCard key={idx} article={article} />
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Article navigation */}
+            <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Link 
+                to={`/articles`} 
+                className="group p-4 border rounded-xl flex items-center gap-3 hover:bg-muted/50 transition-colors"
+              >
+                <div className="h-10 w-10 rounded-full flex items-center justify-center bg-muted group-hover:bg-background transition-colors">
+                  <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground block">Previous</span>
+                  <span className="font-medium">Back to Articles</span>
+                </div>
+              </Link>
+              
+              {relatedArticles.length > 0 && (
+                <Link 
+                  to={`/article/${relatedArticles[0].slug}`} 
+                  className="group p-4 border rounded-xl flex items-center justify-end gap-3 text-right hover:bg-muted/50 transition-colors"
+                >
+                  <div>
+                    <span className="text-xs text-muted-foreground block">Next</span>
+                    <span className="font-medium line-clamp-1">{relatedArticles[0].title}</span>
+                  </div>
+                  <div className="h-10 w-10 rounded-full flex items-center justify-center bg-muted group-hover:bg-background transition-colors">
+                    <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                </Link>
+              )}
+            </div>
+          </div>
+          
+          {/* Sidebar */}
+          <div className="w-full lg:w-1/3 space-y-6">
+            {/* Author Card (desktop) */}
+            <div className="hidden lg:block sticky top-24">
+              <AuthorCard author={article.author} themeColor={themeColor} />
+            </div>
+            
+            {/* Table of Contents */}
+            <div className="hidden lg:block sticky top-[280px]">
+              <TableOfContents contentRef={contentRef} />
+            </div>
+            
+            {/* Related Articles */}
+            {!isMobile && relatedArticles.length > 0 && (
+              <div className="hidden lg:block sticky top-[440px]">
+                <div className="rounded-xl border p-5 bg-card">
+                  <h3 className="font-bold text-lg mb-4">Related Articles</h3>
+                  <div className="space-y-4">
+                    {relatedArticles.map((article, idx) => (
+                      <RelatedArticleCard key={idx} article={article} />
+                    ))}
                   </div>
                 </div>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      </div>
+    </Layout>
+  );
+};
+
+// Author Card Component (extracted from main component)
+const AuthorCard = ({ 
+  author, 
+  themeColor 
+}: { 
+  author: ArticleType['author'], 
+  themeColor: string 
+}) => {
+  return (
+    <div className="rounded-xl border bg-card p-5 mb-6 lg:mb-0 relative overflow-hidden">
+      <div className={`absolute -top-24 -right-24 w-48 h-48 rounded-full bg-${themeColor}-500/10 blur-3xl opacity-50 z-0`}></div>
+      
+      <div className="relative z-10">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-primary/20">
+            <img 
+              src={author.avatar} 
+              alt={author.name} 
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <div>
+            <div className="font-bold text-lg">{author.name}</div>
+            <div className="text-sm text-muted-foreground">Content Creator</div>
+          </div>
+        </div>
+        
+        <Tabs defaultValue="about">
+          <TabsList className="w-full mb-4">
+            <TabsTrigger value="about" className="flex-1">About</TabsTrigger>
+            <TabsTrigger value="stats" className="flex-1">Stats</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="about" className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Content creator specializing in technology, science, and digital trends with expertise in making complex topics accessible.
+            </p>
+            
+            <AuthorProfile author={author} />
+          </TabsContent>
+          
+          <TabsContent value="stats" className="pt-2">
+            <div className="grid grid-cols-3 gap-4 text-center mb-4">
+              <div>
+                <p className="font-bold text-xl">42</p>
+                <p className="text-xs text-muted-foreground">Articles</p>
+              </div>
+              <div>
+                <p className="font-bold text-xl">15.2k</p>
+                <p className="text-xs text-muted-foreground">Readers</p>
+              </div>
+              <div>
+                <p className="font-bold text-xl">4.8</p>
+                <p className="text-xs text-muted-foreground">Rating</p>
               </div>
             </div>
             
-            <div className="w-full lg:w-1/4 space-y-6">
-              <TableOfContents contentRef={contentRef} className="hidden lg:block sticky top-24" />
-              
-              <div className="rounded-xl border bg-gradient-to-r from-purple-50/50 to-background dark:from-purple-950/10 dark:to-background shadow-sm p-6 sticky top-80 overflow-hidden">
-                <div className="absolute -top-10 -right-10 w-24 h-24 rounded-full bg-gradient-to-br from-primary/20 to-purple-500/20 blur-3xl opacity-70 z-0"></div>
-                
-                <div className="relative z-10">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-16 h-16 rounded-full overflow-hidden bg-muted ring-2 ring-primary/20">
-                      <img 
-                        src={article.author.avatar} 
-                        alt={article.author.name} 
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div>
-                      <div className="font-bold text-lg">{article.author.name}</div>
-                      <div className="text-sm text-muted-foreground">Content Creator</div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-4 mb-4 text-sm">
-                    <div className="text-center">
-                      <p className="font-bold">42</p>
-                      <p className="text-xs text-muted-foreground">Articles</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="font-bold">15.2k</p>
-                      <p className="text-xs text-muted-foreground">Readers</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="font-bold">4.8</p>
-                      <p className="text-xs text-muted-foreground">Rating</p>
-                    </div>
-                  </div>
-                  
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
-                    Content creator specializing in {article.category} and related topics with expertise in digital media and content strategy.
-                  </p>
-                  
-                  <AuthorProfile author={article.author} />
-                </div>
-              </div>
+            <div className="flex items-center justify-center gap-2 pt-2">
+              <Button variant="outline" size="icon" className="rounded-full h-8 w-8">
+                <Twitter className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" className="rounded-full h-8 w-8">
+                <Facebook className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" className="rounded-full h-8 w-8">
+                <Linkedin className="h-4 w-4" />
+              </Button>
             </div>
-          </motion.div>
-        </div>
+          </TabsContent>
+        </Tabs>
       </div>
-    </Layout>
+    </div>
   );
 };
 
