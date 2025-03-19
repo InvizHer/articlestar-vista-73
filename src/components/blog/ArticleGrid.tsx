@@ -28,6 +28,7 @@ const ArticleGrid: React.FC<ArticleGridProps> = ({ articles, columns = 3 }) => {
           key={article.id} 
           article={article} 
           index={index}
+          variant="default" // Ensuring all cards use the 'default' variant like recent stories
         />
       ))}
     </motion.div>
