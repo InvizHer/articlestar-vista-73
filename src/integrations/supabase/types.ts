@@ -189,11 +189,39 @@ export type Database = {
           },
         ]
       }
+      site_settings: {
+        Row: {
+          created_at: string
+          default_theme: string
+          default_theme_color: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_theme?: string
+          default_theme_color?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_theme?: string
+          default_theme_color?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      create_settings_table: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_like_count: {
         Args: {
           p_article_id: string

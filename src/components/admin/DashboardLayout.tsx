@@ -19,22 +19,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   useEffect(() => {
     const ensureTablesExist = async () => {
       try {
-        // Check if site_settings table exists
-        const { error } = await supabase
-          .from('site_settings')
-          .select('*')
-          .limit(1);
-
-        // If we get PGRST116 error, the table doesn't exist
-        if (error && (error.code === 'PGRST116' || error.message.includes('does not exist'))) {
-          console.log('site_settings table might not exist, attempting to create it...');
-          
-          // Create the table using SQL
-          const { error: createError } = await supabase.rpc('create_settings_table');
-          
-          if (createError) {
-            console.error('Error creating settings table:', createError);
-          }
+        // Check if site_settings table exists and create it if it doesn't
+        const { error } = await supabase.rpc('create_settings_table');
+        
+        if (error) {
+          console.error('Error ensuring settings table exists:', error);
         }
       } catch (error) {
         console.error('Error ensuring tables exist:', error);
