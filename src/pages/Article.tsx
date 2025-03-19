@@ -24,7 +24,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { TableOfContents } from "@/components/blog/TableOfContents";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import {
@@ -37,6 +36,7 @@ import { useTheme } from "@/hooks/use-theme";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import Comments from "@/components/blog/Comments";
 import LikeButton from "@/components/blog/LikeButton";
+import { Card, CardContent } from "@/components/ui/card";
 
 // WhatsApp Icon component
 const WhatsAppIcon = ({ className }: { className?: string }) => (
@@ -187,6 +187,9 @@ const Article = () => {
   const navigate = useNavigate();
   const [article, setArticle] = useState<ArticleType | null>(null);
   const [loading, setLoading] = useState(true);
+  const [relatedArticles, setRelatedArticles] = useState<ArticleType[]>([]);
+  const [previousArticle, setPreviousArticle] = useState<ArticleType | null>(null);
+  const [nextArticle, setNextArticle] = useState<ArticleType | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const viewCountedRef = useRef(false);
   const isMobile = useIsMobile();
@@ -264,6 +267,12 @@ const Article = () => {
         
         incrementViewCount(data.id);
         
+        // Fetch related articles
+        fetchRelatedArticles(data.id, data.category, data.tags);
+        
+        // Fetch previous and next articles
+        fetchPreviousAndNextArticles(data.id, new Date(data.date));
+        
         setTimeout(() => {
           if (contentRef.current) {
             const headings = contentRef.current.querySelectorAll('h1, h2, h3, h4, h5, h6');
@@ -283,6 +292,74 @@ const Article = () => {
       navigate("/not-found");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch related articles
+  const fetchRelatedArticles = async (articleId: string, category: string, tags: string[]) => {
+    try {
+      const { data, error } = await supabase
+        .from("articles")
+        .select("*")
+        .neq("id", articleId)
+        .eq("published", true)
+        .or(`category.eq.${category},tags.overlaps.${JSON.stringify(tags)}`)
+        .order('date', { ascending: false })
+        .limit(2);
+
+      if (error) {
+        throw error;
+      }
+
+      if (data && data.length > 0) {
+        const relatedArticlesData = data.map(convertDbArticleToArticle);
+        setRelatedArticles(relatedArticlesData);
+      }
+    } catch (error) {
+      console.error("Error fetching related articles:", error);
+    }
+  };
+
+  // Fetch previous and next articles
+  const fetchPreviousAndNextArticles = async (articleId: string, articleDate: Date) => {
+    try {
+      // Get previous article (older article)
+      const { data: prevData, error: prevError } = await supabase
+        .from("articles")
+        .select("*")
+        .eq("published", true)
+        .lt("date", articleDate.toISOString())
+        .order('date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (prevError) {
+        throw prevError;
+      }
+
+      // Get next article (newer article)
+      const { data: nextData, error: nextError } = await supabase
+        .from("articles")
+        .select("*")
+        .eq("published", true)
+        .gt("date", articleDate.toISOString())
+        .order('date', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (nextError) {
+        throw nextError;
+      }
+
+      if (prevData) {
+        setPreviousArticle(convertDbArticleToArticle(prevData));
+      }
+
+      if (nextData) {
+        setNextArticle(convertDbArticleToArticle(nextData));
+      }
+    } catch (error) {
+      console.error("Error fetching previous and next articles:", error);
     }
   };
 
@@ -355,7 +432,7 @@ const Article = () => {
         >
           {/* Main content */}
           <div className="w-full">
-            <div className="mb-6">
+            <div className="mb-8">
               <Badge 
                 className={cn(
                   getBadgeClass(), 
@@ -369,22 +446,30 @@ const Article = () => {
                 {article.title}
               </h1>
 
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground mb-6">
-                <div className="flex items-center gap-1">
-                  <User className="h-4 w-4" />
-                  <span>{article.author.name}</span>
+              {/* Redesigned article information section */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-lg bg-muted/30 border mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <User className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <span className="font-medium">{article.author.name}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <CalendarIcon className="h-4 w-4" />
-                  <span>{article.date}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Clock className="h-4 w-4" />
-                  <span>{article.readTime}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Eye className="h-4 w-4" />
-                  <span>{article.viewCount} views</span>
+                
+                <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground sm:ml-auto">
+                  <div className="flex items-center gap-1.5">
+                    <CalendarIcon className="h-4 w-4" />
+                    <span>{article.date}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="h-4 w-4" />
+                    <span>{article.readTime}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Eye className="h-4 w-4" />
+                    <span>{article.viewCount} views</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -441,30 +526,90 @@ const Article = () => {
             {/* Comments Section */}
             <Comments articleId={article.id} />
             
-            {/* Article navigation */}
-            <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Link 
-                to={`/articles`} 
-                className="group p-4 border rounded-xl flex items-center gap-3 hover:bg-muted/50 transition-colors"
-              >
-                <div className="h-10 w-10 rounded-full flex items-center justify-center bg-muted group-hover:bg-background transition-colors">
-                  <ArrowLeft className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <div>
-                  <span className="text-xs text-muted-foreground block">Previous</span>
-                  <span className="font-medium">Back to Articles</span>
-                </div>
-              </Link>
-              
-              <div className="p-4 border rounded-xl flex items-center justify-end gap-3 text-right">
-                <div>
-                  <span className="text-xs text-muted-foreground block">Thank you</span>
-                  <span className="font-medium line-clamp-1">For reading this article</span>
-                </div>
-                <div className="h-10 w-10 rounded-full flex items-center justify-center bg-muted">
-                  <ArrowRight className="h-5 w-5 text-muted-foreground" />
+            {/* Related Articles */}
+            {relatedArticles.length > 0 && (
+              <div className="mt-8 mb-8">
+                <h3 className="text-xl font-bold mb-4">Related Articles</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {relatedArticles.map((relatedArticle) => (
+                    <Card key={relatedArticle.id} className="overflow-hidden hover:shadow-md transition-shadow group">
+                      <Link to={`/article/${relatedArticle.slug}`} className="block">
+                        <div className="aspect-video overflow-hidden">
+                          <img 
+                            src={relatedArticle.coverImage} 
+                            alt={relatedArticle.title} 
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          />
+                        </div>
+                        <CardContent className="p-4">
+                          <h4 className="font-semibold line-clamp-2 group-hover:text-primary transition-colors">
+                            {relatedArticle.title}
+                          </h4>
+                          <p className="text-muted-foreground text-sm mt-2 line-clamp-2">
+                            {relatedArticle.excerpt}
+                          </p>
+                        </CardContent>
+                      </Link>
+                    </Card>
+                  ))}
                 </div>
               </div>
+            )}
+            
+            {/* Article navigation - Previous/Next */}
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+              {previousArticle ? (
+                <Link 
+                  to={`/article/${previousArticle.slug}`} 
+                  className="group p-4 border rounded-xl flex items-center gap-3 hover:bg-muted/50 transition-colors"
+                >
+                  <div className="h-10 w-10 rounded-full flex items-center justify-center bg-muted group-hover:bg-background transition-colors">
+                    <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <span className="text-xs text-muted-foreground block">Previous</span>
+                    <span className="font-medium line-clamp-1">{previousArticle.title}</span>
+                  </div>
+                </Link>
+              ) : (
+                <Link 
+                  to={`/articles`} 
+                  className="group p-4 border rounded-xl flex items-center gap-3 hover:bg-muted/50 transition-colors"
+                >
+                  <div className="h-10 w-10 rounded-full flex items-center justify-center bg-muted group-hover:bg-background transition-colors">
+                    <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <span className="text-xs text-muted-foreground block">Back to</span>
+                    <span className="font-medium">All Articles</span>
+                  </div>
+                </Link>
+              )}
+              
+              {nextArticle ? (
+                <Link 
+                  to={`/article/${nextArticle.slug}`}
+                  className="group p-4 border rounded-xl flex items-center justify-end gap-3 text-right hover:bg-muted/50 transition-colors"
+                >
+                  <div>
+                    <span className="text-xs text-muted-foreground block">Next</span>
+                    <span className="font-medium line-clamp-1">{nextArticle.title}</span>
+                  </div>
+                  <div className="h-10 w-10 rounded-full flex items-center justify-center bg-muted group-hover:bg-background transition-colors">
+                    <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                </Link>
+              ) : (
+                <div className="p-4 border rounded-xl flex items-center justify-end gap-3 text-right">
+                  <div>
+                    <span className="text-xs text-muted-foreground block">Thank you</span>
+                    <span className="font-medium line-clamp-1">For reading this article</span>
+                  </div>
+                  <div className="h-10 w-10 rounded-full flex items-center justify-center bg-muted">
+                    <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </motion.div>
