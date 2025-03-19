@@ -28,6 +28,36 @@ This project is built with:
 - **Charts**: Recharts
 - **Build Tool**: Vite
 
+## Setting Up Your Own Instance (Important)
+
+### 1. Supabase Configuration
+
+To set up your own instance of this blog platform, you need to configure Supabase first:
+
+1. Create a new Supabase project at [supabase.com](https://supabase.com)
+2. Once your project is created, go to the project settings
+3. Copy your project's URL and anon/public key from the API settings page
+4. Open `src/integrations/supabase/client.ts` in your forked repository
+5. Replace the values for `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` with your own credentials:
+
+```typescript
+// Replace these with your own Supabase credentials
+const SUPABASE_URL = "your-supabase-project-url";
+const SUPABASE_PUBLISHABLE_KEY = "your-supabase-anon-key";
+```
+
+Don't worry about setting up tables and functions manually. The application is designed to automatically create all required database structures when it first runs.
+
+### 2. Deploy Your Project
+
+Deploy your project using one of the methods below. When the application starts for the first time, it will automatically:
+
+- Create all necessary tables in your Supabase project
+- Set up required database functions
+- Initialize default settings
+
+This auto-setup feature means you don't need to manually configure your database.
+
 ## Getting Started
 
 ### Prerequisites
@@ -161,10 +191,7 @@ docker run -p 8080:80 articlestar-vista
 
 ## Environment Configuration
 
-For each deployment, ensure you configure the following environment variables:
-
-- `VITE_SUPABASE_URL`: Your Supabase project URL
-- `VITE_SUPABASE_ANON_KEY`: Your Supabase anonymous key
+For each deployment, ensure you have updated the Supabase credentials in `src/integrations/supabase/client.ts` before building the project.
 
 ## Custom Domain Setup
 
@@ -179,20 +206,17 @@ Once deployed, you can configure a custom domain:
 
 ### Common Issues:
 
-1. **Build Failures**: Ensure all dependencies are properly installed and there are no TypeScript errors.
+1. **Database Setup Errors**: If you see errors about database setup in the console, check your Supabase credentials to ensure they're correct.
    
-   Solution: Run `npm run build` locally to identify and fix errors before deploying.
+   Solution: Verify your Supabase URL and key in `src/integrations/supabase/client.ts`.
 
 2. **API Connection Issues**: Check if environment variables are correctly set.
    
-   Solution: Verify environment variables in your deployment platform settings.
+   Solution: Make sure your Supabase credentials are updated before deployment.
 
 3. **Routing Problems**: Single-page apps need proper redirect rules.
    
-   Solution: For Netlify, create a `_redirects` file in the `public` folder with:
-   ```
-   /* /index.html 200
-   ```
+   Solution: For Netlify, a `_redirects` file is already included in the `public` folder.
 
 ## Maintenance and Updates
 
@@ -209,3 +233,4 @@ npm update
 ## Questions and Support
 
 For questions or support, please open an issue in the GitHub repository or contact the development team.
+
