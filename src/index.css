@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -126,6 +127,11 @@
 
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  ::selection {
+    @apply bg-primary/30 text-foreground;
   }
 }
 
@@ -163,6 +169,10 @@
   animation: fadeInUp 0.5s ease-out forwards;
 }
 
+.animate-fade-in {
+  animation: fadeInUp 0.7s ease-out forwards;
+}
+
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -191,6 +201,15 @@
   }
 }
 
+/* Text shadow for better readability on images */
+.text-shadow {
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.text-shadow-sm {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
 /* Interactive elements */
 .hover-scale {
   @apply transition-transform duration-300;
@@ -202,6 +221,52 @@
 
 .link-underline {
   @apply relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-primary after:origin-bottom-right after:scale-x-0 after:transition-transform after:duration-300 hover:after:origin-bottom-left hover:after:scale-x-100;
+}
+
+/* Enhanced animations */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse-soft {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 4s ease-in-out infinite;
+}
+
+.delay-300 {
+  animation-delay: 300ms;
+}
+
+.delay-500 {
+  animation-delay: 500ms;
+}
+
+.delay-700 {
+  animation-delay: 700ms;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
 }
 
 /* Purple theme gradients */
@@ -227,11 +292,17 @@
   filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.5));
 }
 
-/* Bookmark limit indicator */
-.bookmark-limit-badge {
-  @apply bg-gradient-to-r from-primary/10 to-purple-500/10 text-primary text-xs px-2 py-0.5 rounded-full;
+/* Glass effect */
+.glass-card {
+  @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-md border border-white/20 dark:border-slate-800/20;
 }
 
-.bookmark-limit-badge.is-full {
-  @apply from-destructive/20 to-destructive text-destructive;
+/* Enhanced card hover effect */
+.enhanced-card {
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.enhanced-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
 }
