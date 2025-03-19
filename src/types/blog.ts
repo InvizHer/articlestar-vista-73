@@ -15,6 +15,4 @@ export interface Article {
   coverImage: string;
   published?: boolean;
   viewCount?: number;
-  featured?: boolean;
-  editorPick?: boolean;
 }
