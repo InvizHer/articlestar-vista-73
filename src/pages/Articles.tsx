@@ -79,6 +79,11 @@ const Articles = () => {
   
   const articlesPerPage = 6; // Changed to 6 articles per page
 
+  // Add a new useEffect to scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   useEffect(() => {
     fetchArticles();
   }, [currentPage]);

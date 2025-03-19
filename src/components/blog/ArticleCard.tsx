@@ -2,7 +2,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Article } from "@/types/blog";
-import { CalendarIcon, Clock, ArrowUpRight } from "lucide-react";
+import { CalendarIcon, Clock, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -40,13 +40,17 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
           />
         </div>
         
-        {article.category && (
-          <div className="absolute top-3 left-3">
-            <Badge className="bg-background/80 backdrop-blur-sm">
+        <div className="absolute top-3 left-3 flex items-center gap-2">
+          {article.category && (
+            <Badge className="bg-primary text-primary-foreground">
               {article.category}
             </Badge>
-          </div>
-        )}
+          )}
+          <Badge variant="outline" className="bg-background/80 backdrop-blur-sm flex items-center gap-1">
+            <Eye className="h-3 w-3" />
+            <span>{article.viewCount}</span>
+          </Badge>
+        </div>
       </Link>
       
       <div className="p-5 flex flex-col flex-grow">
@@ -63,7 +67,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
           {article.excerpt}
         </p>
 
-        <div className="flex items-center justify-between text-xs text-muted-foreground border-t pt-3 mt-auto">
+        <div className="flex items-center text-xs text-muted-foreground border-t pt-3 mt-auto">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1">
               <CalendarIcon className="h-3 w-3" />
@@ -75,11 +79,6 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
               <span>{article.readTime}</span>
             </div>
           </div>
-          
-          <Link to={`/article/${article.slug}`} className="text-primary font-medium text-xs flex items-center hover:underline">
-            Read
-            <ArrowUpRight className="h-3 w-3 ml-1" />
-          </Link>
         </div>
       </div>
     </motion.article>
