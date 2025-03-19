@@ -1,3 +1,4 @@
+
 export interface Article {
   id: string;
   title: string;
@@ -15,6 +16,7 @@ export interface Article {
   coverImage: string;
   published?: boolean;
   viewCount?: number;
+  comments_enabled?: boolean;
 }
 
 export interface UnifiedComment {

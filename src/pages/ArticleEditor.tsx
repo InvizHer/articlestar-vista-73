@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -114,6 +113,7 @@ const articleSchema = z.object({
   author_name: z.string().min(2, "Author name is required"),
   author_avatar: z.string().optional(),
   published: z.boolean().default(false),
+  comments_enabled: z.boolean().default(true),
 });
 
 type ArticleFormValues = z.infer<typeof articleSchema>;
@@ -149,6 +149,7 @@ const ArticleEditor = () => {
       author_name: "Admin",
       author_avatar: "/placeholder.svg",
       published: false,
+      comments_enabled: true,
     },
   });
 
@@ -177,7 +178,6 @@ const ArticleEditor = () => {
 
   const fetchMetadata = async () => {
     try {
-      // Fetch unique categories
       const { data: categoryData } = await supabase
         .from("articles")
         .select("category")
@@ -188,7 +188,6 @@ const ArticleEditor = () => {
         setCategories(uniqueCategories);
       }
       
-      // Fetch unique authors
       const { data: authorData } = await supabase
         .from("articles")
         .select("author_name")
@@ -199,7 +198,6 @@ const ArticleEditor = () => {
         setAuthors(uniqueAuthors);
       }
       
-      // Fetch unique tags
       const { data: tagsData } = await supabase
         .from("articles")
         .select("tags");
@@ -239,6 +237,7 @@ const ArticleEditor = () => {
           author_name: data.author_name,
           author_avatar: data.author_avatar || "/placeholder.svg",
           published: data.published,
+          comments_enabled: data.comments_enabled === false ? false : true,
         });
 
         setEditorValue(data.content);
@@ -272,6 +271,7 @@ const ArticleEditor = () => {
         author_name: values.author_name,
         author_avatar: values.author_avatar || "/placeholder.svg",
         published: values.published,
+        comments_enabled: values.comments_enabled,
         updated_at: new Date().toISOString(),
       };
 
@@ -405,29 +405,55 @@ const ArticleEditor = () => {
                   </Badge>
                 )}
                 
-                <FormField
-                  control={form.control}
-                  name="published"
-                  render={({ field }) => (
-                    <div className="flex items-center gap-2 bg-white dark:bg-gray-800 px-3 py-1.5 rounded-lg border shadow-sm">
-                      <Switch 
-                        checked={field.value} 
-                        onCheckedChange={field.onChange}
-                        id="published"
-                        className="data-[state=checked]:bg-green-500"
-                      />
-                      <Badge 
-                        variant={field.value ? "default" : "outline"}
-                        className={cn(
-                          "font-normal text-xs",
-                          field.value ? "bg-green-500 hover:bg-green-600" : ""
-                        )}
-                      >
-                        {field.value ? "Published" : "Draft"}
-                      </Badge>
-                    </div>
-                  )}
-                />
+                <div className="flex items-center gap-2">
+                  <FormField
+                    control={form.control}
+                    name="published"
+                    render={({ field }) => (
+                      <div className="flex items-center gap-2 bg-white dark:bg-gray-800 px-3 py-1.5 rounded-lg border shadow-sm">
+                        <Switch 
+                          checked={field.value} 
+                          onCheckedChange={field.onChange}
+                          id="published"
+                          className="data-[state=checked]:bg-green-500"
+                        />
+                        <Badge 
+                          variant={field.value ? "default" : "outline"}
+                          className={cn(
+                            "font-normal text-xs",
+                            field.value ? "bg-green-500 hover:bg-green-600" : ""
+                          )}
+                        >
+                          {field.value ? "Published" : "Draft"}
+                        </Badge>
+                      </div>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="comments_enabled"
+                    render={({ field }) => (
+                      <div className="flex items-center gap-2 bg-white dark:bg-gray-800 px-3 py-1.5 rounded-lg border shadow-sm">
+                        <Switch 
+                          checked={field.value} 
+                          onCheckedChange={field.onChange}
+                          id="comments_enabled"
+                          className="data-[state=checked]:bg-blue-500"
+                        />
+                        <Badge 
+                          variant={field.value ? "default" : "outline"}
+                          className={cn(
+                            "font-normal text-xs",
+                            field.value ? "bg-blue-500 hover:bg-blue-600" : ""
+                          )}
+                        >
+                          {field.value ? "Comments On" : "Comments Off"}
+                        </Badge>
+                      </div>
+                    )}
+                  />
+                </div>
                 
                 <div className="flex gap-2">
                   <Button 
@@ -692,10 +718,10 @@ const ArticleEditor = () => {
                                         </PopoverContent>
                                       </Popover>
                                     </div>
-                                  </div>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
                             )}
                           />
                           
@@ -920,3 +946,4 @@ const ArticleEditor = () => {
 };
 
 export default ArticleEditor;
+

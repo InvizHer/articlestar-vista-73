@@ -1,9 +1,9 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useForm } from "react-hook-form";
@@ -39,14 +39,30 @@ const CommentForm: React.FC<CommentFormProps> = ({ articleId, onCommentAdded }) 
     setIsSubmitting(true);
     
     try {
+      // Check if the article has comments enabled
+      const { data: articleData, error: articleError } = await supabase
+        .from("articles")
+        .select("comments_enabled")
+        .eq("id", articleId)
+        .single();
+      
+      if (articleError) {
+        throw articleError;
+      }
+      
+      if (articleData && articleData.comments_enabled === false) {
+        toast.error("Comments are disabled for this article");
+        return;
+      }
+      
       const { error } = await supabase
         .from("unified_comments")
         .insert({
           article_id: articleId,
-          parent_id: null, // Top-level comment, not a reply
           name: values.name,
           email: values.email,
           content: values.content,
+          parent_id: null,
           is_admin: false
         });
 
@@ -74,7 +90,6 @@ const CommentForm: React.FC<CommentFormProps> = ({ articleId, onCommentAdded }) 
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Name</FormLabel>
                 <FormControl>
                   <Input placeholder="Your name" {...field} />
                 </FormControl>
@@ -87,7 +102,6 @@ const CommentForm: React.FC<CommentFormProps> = ({ articleId, onCommentAdded }) 
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
                 <FormControl>
                   <Input placeholder="Your email" type="email" {...field} />
                 </FormControl>
@@ -102,10 +116,9 @@ const CommentForm: React.FC<CommentFormProps> = ({ articleId, onCommentAdded }) 
           name="content"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Comment</FormLabel>
               <FormControl>
                 <Textarea 
-                  placeholder="Share your thoughts..." 
+                  placeholder="Write a comment..." 
                   rows={4}
                   {...field} 
                 />

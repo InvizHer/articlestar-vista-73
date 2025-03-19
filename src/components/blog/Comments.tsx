@@ -34,6 +34,27 @@ const Comments: React.FC<CommentsProps> = ({ articleId }) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [commentToDelete, setCommentToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [commentsEnabled, setCommentsEnabled] = useState(true);
+
+  const fetchArticleStatus = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("articles")
+        .select("comments_enabled")
+        .eq("id", articleId)
+        .maybeSingle();
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data) {
+        setCommentsEnabled(data.comments_enabled !== false);
+      }
+    } catch (error) {
+      console.error("Error fetching article status:", error);
+    }
+  };
 
   const fetchComments = async () => {
     setLoading(true);
@@ -87,6 +108,7 @@ const Comments: React.FC<CommentsProps> = ({ articleId }) => {
   };
 
   useEffect(() => {
+    fetchArticleStatus();
     fetchComments();
   }, [articleId]);
 
@@ -147,6 +169,20 @@ const Comments: React.FC<CommentsProps> = ({ articleId }) => {
 
   const displayedComments = showAllComments ? comments : comments.slice(0, 3);
   const hasMoreComments = comments.length > 3;
+
+  if (!commentsEnabled) {
+    return (
+      <div id="comments" className="pt-6">
+        <h3 className="font-bold text-lg mb-6 flex items-center gap-2">
+          <MessageSquare className="h-5 w-5" />
+          Discussion
+        </h3>
+        <div className="text-center py-8 border-t border-b">
+          <p className="text-muted-foreground">Comments are disabled for this article.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div id="comments" className="pt-6">

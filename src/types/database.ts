@@ -1,3 +1,4 @@
+
 export interface Admin {
   id: string;
   username: string;
@@ -22,4 +23,5 @@ export interface DbArticle {
   updated_at: string;
   published: boolean;
   view_count: number;
+  comments_enabled: boolean;
 }
