@@ -18,7 +18,7 @@ import {
   Heart,
   Star,
   Globe,
-  Bookmark
+  Clock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
