@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -77,9 +76,8 @@ const Articles = () => {
   const isMobile = useIsMobile();
   const { themeColor } = useTheme();
   
-  const articlesPerPage = 6; // Changed to 6 articles per page
+  const articlesPerPage = 6;
 
-  // Add a new useEffect to scroll to top when component mounts
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -202,7 +200,6 @@ const Articles = () => {
 
   return (
     <Layout>
-      {/* Hero Section */}
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -257,7 +254,6 @@ const Articles = () => {
       </motion.div>
 
       <div className="container mx-auto px-4 py-12 sm:px-6 lg:px-8 -mt-12">
-        {/* Category Filter */}
         {categories.length > 0 && (
           <motion.div 
             initial={{ y: 20, opacity: 0 }}
@@ -332,7 +328,6 @@ const Articles = () => {
           </motion.div>
         )}
 
-        {/* Articles Grid */}
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -397,7 +392,6 @@ const Articles = () => {
               />
             </motion.div>
             
-            {/* Pagination */}
             {totalPages > 1 && (
               <motion.div 
                 className="mt-12 flex justify-center"

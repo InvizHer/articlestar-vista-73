@@ -6,6 +6,7 @@ import { CalendarIcon, Clock, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/hooks/use-theme";
 
 interface ArticleCardProps {
   article: Article;
@@ -19,6 +20,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
   index = 0 
 }) => {
   const isFeatured = variant === "featured";
+  const { themeColor } = useTheme();
   
   return (
     <motion.article 
@@ -42,7 +44,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
         
         <div className="absolute top-3 left-3 flex items-center gap-2">
           {article.category && (
-            <Badge className="bg-primary text-primary-foreground">
+            <Badge className={`bg-${themeColor} text-${themeColor}-foreground`}>
               {article.category}
             </Badge>
           )}
@@ -67,16 +69,27 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
           {article.excerpt}
         </p>
 
-        <div className="flex items-center text-xs text-muted-foreground border-t pt-3 mt-auto">
+        <div className="flex items-center justify-between border-t pt-3 mt-auto">
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1">
-              <CalendarIcon className="h-3 w-3" />
-              <span>{article.date}</span>
+            <div className="w-8 h-8 rounded-full overflow-hidden border flex-shrink-0">
+              <img 
+                src={article.author.avatar} 
+                alt={article.author.name} 
+                className="w-full h-full object-cover"
+              />
             </div>
-
-            <div className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              <span>{article.readTime}</span>
+            <div>
+              <p className="text-sm font-medium leading-none">{article.author.name}</p>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                <span className="flex items-center gap-1">
+                  <CalendarIcon className="h-3 w-3" />
+                  {article.date}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {article.readTime}
+                </span>
+              </div>
             </div>
           </div>
         </div>
