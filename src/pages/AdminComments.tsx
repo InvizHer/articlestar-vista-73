@@ -23,6 +23,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -45,6 +47,16 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Search, MessageSquare, Reply, RefreshCw, Eye, Trash2, Filter } from "lucide-react";
 import { Comment, CommentReply } from "@/types/blog";
 
@@ -68,6 +80,8 @@ const AdminComments = () => {
   const [viewCommentId, setViewCommentId] = useState<string | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<string>("all");
   const [articleOptions, setArticleOptions] = useState<{id: string, title: string}[]>([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState<string | null>(null);
 
   const fetchComments = async () => {
     setLoading(true);
@@ -221,17 +235,22 @@ const AdminComments = () => {
     }
   };
 
-  const deleteComment = async (commentId: string) => {
-    if (!window.confirm("Are you sure you want to delete this comment?")) {
-      return;
-    }
+  const initiateDeleteComment = (commentId: string) => {
+    setCommentToDelete(commentId);
+    setDeleteDialogOpen(true);
+  };
 
+  const deleteComment = async () => {
+    if (!commentToDelete) return;
+    
     try {
+      setIsSubmitting(true);
+      
       // First delete all replies to this comment
       const { error: replyError } = await supabase
         .from("comment_replies")
         .delete()
-        .eq("comment_id", commentId);
+        .eq("comment_id", commentToDelete);
       
       if (replyError) throw replyError;
       
@@ -239,17 +258,28 @@ const AdminComments = () => {
       const { error } = await supabase
         .from("comments")
         .delete()
-        .eq("id", commentId);
+        .eq("id", commentToDelete);
         
       if (error) throw error;
       
-      toast.success("Comment deleted successfully");
+      toast.success("Comment and all replies deleted successfully");
       
       // Update local state
-      setComments(prev => prev.filter(c => c.id !== commentId));
+      setComments(prev => prev.filter(c => c.id !== commentToDelete));
+      setDeleteDialogOpen(false);
+      setCommentToDelete(null);
+      
+      // Close view dialog if it's open with the deleted comment
+      if (viewCommentId === commentToDelete) {
+        setViewCommentId(null);
+      }
+      
     } catch (error) {
       console.error("Error deleting comment:", error);
       toast.error("Failed to delete comment");
+    } finally {
+      setIsSubmitting(false);
+      setDeleteDialogOpen(false);
     }
   };
 
@@ -531,6 +561,29 @@ const AdminComments = () => {
             </DialogContent>
           </Dialog>
         )}
+        
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete this comment and all its replies. 
+                This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={deleteComment} 
+                disabled={isSubmitting}
+                className="bg-destructive hover:bg-destructive/90"
+              >
+                {isSubmitting ? "Deleting..." : "Delete"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );
@@ -600,7 +653,7 @@ const AdminComments = () => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => deleteComment(comment.id)}
+                  onClick={() => initiateDeleteComment(comment.id)}
                   className="text-destructive hover:text-destructive"
                   title="Delete comment"
                 >

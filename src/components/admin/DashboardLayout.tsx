@@ -1,9 +1,8 @@
 
 import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import DashboardSidebar from "./DashboardSidebar";
+import AdminSidebar from "./AdminSidebar";
 import DashboardHeader from "./DashboardHeader";
-import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface DashboardLayoutProps {
@@ -20,8 +19,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   
   // Set sidebar state when component mounts or when screen size changes
   useEffect(() => {
-    // Always closed for mobile and desktop
-    setSidebarOpen(false);
+    // Always closed for mobile, open for desktop
+    setSidebarOpen(!isMobile);
   }, [isMobile]);
   
   const toggleSidebar = () => {
@@ -30,7 +29,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   
   return (
     <div className="min-h-screen h-full w-full flex bg-gray-50 dark:bg-gray-900">
-      <DashboardSidebar isOpen={sidebarOpen} toggle={toggleSidebar} />
+      <AdminSidebar isOpen={sidebarOpen} toggle={toggleSidebar} />
       
       <div className="flex flex-col flex-1 min-h-screen w-full">
         <DashboardHeader toggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen} />

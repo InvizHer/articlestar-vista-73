@@ -14,65 +14,39 @@ import {
   BarChart3, 
   FileText, 
   Eye, 
-  TrendingUp, 
-  Clock,
+  MessageSquare,
   ArrowUpRight, 
   PenTool,
   Users,
   ChevronRight,
-  BookOpen,
-  CalendarCheck,
   CalendarDays,
-  ArrowUp,
-  ArrowDown,
-  Sparkles,
   Loader2,
   Send,
-  Newspaper
+  Newspaper,
+  Settings,
+  FileQuestion,
+  HelpCircle
 } from "lucide-react";
 import { Article } from "@/types/blog";
 import { Link } from "react-router-dom";
 import { DbArticle } from "@/types/database";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 import { useAdmin } from "@/context/AdminContext";
-import { motion } from "framer-motion";
 import DashboardLayout from "@/components/admin/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Area,
-  AreaChart,
-} from "recharts";
+import { Progress } from "@/components/ui/progress";
 
 const AdminDashboard = () => {
   const [recentArticles, setRecentArticles] = useState<Article[]>([]);
   const [articleCount, setArticleCount] = useState({ total: 0, published: 0, draft: 0 });
+  const [commentStats, setCommentStats] = useState({ total: 0, replied: 0, unreplied: 0 });
   const [totalViews, setTotalViews] = useState(0);
   const [loading, setLoading] = useState(true);
   const { admin } = useAdmin();
   const [activeTab, setActiveTab] = useState("overview");
-
-  // Sample data for line chart
-  const viewsData = [
-    { name: "Jan", views: 450 },
-    { name: "Feb", views: 620 },
-    { name: "Mar", views: 580 },
-    { name: "Apr", views: 730 },
-    { name: "May", views: 820 },
-    { name: "Jun", views: 990 },
-    { name: "Jul", views: 1100 },
-  ];
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -99,6 +73,24 @@ const AdminDashboard = () => {
           .eq("published", true);
           
         if (totalError || publishedError) throw totalError || publishedError;
+        
+        // Fetch comment counts
+        const { data: comments, error: commentsError } = await supabase
+          .from("comments")
+          .select("id");
+          
+        if (commentsError) throw commentsError;
+        
+        // Fetch replied comments count
+        const { data: repliedComments, error: repliedError } = await supabase
+          .from("comment_replies")
+          .select("comment_id")
+          .is("is_admin", true);
+          
+        if (repliedError) throw repliedError;
+        
+        // Get unique replied comment IDs
+        const repliedCommentIds = new Set(repliedComments?.map(r => r.comment_id) || []);
         
         // Calculate total views
         let views = 0;
@@ -132,6 +124,11 @@ const AdminDashboard = () => {
           published: publishedCount || 0,
           draft: (totalCount || 0) - (publishedCount || 0),
         });
+        setCommentStats({
+          total: comments?.length || 0,
+          replied: repliedCommentIds.size,
+          unreplied: (comments?.length || 0) - repliedCommentIds.size
+        });
         setTotalViews(views);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
@@ -143,21 +140,6 @@ const AdminDashboard = () => {
     
     fetchDashboardData();
   }, []);
-  
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-  
-  const item = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 }
-  };
   
   return (
     <DashboardLayout>
@@ -206,261 +188,259 @@ const AdminDashboard = () => {
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
             {/* Stats Cards */}
-            <motion.div 
-              variants={container}
-              initial="hidden"
-              animate="show"
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
-            >
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Total Articles Card */}
-              <motion.div variants={item}>
-                <Card className="overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium">Articles</CardTitle>
-                    <div className="p-2 bg-blue-50 rounded-md dark:bg-blue-900/30">
-                      <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <Card className="overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">Articles</CardTitle>
+                  <div className="p-2 bg-blue-50 rounded-md dark:bg-blue-900/30">
+                    <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <Skeleton className="h-8 w-24" />
+                  ) : (
+                    <div className="text-2xl font-bold">
+                      {articleCount.total.toLocaleString()}
                     </div>
-                  </CardHeader>
-                  <CardContent>
+                  )}
+                  <div className="flex items-center text-xs text-muted-foreground mt-1 space-x-2">
                     {loading ? (
-                      <Skeleton className="h-8 w-24" />
+                      <Skeleton className="h-4 w-40" />
                     ) : (
-                      <div className="text-2xl font-bold">
-                        {articleCount.total.toLocaleString()}
-                      </div>
+                      <>
+                        <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-700/30">
+                          {articleCount.published.toLocaleString()} published
+                        </Badge>
+                        <Badge variant="outline" className="text-orange-600 border-orange-200 bg-orange-50 dark:bg-orange-900/20 dark:border-orange-700/30">
+                          {articleCount.draft.toLocaleString()} drafts
+                        </Badge>
+                      </>
                     )}
-                    <div className="flex items-center text-xs text-muted-foreground mt-1 space-x-2">
-                      {loading ? (
-                        <Skeleton className="h-4 w-40" />
-                      ) : (
-                        <>
-                          <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-700/30">
-                            {articleCount.published.toLocaleString()} published
-                          </Badge>
-                          <Badge variant="outline" className="text-orange-600 border-orange-200 bg-orange-50 dark:bg-orange-900/20 dark:border-orange-700/30">
-                            {articleCount.draft.toLocaleString()} drafts
-                          </Badge>
-                        </>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
+                  </div>
+                </CardContent>
+              </Card>
               
               {/* Total Views Card */}
-              <motion.div variants={item}>
-                <Card className="overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium">Total Views</CardTitle>
-                    <div className="p-2 bg-green-50 rounded-md dark:bg-green-900/30">
-                      <Eye className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <Card className="overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">Total Views</CardTitle>
+                  <div className="p-2 bg-green-50 rounded-md dark:bg-green-900/30">
+                    <Eye className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <Skeleton className="h-8 w-24" />
+                  ) : (
+                    <div className="text-2xl font-bold">
+                      {totalViews.toLocaleString()}
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    {loading ? (
-                      <Skeleton className="h-8 w-24" />
-                    ) : (
-                      <div className="text-2xl font-bold">
-                        {totalViews.toLocaleString()}
-                      </div>
-                    )}
-                    <div className="flex items-center text-xs text-green-600 mt-1">
-                      <ArrowUp className="h-3 w-3 mr-1" />
-                      <span>12% increase this month</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
+                  )}
+                  <div className="flex items-center text-xs text-muted-foreground mt-1">
+                    Across all articles
+                  </div>
+                </CardContent>
+              </Card>
               
-              {/* Reading Time Card */}
-              <motion.div variants={item}>
-                <Card className="overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium">Avg. Reading Time</CardTitle>
-                    <div className="p-2 bg-purple-50 rounded-md dark:bg-purple-900/30">
-                      <Clock className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+              {/* Comments Card */}
+              <Card className="overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">Comments</CardTitle>
+                  <div className="p-2 bg-purple-50 rounded-md dark:bg-purple-900/30">
+                    <MessageSquare className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <Skeleton className="h-8 w-24" />
+                  ) : (
+                    <div className="text-2xl font-bold">
+                      {commentStats.total.toLocaleString()}
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    {loading ? (
-                      <Skeleton className="h-8 w-24" />
-                    ) : (
-                      <div className="text-2xl font-bold">
-                        4.2 <span className="text-sm font-normal text-muted-foreground">min</span>
+                  )}
+                  {loading ? (
+                    <Skeleton className="h-4 w-full mt-2" />
+                  ) : (
+                    <div className="mt-2 space-y-1">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-muted-foreground">Replied</span>
+                        <span className="font-medium">{commentStats.replied}/{commentStats.total}</span>
                       </div>
-                    )}
-                    <div className="flex items-center text-xs text-muted-foreground mt-1">
-                      Based on all published articles
+                      <Progress 
+                        value={commentStats.total ? (commentStats.replied / commentStats.total) * 100 : 0} 
+                        className="h-1.5" 
+                      />
                     </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
+                  )}
+                </CardContent>
+              </Card>
               
-              {/* Engagement Card */}
-              <motion.div variants={item}>
-                <Card className="overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium">Popular Category</CardTitle>
-                    <div className="p-2 bg-amber-50 rounded-md dark:bg-amber-900/30">
-                      <Sparkles className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              {/* Last Update Card */}
+              <Card className="overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">Last Activity</CardTitle>
+                  <div className="p-2 bg-amber-50 rounded-md dark:bg-amber-900/30">
+                    <CalendarDays className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <Skeleton className="h-8 w-24" />
+                  ) : (
+                    <div className="text-2xl font-bold">
+                      {recentArticles.length > 0 
+                        ? formatDistanceToNow(new Date(recentArticles[0].date), { addSuffix: true }) 
+                        : "No activity"}
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    {loading ? (
-                      <Skeleton className="h-8 w-24" />
-                    ) : (
-                      <div className="text-2xl font-bold">
-                        {recentArticles.length > 0 ? recentArticles[0].category : "Technology"}
-                      </div>
-                    )}
-                    <div className="flex items-center text-xs text-amber-600 mt-1">
-                      <TrendingUp className="h-3 w-3 mr-1" />
-                      <span>Trending this week</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </motion.div>
+                  )}
+                  <div className="flex items-center text-xs text-muted-foreground mt-1">
+                    {recentArticles.length > 0 
+                      ? `Last article: ${recentArticles[0].title.substring(0, 20)}...` 
+                      : "No articles yet"}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
             
-            {/* Chart & Recent Activity */}
+            {/* Main Content Area */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Chart Card */}
+              {/* Recent Articles */}
               <Card className="lg:col-span-2 border shadow-sm">
                 <CardHeader>
-                  <CardTitle>Views Overview</CardTitle>
+                  <CardTitle>Recent Articles</CardTitle>
                   <CardDescription>
-                    Total views across all articles in the past 7 months
+                    Your most recently created or updated articles
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   {loading ? (
-                    <div className="h-[300px] flex items-center justify-center">
-                      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                    <div className="space-y-4">
+                      {Array(3).fill(null).map((_, i) => (
+                        <div key={i} className="flex gap-4 items-center p-3 border rounded-lg">
+                          <Skeleton className="h-12 w-12 rounded-md" />
+                          <div className="flex-1 space-y-2">
+                            <Skeleton className="h-4 w-3/4" />
+                            <Skeleton className="h-3 w-1/2" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : recentArticles.length > 0 ? (
+                    <div className="space-y-3">
+                      {recentArticles.slice(0, 3).map((article) => (
+                        <Link 
+                          key={article.id} 
+                          to={`/admin/article/${article.id}`}
+                          className="flex gap-4 items-center p-3 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors"
+                        >
+                          <div className="w-12 h-12 rounded-md overflow-hidden flex-shrink-0 border">
+                            <img 
+                              src={article.coverImage} 
+                              alt={article.title}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = "/placeholder.svg";
+                              }}
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between">
+                              <h3 className="font-medium text-sm line-clamp-1">{article.title}</h3>
+                              <Badge variant={article.published ? "default" : "outline"} className="ml-2 text-xs">
+                                {article.published ? "Published" : "Draft"}
+                              </Badge>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-1">
+                              <span className="flex items-center gap-1">
+                                <CalendarDays className="h-3 w-3" />
+                                {formatDistanceToNow(new Date(article.date), { addSuffix: true })}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Eye className="h-3 w-3" />
+                                {article.viewCount} views
+                              </span>
+                            </div>
+                          </div>
+                          <ArrowUpRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                        </Link>
+                      ))}
                     </div>
                   ) : (
-                    <ResponsiveContainer width="100%" height={300}>
-                      <AreaChart data={viewsData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
-                        <defs>
-                          <linearGradient id="viewsGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <XAxis 
-                          dataKey="name" 
-                          tickLine={false}
-                          axisLine={false}
-                          tick={{ fontSize: 12 }}
-                        />
-                        <YAxis 
-                          tickLine={false}
-                          axisLine={false}
-                          tick={{ fontSize: 12 }}
-                          width={30}
-                        />
-                        <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#eee" />
-                        <Tooltip 
-                          contentStyle={{ 
-                            borderRadius: '8px', 
-                            border: '1px solid #eee',
-                            boxShadow: '0 2px 12px rgba(0,0,0,0.08)'
-                          }} 
-                        />
-                        <Area 
-                          type="monotone" 
-                          dataKey="views" 
-                          stroke="#3b82f6" 
-                          strokeWidth={2}
-                          fillOpacity={1}
-                          fill="url(#viewsGradient)"
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
+                    <div className="text-center py-10 text-muted-foreground">
+                      <p className="mb-4">No articles found</p>
+                      <Button asChild>
+                        <Link to="/admin/article/new" className="flex items-center gap-2">
+                          <PenTool className="h-4 w-4" />
+                          Create Your First Article
+                        </Link>
+                      </Button>
+                    </div>
                   )}
                 </CardContent>
                 <CardFooter className="border-t px-6 py-4">
                   <Button variant="outline" asChild className="ml-auto">
-                    <Link to="/admin/analytics">
-                      <BarChart3 className="mr-2 h-4 w-4" />
-                      View Analytics
+                    <Link to="/admin/articles">
+                      View All Articles
                     </Link>
                   </Button>
                 </CardFooter>
               </Card>
               
-              {/* Recent Activity */}
+              {/* Quick Help */}
               <Card className="border shadow-sm">
                 <CardHeader>
-                  <CardTitle>Recent Activity</CardTitle>
+                  <CardTitle>Admin Help</CardTitle>
                   <CardDescription>
-                    Latest updates and actions
+                    Quick tips and resources
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {loading ? (
-                    <div className="space-y-4">
-                      {Array(4).fill(null).map((_, i) => (
-                        <div key={i} className="flex gap-3 items-start">
-                          <Skeleton className="h-8 w-8 rounded-full" />
-                          <div className="flex-1 space-y-2">
-                            <Skeleton className="h-4 w-full" />
-                            <Skeleton className="h-3 w-3/4" />
-                          </div>
+                  <div className="space-y-4">
+                    <div className="rounded-lg border p-3">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded-md">
+                          <FileQuestion className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                         </div>
-                      ))}
+                        <h3 className="font-medium text-sm">Creating Content</h3>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Use the Article Editor to create engaging content with rich text formatting, images, and more.
+                      </p>
                     </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="flex gap-3 items-start">
-                        <div className="p-2 rounded-full bg-blue-50 dark:bg-blue-900/30">
-                          <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    
+                    <div className="rounded-lg border p-3">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="bg-amber-50 dark:bg-amber-900/20 p-2 rounded-md">
+                          <MessageSquare className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                         </div>
-                        <div>
-                          <p className="text-sm font-medium">New article published</p>
-                          <p className="text-xs text-muted-foreground">
-                            {recentArticles.length > 0 ? (
-                              <>{formatDistanceToNow(new Date(recentArticles[0].date), { addSuffix: true })}</>
-                            ) : "2 hours ago"}
-                          </p>
-                        </div>
+                        <h3 className="font-medium text-sm">Managing Comments</h3>
                       </div>
-                      
-                      <div className="flex gap-3 items-start">
-                        <div className="p-2 rounded-full bg-green-50 dark:bg-green-900/30">
-                          <Eye className="h-4 w-4 text-green-600 dark:text-green-400" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">Article reached 1,000 views</p>
-                          <p className="text-xs text-muted-foreground">Yesterday</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex gap-3 items-start">
-                        <div className="p-2 rounded-full bg-purple-50 dark:bg-purple-900/30">
-                          <PenTool className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">Draft saved</p>
-                          <p className="text-xs text-muted-foreground">3 days ago</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex gap-3 items-start">
-                        <div className="p-2 rounded-full bg-amber-50 dark:bg-amber-900/30">
-                          <Users className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">New author added</p>
-                          <p className="text-xs text-muted-foreground">1 week ago</p>
-                        </div>
-                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Respond to reader comments to build engagement and community around your content.
+                      </p>
                     </div>
-                  )}
+                    
+                    <div className="rounded-lg border p-3">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="bg-green-50 dark:bg-green-900/20 p-2 rounded-md">
+                          <Settings className="h-4 w-4 text-green-600 dark:text-green-400" />
+                        </div>
+                        <h3 className="font-medium text-sm">Admin Settings</h3>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Customize your blog's appearance, manage users, and configure site settings.
+                      </p>
+                    </div>
+                  </div>
                 </CardContent>
                 <CardFooter className="border-t px-6 py-4">
-                  <Button variant="ghost" size="sm" className="ml-auto">
-                    <span className="text-xs text-muted-foreground">View all activity</span>
-                    <ChevronRight className="ml-1 h-4 w-4" />
+                  <Button variant="ghost" size="sm" className="text-xs text-muted-foreground flex items-center gap-1.5 ml-auto" asChild>
+                    <Link to="/admin/settings">
+                      <HelpCircle className="h-3.5 w-3.5" />
+                      View Admin Guide
+                    </Link>
                   </Button>
                 </CardFooter>
               </Card>
@@ -473,9 +453,9 @@ const AdminDashboard = () => {
             <Card className="border shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
-                  <CardTitle>Recent Articles</CardTitle>
+                  <CardTitle>All Articles</CardTitle>
                   <CardDescription>
-                    Your most recently created articles
+                    Manage your published and draft articles
                   </CardDescription>
                 </div>
                 <Button asChild size="sm" variant="outline">
@@ -526,7 +506,7 @@ const AdminDashboard = () => {
                           <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-1">
                             <span className="flex items-center gap-1">
                               <CalendarDays className="h-3 w-3" />
-                              {formatDistanceToNow(new Date(article.date), { addSuffix: true })}
+                              {format(new Date(article.date), "MMM d, yyyy")}
                             </span>
                             <span className="flex items-center gap-1">
                               <Eye className="h-3 w-3" />
@@ -580,16 +560,16 @@ const AdminDashboard = () => {
                   </Button>
                   
                   <Button variant="outline" asChild className="h-auto py-6 flex flex-col items-center justify-center gap-3">
-                    <Link to="/admin/analytics">
-                      <BarChart3 className="h-6 w-6 text-green-600 dark:text-green-400" />
-                      <span>Analytics</span>
+                    <Link to="/admin/comments">
+                      <MessageSquare className="h-6 w-6 text-green-600 dark:text-green-400" />
+                      <span>Comments</span>
                     </Link>
                   </Button>
                   
                   <Button variant="outline" asChild className="h-auto py-6 flex flex-col items-center justify-center gap-3">
                     <Link to="/admin/articles">
-                      <BookOpen className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-                      <span>Manage Articles</span>
+                      <FileText className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                      <span>All Articles</span>
                     </Link>
                   </Button>
                   
