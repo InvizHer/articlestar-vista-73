@@ -50,7 +50,10 @@ const LikeButton: React.FC<LikeButtonProps> = ({
           .rpc('toggle_like', { p_article_id: articleId });
         
         if (error) throw error;
-        setLikeCount(data || 0);
+        // Here we ensure data is of type number before setting it
+        if (typeof data === 'number') {
+          setLikeCount(data);
+        }
         setIsLiked(true);
         toast.success('Article liked!');
       } else {
@@ -58,7 +61,10 @@ const LikeButton: React.FC<LikeButtonProps> = ({
           .rpc('remove_like', { p_article_id: articleId });
         
         if (error) throw error;
-        setLikeCount(data || 0);
+        // Here we ensure data is of type number before setting it
+        if (typeof data === 'number') {
+          setLikeCount(data);
+        }
         setIsLiked(false);
         toast.success('Like removed');
       }
